@@ -11,33 +11,17 @@ function Home() {
       id: 1,
       title: "CaseFlow",
       desc: "Based on Knowledge Graph Urban Case Management System. A standalone project detail page.",
-      url: "/caseflow", 
+      url: "/caseflow",
       tags: ["React", "Tailwind CSS", "GraphRAG"],
       image: "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?auto=format&fit=crop&q=80&w=800"
     },
     {
       id: 2,
-      title: "Interactive Studio",
-      desc: "专注于极简交互设计的实验性项目，探索 Web 动效的边界。",
+      title: "更新旧城",
+      desc: "基于多智能体的城市更新模拟系统，用像素艺术呈现城市演变过程。",
       url: "https://your-project-link-2.com",
-      tags: ["Animation", "GSAP"],
-      image: "https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80&w=800"
-    },
-    {
-      id: 3,
-      title: "Data Visualization Art",
-      desc: "将复杂的数据转化为优雅的视觉图表，支持实时数据更新。",
-      url: "https://your-project-link-3.com",
-      tags: ["D3.js", "Canvas"],
-      image: "https://images.unsplash.com/photo-1551288049-bbbda536339a?auto=format&fit=crop&q=80&w=800"
-    },
-    {
-      id: 4,
-      title: "E-commerce Redesign",
-      desc: "为未来购物体验设计的概念性网页，采用全响应式布局。",
-      url: "https://your-project-link-4.com",
-      tags: ["Next.js", "Stripe"],
-      image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800"
+      tags: ["Agent Based Modeling", "Pixel Art"],
+      image: "https://images.unsplash.com/photo-1518391846015-55a9cc003b25?auto=format&fit=crop&q=80&w=800"
     }
   ];
 

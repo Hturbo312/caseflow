@@ -11,14 +11,23 @@ import {
   X,
   Route,
   Target,
-  ArrowRight
+  ArrowRight,
+  Layers,
+  Focus,
+  GitBranch
 } from 'lucide-react';
 import { useGraphStore, useCaseStore, useSchemaStore } from '../store';
 
 const KnowledgeGraphCanvas = () => {
   const fgRef = useRef(null);
-  const { nodes, links, setHighlightedNodes, setSelectedNode, filter, setFilter, selectedNode } = useGraphStore();
-  const { getCurrentCase } = useCaseStore();
+  const {
+    nodes, links,
+    allNodes, allLinks,
+    setHighlightedNodes, setSelectedNode, filter, setFilter, selectedNode,
+    viewMode, focusDepth, focusCaseId,
+    setViewMode, setFocusDepth, setFocusCase
+  } = useGraphStore();
+  const { getCurrentCase, cases } = useCaseStore();
   const { getCurrentSchema } = useSchemaStore();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,6 +52,7 @@ const KnowledgeGraphCanvas = () => {
 
   const currentSchema = getCurrentSchema();
   const currentCase = getCurrentCase();
+  const focusCaseData = cases.find(c => c.id === focusCaseId);
 
   // 从 Schema 获取实体类型颜色
   const getEntityTypeColor = (typeName) => {
@@ -256,7 +266,7 @@ const KnowledgeGraphCanvas = () => {
   }, [filteredNodes, selectedNode, setSelectedNode]);
 
   return (
-    <div className="h-full bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col">
+    <div className="h-full bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col" style={{ minHeight: '500px' }}>
       {/* 顶部工具栏 */}
       <div className="border-b border-gray-200 p-4">
         <div className="flex items-center justify-between">
@@ -271,6 +281,74 @@ const KnowledgeGraphCanvas = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* 视图模式切换 */}
+            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+              <button
+                type="button"
+                onClick={() => setViewMode('full')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  viewMode === 'full'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                title="全量模式：显示所有案例实体"
+              >
+                <Layers className="w-4 h-4" />
+                全量
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (focusCaseId) {
+                    setViewMode('focused');
+                  }
+                }}
+                disabled={!focusCaseId}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  viewMode === 'focused'
+                    ? 'bg-blue-500 text-white shadow-sm'
+                    : focusCaseId
+                      ? 'text-gray-600 hover:text-gray-900'
+                      : 'text-gray-400 cursor-not-allowed'
+                }`}
+                title={focusCaseId ? '聚焦模式：显示选中案例及其邻居' : '请先选择一个案例'}
+              >
+                <Focus className="w-4 h-4" />
+                聚焦
+              </button>
+            </div>
+
+            {/* 聚焦深度选择器 */}
+            {viewMode === 'focused' && focusCaseId && (
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-200"
+              >
+                <GitBranch className="w-4 h-4 text-blue-500" />
+                <span className="text-xs text-blue-700 font-medium">深度：</span>
+                <div className="flex gap-1">
+                  {[1, 2].map(depth => (
+                    <button
+                      key={depth}
+                      type="button"
+                      onClick={() => setFocusDepth(depth)}
+                      className={`w-6 h-6 rounded text-xs font-bold transition-all ${
+                        focusDepth === depth
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-white text-blue-600 hover:bg-blue-100 border border-blue-200'
+                      }`}
+                    >
+                      {depth}
+                    </button>
+                  ))}
+                </div>
+                <span className="text-xs text-blue-600 ml-1">
+                  ({focusCaseData?.name || '未知案例'})
+                </span>
+              </motion.div>
+            )}
+
             {/* 路径分析按钮 */}
             <button
               type="button"
@@ -508,6 +586,12 @@ const KnowledgeGraphCanvas = () => {
               // 起点和终点特殊标记
               if (pathStartNode && node.id === pathStartNode.id) return '#3b82f6';
               if (pathEndNode && node.id === pathEndNode.id) return '#a855f7';
+
+              // 聚焦模式下，高亮聚焦案例的节点
+              if (viewMode === 'focused' && focusCaseId && node.caseId === focusCaseId) {
+                return '#3b82f6'; // 聚焦案例节点蓝色
+              }
+
               return getNodeColor(node.type);
             }}
             nodeRel={1}
@@ -516,6 +600,12 @@ const KnowledgeGraphCanvas = () => {
               if (pathStartNode && node.id === pathStartNode.id) return 12;
               if (pathEndNode && node.id === pathEndNode.id) return 12;
               if (pathNodeIds.size > 0 && pathNodeIds.has(node.id)) return 10;
+
+              // 聚焦模式下，聚焦案例节点稍大
+              if (viewMode === 'focused' && focusCaseId && node.caseId === focusCaseId) {
+                return 10;
+              }
+
               return 8;
             }}
             linkLabel="name"
@@ -597,6 +687,12 @@ const KnowledgeGraphCanvas = () => {
                     {selectedNode?.type}
                   </div>
                 </div>
+                {selectedNode?.caseName && (
+                  <div>
+                    <span className="text-gray-500">所属案例</span>
+                    <div className="font-medium text-blue-600">{selectedNode?.caseName}</div>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
@@ -604,18 +700,33 @@ const KnowledgeGraphCanvas = () => {
 
         {/* 图例 */}
         <div className="absolute bottom-4 left-4 bg-white rounded-xl shadow-lg border border-gray-200 p-3">
-          <h4 className="text-xs font-semibold text-gray-500 mb-2">图例</h4>
-          <div className="space-y-1.5">
-            {currentSchema?.entityTypes?.map(type => (
-              <div key={type.id} className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: type.color }}
-                />
-                <span className="text-xs text-gray-600">{type.name}</span>
+          <h4 className="text-xs font-semibold text-gray-500 mb-2">
+            {viewMode === 'focused' ? '聚焦案例' : '实体类型'}
+          </h4>
+          {viewMode === 'focused' && focusCaseId ? (
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-blue-500" />
+                <span className="text-xs text-gray-600">当前案例节点</span>
               </div>
-            ))}
-          </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-gray-400" />
+                <span className="text-xs text-gray-600">邻居节点</span>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {currentSchema?.entityTypes?.map(type => (
+                <div key={type.id} className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: type.color }}
+                  />
+                  <span className="text-xs text-gray-600">{type.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -623,10 +734,20 @@ const KnowledgeGraphCanvas = () => {
       <div className="border-t border-gray-200 px-4 py-2 bg-gray-50">
         <div className="flex items-center justify-between text-xs text-gray-500">
           <div className="flex items-center gap-4">
-            <span>节点：{filteredNodes.length}</span>
-            <span>关系：{filteredLinks.length}</span>
+            <span>节点：{nodes.length} / {allNodes.length}</span>
+            <span>关系：{links.length} / {allLinks.length}</span>
+            <span className={`px-2 py-0.5 rounded ${
+              viewMode === 'full' ? 'bg-gray-200 text-gray-600' : 'bg-blue-100 text-blue-600'
+            }`}>
+              {viewMode === 'full' ? '全量模式' : `聚焦模式 · 深度 ${focusDepth}`}
+            </span>
           </div>
-          <span>{currentCase?.name || '未选择案例'}</span>
+          <span>
+            {viewMode === 'focused' && focusCaseData
+              ? `聚焦：${focusCaseData.name}`
+              : `${currentSchema?.name || '未知 Schema'} · ${cases.filter(c => c.schemaId === currentSchema?.id).length} 案例`
+            }
+          </span>
         </div>
       </div>
     </div>

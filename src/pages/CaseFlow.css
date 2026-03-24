@@ -258,6 +258,14 @@
   flex: 1;
   padding: 24px;
   overflow: hidden;
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+}
+
+.caseflow-main-content > div {
+  flex: 1;
+  min-height: 0;
 }
 
 /* ========== 右栏 - 案例卡片栏 ========== */
@@ -418,6 +426,47 @@
 
 .caseflow-preview-btn:hover {
   background: var(--neutral-800);
+}
+
+.caseflow-preview-btn-secondary {
+  width: 100%;
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px;
+  margin-top: var(--space-2);
+}
+
+.caseflow-preview-btn-secondary:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.caseflow-preview-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* 案例卡片聚焦指示器 */
+.caseflow-card-focus-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  font-weight: 600;
 }
 
 /* ========== 响应式 ========== */

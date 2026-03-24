@@ -6,10 +6,11 @@ import {
   MessageSquare,
   ChevronLeft,
   FileText,
-  X
+  X,
+  Focus
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useGraphStore, useCaseStore } from '../store';
+import { useGraphStore, useCaseStore, useSchemaStore } from '../store';
 import SchemaArchitect from '../components/SchemaArchitect';
 import CaseDetail from '../components/CaseDetail';
 import KnowledgeGraphCanvas from '../components/KnowledgeGraphCanvas';
@@ -19,26 +20,40 @@ import './CaseFlow.css';
 const CaseFlow = () => {
   const [leftActiveModule, setLeftActiveModule] = useState('schema');
   const [mainView, setMainView] = useState('graph');
-  const { initializeGraph, syncCurrentCaseToGraph } = useGraphStore();
-  const { cases, currentCaseId, setCurrentCase } = useCaseStore();
+  const { initializeGraph, setFocusCase, focusCaseId, viewMode, loadAllCasesToGraph } = useGraphStore();
+  const { cases, currentCaseId, setCurrentCase, loadCases, isLoading: casesLoading } = useCaseStore();
+  const { loadSchemas, isLoading: schemasLoading, currentSchemaId } = useSchemaStore();
 
-  // 初始化图谱数据
+  // 初始化：从API加载数据
   useEffect(() => {
-    initializeGraph();
+    const initData = async () => {
+      await Promise.all([loadSchemas(), loadCases()]);
+      initializeGraph();
+    };
+    initData();
   }, []);
 
-  // 处理案例选择 - 同步到 store 和图谱
+  // 当 schema 变化时重新加载所有案例
+  useEffect(() => {
+    loadAllCasesToGraph();
+  }, [currentSchemaId]);
+
+  // 处理案例选择 - 切换到聚焦模式
   const handleCaseSelect = (caseItem) => {
     setCurrentCase(caseItem.id);
-    // 延迟一帧确保 store 更新后再同步图谱
-    setTimeout(() => {
-      syncCurrentCaseToGraph();
-    }, 0);
+    // 设置聚焦案例，自动切换到聚焦模式
+    setFocusCase(caseItem.id);
+  };
+
+  // 处理取消案例选择 - 返回全量模式
+  const handleCaseDeselect = () => {
+    setCurrentCase(null);
+    setFocusCase(null); // 返回全量模式
   };
 
   const leftModules = [
     { id: 'schema', title: 'Schema 建模', icon: Database, component: SchemaArchitect },
-    { id: 'case', title: '案例详情', icon: FileText, component: CaseDetail },
+    { id: 'case', title: '案例拆解', icon: FileText, component: CaseDetail },
   ];
 
   const LeftComponent = leftModules.find(m => m.id === leftActiveModule)?.component || leftModules[0].component;
@@ -180,7 +195,7 @@ const CaseFlow = () => {
         <div className="caseflow-right-list">
           {cases.map((caseItem) => {
             const status = getCaseStatus(caseItem);
-            const isSelected = currentCaseId === caseItem.id;
+            const isSelected = focusCaseId === caseItem.id;
             const caseType = caseItem.tags?.[0] || caseItem.schemaId || '未分类';
 
             return (
@@ -196,10 +211,10 @@ const CaseFlow = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setCurrentCase(null);
+                        handleCaseDeselect();
                       }}
                       className="caseflow-card-close"
-                      aria-label="关闭选中案例"
+                      aria-label="取消聚焦，返回全量模式"
                     >
                       <X size={14} />
                     </button>
@@ -216,13 +231,19 @@ const CaseFlow = () => {
                     <span>{caseItem.relations?.length || 0} 关系</span>
                   </div>
                 )}
+                {isSelected && viewMode === 'focused' && (
+                  <div className="caseflow-card-focus-indicator">
+                    <Focus size={12} />
+                    <span>聚焦中</span>
+                  </div>
+                )}
               </motion.div>
             );
           })}
         </div>
 
         <AnimatePresence>
-          {currentCaseId && (
+          {focusCaseId && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
@@ -230,17 +251,28 @@ const CaseFlow = () => {
               transition={{ duration: 0.25 }}
               className="caseflow-preview-panel"
             >
-              <h4 className="caseflow-preview-title">快速预览</h4>
+              <h4 className="caseflow-preview-title">
+                聚焦案例 · {viewMode === 'focused' ? '深度模式' : '全量模式'}
+              </h4>
               <p className="caseflow-preview-text">
-                {cases.find(c => c.id === currentCaseId)?.description || '暂无描述'}
+                {cases.find(c => c.id === focusCaseId)?.description || '暂无描述'}
               </p>
-              <button
-                className="caseflow-preview-btn"
-                onClick={() => setLeftActiveModule('case')}
-                aria-label="查看案例详情"
-              >
-                查看详情
-              </button>
+              <div className="caseflow-preview-actions">
+                <button
+                  className="caseflow-preview-btn"
+                  onClick={() => setLeftActiveModule('case')}
+                  aria-label="查看案例详情"
+                >
+                  查看详情
+                </button>
+                <button
+                  className="caseflow-preview-btn-secondary"
+                  onClick={handleCaseDeselect}
+                  aria-label="返回全量视图"
+                >
+                  返回全量
+                </button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

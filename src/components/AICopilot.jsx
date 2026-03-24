@@ -27,9 +27,11 @@ const AICopilot = () => {
 
   // 本地配置状态
   const [localConfig, setLocalConfig] = useState({
-    endpoint: apiConfig?.endpoint || '',
+    endpoint: apiConfig?.endpoint || 'https://api.openai.com/v1/chat/completions',
     apiKey: apiConfig?.apiKey || '',
-    model: apiConfig?.model || 'gpt-3.5-turbo',
+    model: apiConfig?.model || '',
+    temperature: apiConfig?.temperature || 0.7,
+    maxTokens: apiConfig?.maxTokens || 4096,
   });
 
   const currentCase = getCurrentCase();
@@ -37,9 +39,11 @@ const AICopilot = () => {
   // 同步 store 中的配置到本地状态
   useEffect(() => {
     setLocalConfig({
-      endpoint: apiConfig?.endpoint || '',
+      endpoint: apiConfig?.endpoint || 'https://api.openai.com/v1/chat/completions',
       apiKey: apiConfig?.apiKey || '',
-      model: apiConfig?.model || 'gpt-3.5-turbo',
+      model: apiConfig?.model || '',
+      temperature: apiConfig?.temperature || 0.7,
+      maxTokens: apiConfig?.maxTokens || 4096,
     });
   }, [apiConfig]);
 
@@ -73,9 +77,11 @@ const AICopilot = () => {
       try {
         const parsed = JSON.parse(savedConfig);
         setLocalConfig({
-          endpoint: parsed.endpoint || '',
+          endpoint: parsed.endpoint || 'https://api.openai.com/v1/chat/completions',
           apiKey: parsed.apiKey || '',
-          model: parsed.model || 'gpt-3.5-turbo',
+          model: parsed.model || '',
+          temperature: parsed.temperature || 0.7,
+          maxTokens: parsed.maxTokens || 4096,
         });
       } catch (e) {
         console.error('读取配置失败:', e);
@@ -325,17 +331,37 @@ const AICopilot = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
-                  <select
+                  <input
+                    type="text"
                     value={localConfig.model}
                     onChange={(e) => setLocalConfig({ ...localConfig, model: e.target.value })}
+                    placeholder="gpt-4o / claude-3-5-sonnet-20241022"
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                  >
-                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                    <option value="gpt-4">GPT-4</option>
-                    <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                    <option value="gpt-4o">GPT-4o</option>
-                    <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
-                  </select>
+                  />
+                  <p className="text-xs text-gray-400 mt-1">请填写您要使用的模型名称</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Temperature</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="2"
+                      value={localConfig.temperature}
+                      onChange={(e) => setLocalConfig({ ...localConfig, temperature: parseFloat(e.target.value) || 0.7 })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Max Tokens</label>
+                    <input
+                      type="number"
+                      value={localConfig.maxTokens}
+                      onChange={(e) => setLocalConfig({ ...localConfig, maxTokens: parseInt(e.target.value) || 4096 })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    />
+                  </div>
                 </div>
                 <button
                   onClick={handleSaveConfig}
