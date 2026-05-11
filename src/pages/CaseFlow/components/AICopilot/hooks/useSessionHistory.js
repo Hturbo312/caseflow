@@ -1,0 +1,95 @@
+import { useState, useCallback, useEffect } from 'react';
+import { useAgentStore, useAuthStore } from '@store';
+import { chatApi } from '@services/api';
+
+/**
+ * Custom hook for session history management
+ * Extracts session history logic from AICopilot
+ */
+export const useSessionHistory = (agentName) => {
+  const { isAuthenticated } = useAuthStore();
+  const {
+    sessions,
+    currentAgentName,
+    loadSessionMessages,
+    startNewSession,
+    deleteSession
+  } = useAgentStore();
+
+  const currentSession = sessions[currentAgentName] || {};
+  const [showHistory, setShowHistory] = useState(false);
+  const [sessionHistory, setSessionHistory] = useState([]);
+
+  // Load history from API
+  const loadHistory = useCallback(async () => {
+    try {
+      const data = await chatApi.getSessions(agentName);
+      setSessionHistory(data.sessions || []);
+    } catch (error) {
+      console.error('Load session history failed:', error);
+    }
+  }, [agentName]);
+
+  // Load session history when agent changes or auth status changes
+  useEffect(() => {
+    if (isAuthenticated && agentName) {
+      loadHistory();
+    }
+  }, [agentName, isAuthenticated, loadHistory]);
+
+  // Load specific session messages
+  const handleLoadSession = useCallback(async (sessionId) => {
+    await loadSessionMessages(sessionId);
+    setShowHistory(false);
+  }, [loadSessionMessages]);
+
+  // Start new session
+  const handleNewSession = useCallback(() => {
+    startNewSession();
+    setShowHistory(false);
+    setSessionHistory([]); // Clear local history
+  }, [startNewSession]);
+
+  // Delete session
+  const handleDeleteSession = useCallback(async (sessionId) => {
+    if (!confirm('确定要删除这个会话吗？')) return;
+    await deleteSession(sessionId);
+    // Refresh history
+    loadHistory();
+  }, [deleteSession, loadHistory]);
+
+  // Format date for display
+  const formatDate = useCallback((dateStr) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return '今天 ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    } else if (diffDays === 1) {
+      return '昨天 ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    } else if (diffDays < 7) {
+      return `${diffDays}天前`;
+    } else {
+      return date.toLocaleDateString('zh-CN');
+    }
+  }, []);
+
+  return {
+    // State
+    showHistory,
+    sessionHistory,
+    currentSession,
+
+    // Actions
+    setShowHistory,
+    loadHistory,
+    handleLoadSession,
+    handleNewSession,
+    handleDeleteSession,
+    formatDate
+  };
+};
+
+export default useSessionHistory;
