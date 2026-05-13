@@ -3,6 +3,7 @@
  */
 
 import { normalizeId } from './idGenerator';
+import { DEFAULT_RELATION_COLOR } from './constants';
 
 /**
  * Transform API case data to frontend format
@@ -115,7 +116,7 @@ export const normalizeSchemaRelation = (relation) => {
     to: relation.to_entity_type || relation.to,
     description: relation.description || '',
     direction: relation.direction || 'directed',
-    color: relation.color || '#9ca3af',
+    color: relation.color || DEFAULT_RELATION_COLOR,
     style: relation.style || 'solid'
   };
 };
@@ -167,7 +168,7 @@ export const schemaRelationToApiFormat = (relation) => {
     toEntityType: relation.to,
     description: relation.description,
     direction: relation.direction || 'directed',
-    color: relation.color || '#9ca3af',
+    color: relation.color || DEFAULT_RELATION_COLOR,
     style: relation.style || 'solid'
   };
 };

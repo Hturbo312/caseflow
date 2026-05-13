@@ -29,31 +29,9 @@ export const CASE_STATUS_LIST = [
 ];
 
 /**
- * 获取状态对应的 CSS 类名
- * @param {string} status - 案例状态值
- * @returns {string} 对应的 CSS 类名
- * @example
- * getStatusClass('active') // 返回 'active'
- * getStatusClass('completed') // 返回 'completed'
- * getStatusClass('unknown') // 返回 'planning' (默认)
- */
-export const getStatusClass = (status) => {
-  const statusMap = {
-    [CASE_STATUS.ACTIVE]: 'active',
-    [CASE_STATUS.COMPLETED]: 'completed',
-    [CASE_STATUS.PLANNING]: 'planning'
-  };
-  return statusMap[status] || 'planning';
-};
-
-/**
  * 获取状态的中文显示文本
  * @param {string} status - 案例状态值
  * @returns {string} 状态的中文文本
- * @example
- * getStatusText('active') // 返回 '进行中'
- * getStatusText('completed') // 返回 '已完成'
- * getStatusText('planning') // 返回 '规划中'
  */
 export const getStatusText = (status) => {
   const textMap = {
@@ -66,13 +44,10 @@ export const getStatusText = (status) => {
 
 /**
  * 根据案例数据计算其状态
- * 这是 getCaseStatus 的别名，保持向后兼容
  * @param {Object} caseItem - 案例对象
- * @param {Array} caseItem.entities - 案例中的实体列表
- * @param {Array} caseItem.relations - 案例中的关系列表
  * @returns {string} 计算得出的状态值
  */
-export const calculateCaseStatus = (caseItem) => {
+export const getCaseStatus = (caseItem) => {
   if (!caseItem?.entities || caseItem.entities.length === 0) {
     return CASE_STATUS.PLANNING;
   }
@@ -81,19 +56,6 @@ export const calculateCaseStatus = (caseItem) => {
   }
   return CASE_STATUS.ACTIVE;
 };
-
-/**
- * 根据案例数据计算其状态（主函数名）
- * @param {Object} caseItem - 案例对象
- * @param {Array} caseItem.entities - 案例中的实体列表
- * @param {Array} caseItem.relations - 案例中的关系列表
- * @returns {string} 计算得出的状态值
- * @example
- * getCaseStatus({ entities: [], relations: [] }) // 返回 'planning'
- * getCaseStatus({ entities: [{}], relations: [] }) // 返回 'active'
- * getCaseStatus({ entities: [{}], relations: [{}] }) // 返回 'completed'
- */
-export const getCaseStatus = calculateCaseStatus;
 
 // ==================== 格式化相关 ====================
 
@@ -190,6 +152,21 @@ export const formatCaseLocation = (location, options = {}) => {
   }
 
   return location;
+};
+
+/**
+ * 计算图谱拓扑指标（密度、平均度、完整度）
+ * @param {number} entityCount - 实体数量
+ * @param {number} relationCount - 关系数量
+ * @returns {{avgDegree: string|number, density: string|number, completeness: number}} 拓扑指标
+ */
+export const calculateTopologyMetrics = (entityCount, relationCount) => {
+  const avgDegree = entityCount > 0 ? (relationCount * 2 / entityCount).toFixed(1) : 0;
+  const density = entityCount > 1
+    ? Math.min(1, (relationCount / (entityCount * (entityCount - 1) / 2)).toFixed(2))
+    : 0;
+  const completeness = entityCount > 0 ? Math.min(100, Math.round((relationCount / entityCount) * 50)) : 0;
+  return { avgDegree, density, completeness };
 };
 
 // ==================== 验证相关 ====================

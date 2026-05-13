@@ -7,17 +7,16 @@
 export {
   CASE_STATUS,
   CASE_STATUS_LIST,
-  getStatusClass,
   getStatusText,
-  getCaseStatus,
-  calculateCaseStatus
+  getCaseStatus
 } from './caseHelpers';
 
 // ==================== 格式化相关 ====================
 export {
   formatCaseDate,
   formatCaseLocation,
-  getCaseStats
+  getCaseStats,
+  calculateTopologyMetrics
 } from './caseHelpers';
 
 // ==================== 验证相关 ====================
@@ -30,11 +29,9 @@ export {
   extractSchemaId,
   caseBelongsToSchema,
   filterCasesBySchema,
-  filterBySchemaId,
   findSchemaById,
   getSchemaName,
-  getCaseSchemaName,
-  isCaseOfSchema
+  getCaseSchemaName
 } from './schemaFilter';
 
 // ==================== 常量配置 ====================

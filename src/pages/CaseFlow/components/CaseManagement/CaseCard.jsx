@@ -1,6 +1,7 @@
 import React, { memo, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Focus, Trash2, ChevronDown, ChevronUp, Building, Link2, Hash, Activity, MapPin, Calendar, FileText, Settings } from 'lucide-react';
+import { calculateTopologyMetrics } from './utils';
 
 /**
  * 预设函数实现
@@ -9,20 +10,19 @@ const presetFunctions = {
   entityCount: (caseItem) => caseItem.entities?.length || 0,
   relationCount: (caseItem) => caseItem.relations?.length || 0,
   avgDegree: (caseItem) => {
-    const entities = caseItem.entities?.length || 0;
-    const relations = caseItem.relations?.length || 0;
-    return entities > 0 ? (relations * 2 / entities).toFixed(1) : 0;
+    const e = caseItem.entities?.length || 0;
+    const r = caseItem.relations?.length || 0;
+    return calculateTopologyMetrics(e, r).avgDegree;
   },
   density: (caseItem) => {
-    const entities = caseItem.entities?.length || 0;
-    const relations = caseItem.relations?.length || 0;
-    if (entities < 2) return 0;
-    return (relations / (entities * (entities - 1) / 2)).toFixed(2);
+    const e = caseItem.entities?.length || 0;
+    const r = caseItem.relations?.length || 0;
+    return calculateTopologyMetrics(e, r).density;
   },
   completeness: (caseItem) => {
-    const entities = caseItem.entities?.length || 0;
-    const relations = caseItem.relations?.length || 0;
-    return entities > 0 ? Math.min(100, Math.round((relations / entities) * 50)) : 0;
+    const e = caseItem.entities?.length || 0;
+    const r = caseItem.relations?.length || 0;
+    return calculateTopologyMetrics(e, r).completeness;
   },
   entityTypes: (caseItem) => {
     const types = new Set(caseItem.entities?.map(e => e.entityType) || []);
@@ -127,13 +127,7 @@ const CaseCard = memo(({
 
   // 计算拓扑指标
   const topologyMetrics = useMemo(() => {
-    const density = entityCount > 1 ? (relationCount / (entityCount * (entityCount - 1) / 2)).toFixed(2) : 0;
-    const avgDegree = entityCount > 0 ? (relationCount * 2 / entityCount).toFixed(1) : 0;
-    return {
-      density: Math.min(density, 1),
-      avgDegree,
-      completeness: entityCount > 0 ? Math.min(100, Math.round((relationCount / entityCount) * 50)) : 0
-    };
+    return calculateTopologyMetrics(entityCount, relationCount);
   }, [entityCount, relationCount]);
 
   // 语义标签
