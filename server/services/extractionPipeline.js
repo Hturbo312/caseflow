@@ -592,27 +592,28 @@ export async function finalizeCase(caseId, options = {}) {
   let savedRelations = 0;
   if (relations.length > 0) {
     const approvedRelations = relations.filter(r => r.status === 'approved');
-    for (const rel of approvedRelations) {
-      // 通过实体名称查找 ID
-      const sourceResult = await pool.query(
-        'SELECT id FROM case_entities WHERE case_id = $1 AND name = $2',
-        [caseId, rel.sourceName]
+    if (approvedRelations.length > 0) {
+      // 优化：一次性查询所有涉及的实体名称，避免 N+1 查询
+      const entityNames = [...new Set(approvedRelations.flatMap(r => [r.sourceName, r.targetName]))];
+      const entitiesResult = await pool.query(
+        'SELECT id, name FROM case_entities WHERE case_id = $1 AND name = ANY($2)',
+        [caseId, entityNames]
       );
-      const targetResult = await pool.query(
-        'SELECT id FROM case_entities WHERE case_id = $1 AND name = $2',
-        [caseId, rel.targetName]
-      );
-      const sourceId = sourceResult.rows[0]?.id;
-      const targetId = targetResult.rows[0]?.id;
+      const nameToId = new Map(entitiesResult.rows.map(r => [r.name, r.id]));
 
-      if (sourceId && targetId) {
-        await pool.query(
-          'INSERT INTO case_relations (case_id, source_entity_id, target_entity_id, relation_type) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING',
-          [caseId, sourceId, targetId, rel.name]
-        );
-        savedRelations++;
-      } else {
-        console.warn(`[finalizeCase] 关系实体未找到: ${rel.sourceName} -> ${rel.targetName}`);
+      for (const rel of approvedRelations) {
+        const sourceId = nameToId.get(rel.sourceName);
+        const targetId = nameToId.get(rel.targetName);
+
+        if (sourceId && targetId) {
+          await pool.query(
+            'INSERT INTO case_relations (case_id, source_entity_id, target_entity_id, relation_type) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING',
+            [caseId, sourceId, targetId, rel.name]
+          );
+          savedRelations++;
+        } else {
+          console.warn(`[finalizeCase] 关系实体未找到: ${rel.sourceName} -> ${rel.targetName}`);
+        }
       }
     }
   }

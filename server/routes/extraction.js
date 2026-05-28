@@ -30,16 +30,12 @@ router.post('/:caseId/schema-analyze', authMiddleware, async (req, res) => {
   }
 });
 
-// 解析文本（构建 Text IR）- 需要较长超时时间（LLM 调用）
+// 解析文本（构建 Text IR）- 纯规则切分，无需 LLM，使用默认超时
 router.post('/:caseId/parse-text', authMiddleware, async (req, res) => {
   try {
     const { caseId } = req.params;
     const { caseText, schemaId } = req.body;
     if (!caseText) return res.status(400).json({ error: 'caseText 是必需的' });
-
-    // 设置较长超时（AI 调用可达 10 分钟）
-    req.socket.setTimeout(660000); // 11 分钟，略长于 AI 超时
-    res.setTimeout(660000);
 
     const result = await pipeline.parseCaseText(caseId, caseText, schemaId);
     res.json({ success: true, data: result });
@@ -217,20 +213,23 @@ router.post('/:caseId/batch-save-relations', authMiddleware, async (req, res) =>
       return res.status(400).json({ error: 'relations 数组是必需的' });
     }
 
+    // 优化：一次性查询所有涉及的实体名称，避免 N+1 查询
+    const entityNames = [...new Set(relations.flatMap(r => [r.sourceName, r.targetName]))];
+    if (entityNames.length === 0) {
+      return res.json({ success: true, saved: 0, skipped: [], relations: [] });
+    }
+
+    const entitiesResult = await pool.query(
+      'SELECT id, name FROM case_entities WHERE case_id = $1 AND name = ANY($2)',
+      [caseId, entityNames]
+    );
+    const nameToId = new Map(entitiesResult.rows.map(r => [r.name, r.id]));
+
     const saved = [];
     const skipped = [];
     for (const rel of relations) {
-      // 通过实体名称查找 ID
-      const sourceResult = await pool.query(
-        'SELECT id FROM case_entities WHERE case_id = $1 AND name = $2',
-        [caseId, rel.sourceName]
-      );
-      const targetResult = await pool.query(
-        'SELECT id FROM case_entities WHERE case_id = $1 AND name = $2',
-        [caseId, rel.targetName]
-      );
-      const sourceId = sourceResult.rows[0]?.id;
-      const targetId = targetResult.rows[0]?.id;
+      const sourceId = nameToId.get(rel.sourceName);
+      const targetId = nameToId.get(rel.targetName);
 
       if (sourceId && targetId) {
         const result = await pool.query(
@@ -239,7 +238,10 @@ router.post('/:caseId/batch-save-relations', authMiddleware, async (req, res) =>
         );
         if (result.rows.length > 0) saved.push(result.rows[0]);
       } else {
-        skipped.push({ sourceName: rel.sourceName, targetName: rel.targetName, reason: '实体未找到' });
+        const missing = [];
+        if (!sourceId) missing.push(rel.sourceName);
+        if (!targetId) missing.push(rel.targetName);
+        skipped.push({ sourceName: rel.sourceName, targetName: rel.targetName, reason: `实体未找到: ${missing.join(', ')}` });
       }
     }
 
