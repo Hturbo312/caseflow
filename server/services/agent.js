@@ -5,29 +5,42 @@ import https from 'https';
 import http from 'http';
 
 /**
- * 解析 AI 配置：用户配置优先，回退到全局缓存
+ * 解析 AI 配置：用户配置优先，回退到全局缓存（环境变量 / 管理员配置）
  */
 function resolveAiConfig(userConfig) {
-  // 只使用用户自己的配置，不回退全局缓存
-  if (!userConfig || !userConfig.api_key) {
+  // 用户有配置时使用用户配置
+  if (userConfig && userConfig.api_key) {
     return {
-      apiKey: null,
-      endpoint: null,
-      model: 'glm-4-flash',
-      temperature: 0.7,
-      maxTokens: 16384,
-      useTemperature: true,
-      useMaxTokens: true,
+      apiKey: userConfig.api_key || userConfig.apiKey,
+      endpoint: userConfig.endpoint,
+      model: userConfig.model || 'glm-4-flash',
+      temperature: parseFloat(userConfig.temperature ?? 0.7),
+      maxTokens: parseInt(userConfig.max_tokens ?? 16384),
+      useTemperature: userConfig.use_temperature !== undefined ? userConfig.use_temperature : true,
+      useMaxTokens: userConfig.use_max_tokens !== undefined ? userConfig.use_max_tokens : true,
     };
   }
+  // 回退到全局缓存（环境变量或管理员通过 API 设置的全局配置）
+  if (aiConfigCache && aiConfigCache.apiKey && aiConfigCache.endpoint) {
+    return {
+      apiKey: aiConfigCache.apiKey,
+      endpoint: aiConfigCache.endpoint,
+      model: aiConfigCache.model || 'glm-4-flash',
+      temperature: aiConfigCache.temperature ?? 0.7,
+      maxTokens: aiConfigCache.maxTokens ?? 16384,
+      useTemperature: aiConfigCache.useTemperature !== undefined ? aiConfigCache.useTemperature : true,
+      useMaxTokens: aiConfigCache.useMaxTokens !== undefined ? aiConfigCache.useMaxTokens : true,
+    };
+  }
+  // 两者都没有，返回 null 配置
   return {
-    apiKey: userConfig.api_key || userConfig.apiKey,
-    endpoint: userConfig.endpoint,
-    model: userConfig.model || 'glm-4-flash',
-    temperature: parseFloat(userConfig.temperature ?? 0.7),
-    maxTokens: parseInt(userConfig.max_tokens ?? 16384),
-    useTemperature: userConfig.use_temperature !== undefined ? userConfig.use_temperature : true,
-    useMaxTokens: userConfig.use_max_tokens !== undefined ? userConfig.use_max_tokens : true,
+    apiKey: null,
+    endpoint: null,
+    model: 'glm-4-flash',
+    temperature: 0.7,
+    maxTokens: 16384,
+    useTemperature: true,
+    useMaxTokens: true,
   };
 }
 

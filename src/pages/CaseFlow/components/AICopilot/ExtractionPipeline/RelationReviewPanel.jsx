@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Check, X } from 'lucide-react';
+import { ArrowRight, Check, X, CheckCheck, XCircle } from 'lucide-react';
 import { useI18n } from '../../../../../i18n';
 
 const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
@@ -23,6 +23,15 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
     return entity?.color || '#9ca3af';
   };
 
+  // 批量操作
+  const handleConfirmAll = () => {
+    relations.filter(r => r.status === 'pending').forEach(r => onUpdateStatus(r.id, 'approved'));
+  };
+
+  const handleSkipAll = () => {
+    relations.filter(r => r.status === 'pending').forEach(r => onUpdateStatus(r.id, 'skipped'));
+  };
+
   return (
     <div className="space-y-3">
       {/* 头部 */}
@@ -34,6 +43,24 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
           {stats.pending > 0 && <span className="text-amber-600">{t('pipeline.pending')} {stats.pending}</span>}
         </div>
       </div>
+
+      {/* 批量操作 */}
+      {stats.pending > 0 && (
+        <div className="flex items-center gap-2 px-1">
+          <button
+            onClick={handleConfirmAll}
+            className="text-xs text-green-600 hover:text-green-700 flex items-center gap-1"
+          >
+            <CheckCheck size={14} /> {t('pipeline.confirmAll')}
+          </button>
+          <button
+            onClick={handleSkipAll}
+            className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1"
+          >
+            <XCircle size={14} /> {t('pipeline.skipAll')}
+          </button>
+        </div>
+      )}
 
       {/* 关系列表 */}
       <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
