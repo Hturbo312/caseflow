@@ -50,7 +50,7 @@ const SESSION_TTL = 15 * 60 * 1000; // 15 分钟超时
 
 // 定期清理过期会话（每 5 分钟执行一次）
 let sessionCleanupStarted = false;
-function startSessionCleanup() {
+export function startSessionCleanup() {
   if (sessionCleanupStarted) return;
   sessionCleanupStarted = true;
   setInterval(() => {
@@ -68,7 +68,7 @@ function startSessionCleanup() {
 }
 
 // 更新会话活跃时间
-function touchSession(sessionId) {
+export function touchSession(sessionId) {
   const session = agentSessions.get(sessionId);
   if (session) session.lastActive = Date.now();
 }
