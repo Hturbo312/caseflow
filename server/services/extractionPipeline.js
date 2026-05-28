@@ -630,26 +630,27 @@ export async function finalizeCase(caseId, options = {}) {
 
   // 自动为本案实体生成嵌入（异步，不阻塞响应）
   if (autoEmbed) {
-    triggerAutoEmbed(caseId).catch(e => console.error('[finalizeCase] 自动嵌入失败:', e));
+    triggerAutoEmbed(caseId, 'finalizeCase').catch(e => console.error('[finalizeCase] 自动嵌入失败:', e));
   }
 
   return { success: true, schema_id: schemaId, saved_relations: savedRelations };
 }
 
-// 异步触发嵌入生成
-async function triggerAutoEmbed(caseId) {
-  // 通过内部 HTTP 调用 RAG 嵌入端点
-  const PORT = process.env.PORT || 3000;
-  const response = await fetch(`http://localhost:${PORT}/api/rag/embed-entities`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ caseId, force: false }),
-  });
-  if (response.ok) {
-    const data = await response.json();
-    console.log(`[finalizeCase] 自动嵌入完成: ${data.message || data.count || 0} 个实体`);
-  } else {
-    console.warn(`[finalizeCase] 自动嵌入请求失败: HTTP ${response.status}`);
+// 异步触发嵌入生成（统一函数，供 extraction.js 和 finalizeCase 共用）
+export async function triggerAutoEmbed(caseId, source = 'auto') {
+  const { PORT } = await import('../config.js');
+  try {
+    const response = await fetch(`http://localhost:${PORT}/api/rag/embed-entities`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ caseId, force: false }),
+    });
+    if (response.ok) {
+      const data = await response.json();
+      console.log(`[${source}] 自动嵌入完成: ${data.count || 0} 个实体`);
+    }
+  } catch (e) {
+    console.error(`[${source}] 嵌入触发异常:`, e.message);
   }
 }
 

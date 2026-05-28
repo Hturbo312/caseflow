@@ -451,7 +451,6 @@ export const zh = {
   'pipeline.hint': '线索',
   'pipeline.noSegments': '暂无文本片段',
   'pipeline.segmentLabel': '段落',
-  'pipeline.noEntitiesYet': '尚未提取任何实体',
   // Property types (constants)
   'prop.text': '文本',
   'prop.number': '数字',
@@ -936,7 +935,6 @@ export const en = {
   'pipeline.hint': 'hints',
   'pipeline.noSegments': 'No text segments yet',
   'pipeline.segmentLabel': 'Segment',
-  'pipeline.noEntitiesYet': 'No entities extracted yet',
   // Property types (constants)
   'prop.text': 'Text',
   'prop.number': 'Number',

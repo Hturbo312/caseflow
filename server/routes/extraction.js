@@ -1,6 +1,7 @@
 import express from 'express';
 import { authMiddleware } from '../middleware/auth.js';
 import * as pipeline from '../services/extractionPipeline.js';
+import { triggerAutoEmbed } from '../services/extractionPipeline.js';
 import pool from '../db.js';
 
 const router = express.Router();
@@ -261,24 +262,6 @@ router.post('/:caseId/batch-save-relations', authMiddleware, async (req, res) =>
     res.status(500).json({ error: error.message });
   }
 });
-
-// 关系保存后/实体保存后异步触发嵌入（统一函数）
-async function triggerAutoEmbed(caseId, source) {
-  const { PORT } = await import('../config.js');
-  try {
-    const response = await fetch(`http://localhost:${PORT}/api/rag/embed-entities`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ caseId, force: false }),
-    });
-    if (response.ok) {
-      const data = await response.json();
-      console.log(`[${source}] 自动嵌入完成: ${data.count || 0} 个实体`);
-    }
-  } catch (e) {
-    console.error(`[${source}] 嵌入触发异常:`, e.message);
-  }
-}
 
 // 获取案例所有实体（用于关系审核时显示实体颜色）
 router.get('/:caseId/entities', authMiddleware, async (req, res) => {
