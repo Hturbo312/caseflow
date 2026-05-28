@@ -7,7 +7,9 @@ import {
   buildSystemPrompt,
   callAI,
   callAIStream,
-  parseAgentOutput
+  parseAgentOutput,
+  startSessionCleanup,
+  touchSession
 } from '../services/agent.js';
 import pool from '../db.js';
 
@@ -121,14 +123,19 @@ router.post('/:name/invoke', authMiddleware, async (req, res) => {
       session = {
         agentName: name,
         messages: [],
-        createdAt: new Date()
+        createdAt: new Date(),
+        lastActive: Date.now()
       };
       agentSessions.set(newSessionId, session);
     }
 
+    // 启动会话清理定时器
+    startSessionCleanup();
+
     let messages = [];
     if (agent.supports_multi_turn && session) {
       messages = [...session.messages];
+      touchSession(newSessionId);
     }
     messages.push({ role: 'user', content: user_input });
 
@@ -141,6 +148,7 @@ router.post('/:name/invoke', authMiddleware, async (req, res) => {
     if (agent.supports_multi_turn && session) {
       session.messages.push({ role: 'user', content: user_input });
       session.messages.push({ role: 'assistant', content: aiResponse });
+      touchSession(newSessionId);
     }
 
     // 异步保存聊天记录和会话元数据（不阻塞响应）
@@ -206,9 +214,13 @@ router.post('/:name/invoke/stream', authMiddleware, async (req, res) => {
 
     res.write(`data: ${JSON.stringify({ type: 'session_id', session_id: newSessionId })}\n\n`);
 
+    // 启动会话清理定时器
+    startSessionCleanup();
+
     let messages = [];
     if (agent.supports_multi_turn && session) {
       messages = [...session.messages];
+      touchSession(newSessionId);
     }
     messages.push({ role: 'user', content: user_input });
 
@@ -228,6 +240,7 @@ router.post('/:name/invoke/stream', authMiddleware, async (req, res) => {
     if (agent.supports_multi_turn && session) {
       session.messages.push({ role: 'user', content: user_input });
       session.messages.push({ role: 'assistant', content: fullResponse });
+      touchSession(newSessionId);
     }
 
     // 异步保存（不阻塞）

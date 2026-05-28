@@ -44,8 +44,34 @@ function resolveAiConfig(userConfig) {
   };
 }
 
-// 内存中的 Agent 会话存储
+// 内存中的 Agent 会话存储（带 TTL 清理，防止内存泄漏）
 export const agentSessions = new Map();
+const SESSION_TTL = 15 * 60 * 1000; // 15 分钟超时
+
+// 定期清理过期会话（每 5 分钟执行一次）
+let sessionCleanupStarted = false;
+function startSessionCleanup() {
+  if (sessionCleanupStarted) return;
+  sessionCleanupStarted = true;
+  setInterval(() => {
+    const now = Date.now();
+    let cleaned = 0;
+    for (const [id, session] of agentSessions.entries()) {
+      const lastActive = session.lastActive || session.createdAt?.getTime() || 0;
+      if (now - lastActive > SESSION_TTL) {
+        agentSessions.delete(id);
+        cleaned++;
+      }
+    }
+    if (cleaned > 0) console.log(`[agentSessions] 清理了 ${cleaned} 个过期会话`);
+  }, 5 * 60 * 1000);
+}
+
+// 更新会话活跃时间
+function touchSession(sessionId) {
+  const session = agentSessions.get(sessionId);
+  if (session) session.lastActive = Date.now();
+}
 
 // Agent 元数据缓存
 let agentMetaCache = new Map();
@@ -598,101 +624,4 @@ function extractBalancedJson(text) {
     }
   }
   return null;
-}
-
-// 提取关键词
-function extractKeywords(text) {
-  const stopWords = ['的', '是', '在', '有', '和', '与', '或', '了', '吗', '什么', '怎么', '如何', '请', '帮我', '分析'];
-  const words = text.split(/\s+|，|。|？|！|、/).filter(w => w.length > 1 && !stopWords.includes(w));
-  return words.slice(0, 10);
-}
-
-// 简单 RAG 搜索
-async function simpleRAGSearch(keywords, schemaId, caseId) {
-  const results = [];
-
-  try {
-    let entityQuery = `
-      SELECT e.id, e.name, e.entity_type, e.properties, e.case_id, c.name as case_name
-      FROM case_entities e
-      JOIN cases c ON e.case_id = c.id
-      WHERE 1=1
-    `;
-    const entityParams = [];
-    let idx = 1;
-
-    if (schemaId) {
-      entityQuery += ` AND c.schema_id = $${idx}`;
-      entityParams.push(schemaId);
-      idx++;
-    }
-    if (caseId) {
-      entityQuery += ` AND e.case_id = $${idx}`;
-      entityParams.push(caseId);
-      idx++;
-    }
-
-    if (keywords.length > 0) {
-      const keywordConditions = keywords.map(k => `e.name ILIKE $${idx++}`);
-      entityQuery += ` AND (${keywordConditions.join(' OR ')})`;
-      keywords.forEach(k => entityParams.push(`%${k}%`));
-    }
-
-    entityQuery += ` LIMIT 10`;
-    const entitiesResult = await pool.query(entityQuery, entityParams);
-
-    entitiesResult.rows.forEach(e => {
-      results.push({
-        type: 'entity',
-        id: e.id,
-        name: e.name,
-        entity_type: e.entity_type,
-        properties: e.properties,
-        case_id: e.case_id,
-        case_name: e.case_name
-      });
-    });
-
-    let caseQuery = `
-      SELECT id, name, description
-      FROM cases
-      WHERE 1=1
-    `;
-    const caseParams = [];
-    idx = 1;
-
-    if (schemaId) {
-      caseQuery += ` AND schema_id = $${idx}`;
-      caseParams.push(schemaId);
-      idx++;
-    }
-    if (caseId) {
-      caseQuery += ` AND id = $${idx}`;
-      caseParams.push(caseId);
-      idx++;
-    }
-
-    if (keywords.length > 0) {
-      const keywordConditions = keywords.map(k => `(name ILIKE $${idx} OR description ILIKE $${idx++})`);
-      caseQuery += ` AND (${keywordConditions.join(' OR ')})`;
-      keywords.forEach(k => caseParams.push(`%${k}%`));
-    }
-
-    caseQuery += ` LIMIT 5`;
-    const casesResult = await pool.query(caseQuery, caseParams);
-
-    casesResult.rows.forEach(c => {
-      results.push({
-        type: 'case',
-        id: c.id,
-        name: c.name,
-        description: c.description
-      });
-    });
-
-  } catch (error) {
-    console.error('Simple RAG search error:', error);
-  }
-
-  return results;
 }
