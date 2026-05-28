@@ -221,7 +221,7 @@ router.post('/:caseId/batch-save-relations', authMiddleware, async (req, res) =>
     }
 
     // 优化：一次性查询所有涉及的实体名称，避免 N+1 查询
-    const entityNames = [...new Set(relations.flatMap(r => [r.sourceName, r.targetName]))];
+    const entityNames = [...new Set(relations.flatMap(r => [r.sourceName, r.targetName]).filter(Boolean))];
     if (entityNames.length === 0) {
       return res.json({ success: true, saved: 0, skipped: [], relations: [] });
     }
@@ -235,6 +235,12 @@ router.post('/:caseId/batch-save-relations', authMiddleware, async (req, res) =>
     const saved = [];
     const skipped = [];
     for (const rel of relations) {
+      // 跳过缺少必要字段的关系
+      if (!rel.sourceName || !rel.targetName || !rel.name) {
+        skipped.push({ sourceName: rel.sourceName, targetName: rel.targetName, reason: '缺少必要字段 (sourceName/targetName/name)' });
+        continue;
+      }
+
       const sourceId = nameToId.get(rel.sourceName);
       const targetId = nameToId.get(rel.targetName);
 

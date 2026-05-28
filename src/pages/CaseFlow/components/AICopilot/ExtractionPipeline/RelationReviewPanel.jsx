@@ -209,7 +209,10 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
         </AnimatePresence>
 
         {relations.length === 0 && (
-          <p className="text-center text-xs text-gray-400 py-4">{t('ai.noRelations')}</p>
+          <div className="text-center py-6">
+            <p className="text-xs text-gray-400">{t('ai.noRelations')}</p>
+            <p className="text-xs text-gray-300 mt-1">{t('pipeline.noRelationsHint')}</p>
+          </div>
         )}
       </div>
     </div>

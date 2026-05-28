@@ -359,6 +359,7 @@ export const zh = {
   'pipeline.skip': '跳过',
   'pipeline.confirm': '确认',
   'pipeline.viewEvidence': '查看原文依据',
+  'pipeline.noRelationsHint': '关系推断由 AI 基于实体上下文自动生成',
   // AICopilot
   'ai.schemaBuilder': 'Schema构建',
   'ai.caseBreakdown': '案例拆解',
@@ -851,6 +852,7 @@ export const en = {
   'pipeline.skip': 'Skip',
   'pipeline.confirm': 'Confirm',
   'pipeline.viewEvidence': 'View source evidence',
+  'pipeline.noRelationsHint': 'Relations are inferred by AI based on entity context',
   // AICopilot
   'ai.schemaBuilder': 'Schema Builder',
   'ai.caseBreakdown': 'Case Breakdown',

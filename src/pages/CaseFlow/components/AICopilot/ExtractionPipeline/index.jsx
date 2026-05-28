@@ -103,7 +103,7 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
       const result = await finalize();
       if (!result?.success) return;
 
-      // 2. 保存已审核的关系
+      // 2. 保存已审核的关系（autoEmbed=false，因为后续 finalize 会统一触发）
       const approvedRelations = relationCandidates?.filter(r => r.status === 'approved') || [];
       if (approvedRelations.length > 0) {
         const token = authHelper.getToken();
@@ -113,7 +113,7 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
             'Content-Type': 'application/json',
             ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({ relations: approvedRelations }),
+          body: JSON.stringify({ relations: approvedRelations, autoEmbed: false }),
         });
         if (relRes.ok) {
           const relData = await relRes.json();
