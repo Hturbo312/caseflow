@@ -170,7 +170,7 @@ router.post('/:caseId/batch-save-entities', authMiddleware, async (req, res) => 
 
     // 实体保存完成后，自动触发嵌入生成（异步，不阻塞响应）
     if (autoEmbed && saved.length > 0) {
-      triggerEmbedAfterEntities(caseId).catch(e => console.error('[batch-save-entities] 自动嵌入失败:', e));
+      triggerAutoEmbed(caseId, 'batch-save-entities').catch(e => console.error('[batch-save-entities] 自动嵌入失败:', e));
     }
 
     res.json({ success: true, entities: saved });
@@ -253,7 +253,7 @@ router.post('/:caseId/batch-save-relations', authMiddleware, async (req, res) =>
 
     // 关系保存完成后，自动触发嵌入生成（异步，不阻塞响应）
     if (autoEmbed && saved.length > 0) {
-      triggerEmbedAfterRelations(caseId).catch(e => console.error('[batch-save-relations] 自动嵌入失败:', e));
+      triggerAutoEmbed(caseId, 'batch-save-relations').catch(e => console.error('[batch-save-relations] 自动嵌入失败:', e));
     }
 
     res.json({ success: true, saved: saved.length, skipped, relations: saved });
@@ -262,8 +262,8 @@ router.post('/:caseId/batch-save-relations', authMiddleware, async (req, res) =>
   }
 });
 
-// 关系保存后异步触发嵌入（复用 extractionPipeline 的内部函数）
-async function triggerEmbedAfterRelations(caseId) {
+// 关系保存后/实体保存后异步触发嵌入（统一函数）
+async function triggerAutoEmbed(caseId, source) {
   const { PORT } = await import('../config.js');
   try {
     const response = await fetch(`http://localhost:${PORT}/api/rag/embed-entities`, {
@@ -273,28 +273,10 @@ async function triggerEmbedAfterRelations(caseId) {
     });
     if (response.ok) {
       const data = await response.json();
-      console.log(`[batch-save-relations] 自动嵌入完成: ${data.count || 0} 个实体`);
+      console.log(`[${source}] 自动嵌入完成: ${data.count || 0} 个实体`);
     }
   } catch (e) {
-    console.error('[batch-save-relations] 嵌入触发异常:', e.message);
-  }
-}
-
-// 实体保存后异步触发嵌入
-async function triggerEmbedAfterEntities(caseId) {
-  const { PORT } = await import('../config.js');
-  try {
-    const response = await fetch(`http://localhost:${PORT}/api/rag/embed-entities`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ caseId, force: false }),
-    });
-    if (response.ok) {
-      const data = await response.json();
-      console.log(`[batch-save-entities] 自动嵌入完成: ${data.count || 0} 个实体`);
-    }
-  } catch (e) {
-    console.error('[batch-save-entities] 嵌入触发异常:', e.message);
+    console.error(`[${source}] 嵌入触发异常:`, e.message);
   }
 }
 
