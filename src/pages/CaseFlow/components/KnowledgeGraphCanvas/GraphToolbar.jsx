@@ -390,7 +390,7 @@ const GraphToolbar = ({
             <div className="flex items-center gap-1.5">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
               <span className="text-xs text-amber-700">
-                {t('toolbar.noCaseAlert')}
+                {t('empty.noCaseAlert')}
               </span>
             </div>
             <button

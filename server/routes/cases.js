@@ -5,7 +5,7 @@ import { authMiddleware } from '../middleware/auth.js';
 const router = express.Router();
 
 // 获取所有案例
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
     const casesResult = await pool.query('SELECT * FROM cases ORDER BY created_at DESC');
     const cases = casesResult.rows;
@@ -59,7 +59,7 @@ router.post('/', authMiddleware, async (req, res) => {
 // ============================================================
 
 // 导出所有案例图谱数据（JSON 列表）
-router.get('/export-all', async (req, res) => {
+router.get('/export-all', authMiddleware, async (req, res) => {
   try {
     const { format } = req.query;
     const casesResult = await pool.query('SELECT id, name, schema_id FROM cases ORDER BY id');
@@ -131,7 +131,7 @@ router.get('/export-all', async (req, res) => {
 });
 
 // 获取案例详情
-router.get('/:id', async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const caseResult = await pool.query('SELECT * FROM cases WHERE id = $1', [id]);
@@ -220,7 +220,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 // ============================================================
 
 // 导出案例图谱数据（JSON）
-router.get('/:id/export', async (req, res) => {
+router.get('/:id/export', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const { format } = req.query; // 'json' | 'csv'

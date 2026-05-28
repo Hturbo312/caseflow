@@ -477,6 +477,14 @@ export const zh = {
   'common.unknownError': '未知错误',
   'common.adjustmentFailed': '调整失败',
   'ai.characters': '字符',
+  // Missing placeholders & prompts (补充)
+  'ai.schemaBuilderPlaceholder': '描述您想创建的 Schema 结构...',
+  'ai.caseBreakdownPlaceholder': '粘贴或输入案例文本开始提取...',
+  'ai.conversationPlaceholder': '输入关于图谱的问题...',
+  'ai.caseBreakdownComplete': '案例拆解完成！',
+  'ai.caseTextPlaceholder': '在此粘贴案例全文...',
+  'ai.adjustPlaceholder': '描述您想要的调整...',
+  'ai.loginToConfigure': '登录后配置 AI',
   // Default schema
   'schema.defaultName': '默认 Schema',
   'schema.defaultDesc': '基础城市更新案例拆解框架',
@@ -961,6 +969,14 @@ export const en = {
   'common.unknownError': 'Unknown error',
   'common.adjustmentFailed': 'Adjustment failed',
   'ai.characters': 'characters',
+  // Missing placeholders & prompts
+  'ai.schemaBuilderPlaceholder': 'Describe the Schema structure you want to create...',
+  'ai.caseBreakdownPlaceholder': 'Paste or enter case text to start extraction...',
+  'ai.conversationPlaceholder': 'Ask a question about the graph...',
+  'ai.caseBreakdownComplete': 'Case breakdown complete!',
+  'ai.caseTextPlaceholder': 'Paste the full case text here...',
+  'ai.adjustPlaceholder': 'Describe the adjustment you want...',
+  'ai.loginToConfigure': 'Login to configure AI',
   // Default schema
   'schema.defaultName': 'Default Schema',
   'schema.defaultDesc': 'Basic urban renewal case breakdown framework',

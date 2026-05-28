@@ -282,7 +282,7 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
                   />
                 ))}
                 {Object.keys(candidates).length === 0 && (
-                  <p className="text-center text-sm text-gray-400 py-8">{t('pipeline.noEntitiesYet')}</p>
+                  <p className="text-center text-sm text-gray-400 py-8">{t('ai.noEntitiesYet')}</p>
                 )}
               </div>
             </motion.div>
