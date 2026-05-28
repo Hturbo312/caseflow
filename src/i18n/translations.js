@@ -335,7 +335,6 @@ export const zh = {
   'schema.confirmDeleteRelation': '确定要删除此关系定义吗？',
   'schema.properties': '属性',
   'schema.relationSubtitle': '定义实体间的关系',
-  'schema.relationSubtitle': '定义实体间的关系',
   'schema.relationPlaceholder': '如：拥有、属于、关联',
   'schema.relationDescPlaceholder': '描述此关系的含义和用途...',
   'schema.colorLabel': '颜色',

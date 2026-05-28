@@ -212,7 +212,7 @@ router.post('/:caseId/finalize', authMiddleware, async (req, res) => {
 router.post('/:caseId/batch-save-relations', authMiddleware, async (req, res) => {
   try {
     const { caseId } = req.params;
-    const { relations } = req.body;
+    const { relations, autoEmbed = true } = req.body;
     if (!relations || !Array.isArray(relations)) {
       return res.status(400).json({ error: 'relations 数组是必需的' });
     }
@@ -242,11 +242,35 @@ router.post('/:caseId/batch-save-relations', authMiddleware, async (req, res) =>
         skipped.push({ sourceName: rel.sourceName, targetName: rel.targetName, reason: '实体未找到' });
       }
     }
+
+    // 关系保存完成后，自动触发嵌入生成（异步，不阻塞响应）
+    if (autoEmbed && saved.length > 0) {
+      triggerEmbedAfterRelations(caseId).catch(e => console.error('[batch-save-relations] 自动嵌入失败:', e));
+    }
+
     res.json({ success: true, saved: saved.length, skipped, relations: saved });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+
+// 关系保存后异步触发嵌入（复用 extractionPipeline 的内部函数）
+async function triggerEmbedAfterRelations(caseId) {
+  const { PORT } = await import('../config.js');
+  try {
+    const response = await fetch(`http://localhost:${PORT}/api/rag/embed-entities`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ caseId, force: false }),
+    });
+    if (response.ok) {
+      const data = await response.json();
+      console.log(`[batch-save-relations] 自动嵌入完成: ${data.count || 0} 个实体`);
+    }
+  } catch (e) {
+    console.error('[batch-save-relations] 嵌入触发异常:', e.message);
+  }
+}
 
 // 获取文本片段（溯源查看）
 router.get('/:caseId/segments', authMiddleware, async (req, res) => {
