@@ -103,11 +103,11 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
       const result = await finalize();
       if (!result?.success) return;
 
-      // 2. 保存已审核的关系（绕过 protected store 的 bug）
+      // 2. 保存已审核的关系
       const approvedRelations = relationCandidates?.filter(r => r.status === 'approved') || [];
       if (approvedRelations.length > 0) {
         const token = authHelper.getToken();
-        await fetch(`${API_BASE_URL}/extraction/${caseId}/batch-save-relations`, {
+        const relRes = await fetch(`${API_BASE_URL}/extraction/${caseId}/batch-save-relations`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -115,7 +115,32 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
           },
           body: JSON.stringify({ relations: approvedRelations }),
         });
-        console.log(`[handleFinalize] 保存了 ${approvedRelations.length} 条关系`);
+        if (relRes.ok) {
+          const relData = await relRes.json();
+          console.log(`[handleFinalize] 保存了 ${relData.saved ?? approvedRelations.length} 条关系`);
+          if (relData.skipped?.length > 0) {
+            console.warn(`[handleFinalize] 跳过了 ${relData.skipped.length} 条关系:`, relData.skipped);
+          }
+        } else {
+          console.error(`[handleFinalize] 关系保存失败: ${relRes.status}`);
+        }
+      }
+
+      // 3. 调用后端 finalize 接口：标记 case_memory 为 completed + 触发 autoEmbed
+      const token = authHelper.getToken();
+      const finalizeRes = await fetch(`${API_BASE_URL}/extraction/${caseId}/finalize`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ relations: [], autoEmbed: true }),
+      });
+      if (finalizeRes.ok) {
+        const finalizeData = await finalizeRes.json();
+        console.log(`[handleFinalize] 后端 finalize 完成:`, finalizeData.data);
+      } else {
+        console.warn(`[handleFinalize] 后端 finalize 失败: ${finalizeRes.status}`);
       }
 
       if (onComplete) {
