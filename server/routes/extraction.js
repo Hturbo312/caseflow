@@ -156,7 +156,7 @@ router.post('/:caseId/save-entity', authMiddleware, async (req, res) => {
 router.post('/:caseId/batch-save-entities', authMiddleware, async (req, res) => {
   try {
     const { caseId } = req.params;
-    const { entities } = req.body;
+    const { entities, autoEmbed = true } = req.body;
     if (!entities || !Array.isArray(entities)) return res.status(400).json({ error: 'entities 数组是必需的' });
 
     const saved = [];
@@ -167,6 +167,12 @@ router.post('/:caseId/batch-save-entities', authMiddleware, async (req, res) => 
       );
       saved.push(result.rows[0]);
     }
+
+    // 实体保存完成后，自动触发嵌入生成（异步，不阻塞响应）
+    if (autoEmbed && saved.length > 0) {
+      triggerEmbedAfterEntities(caseId).catch(e => console.error('[batch-save-entities] 自动嵌入失败:', e));
+    }
+
     res.json({ success: true, entities: saved });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -273,6 +279,35 @@ async function triggerEmbedAfterRelations(caseId) {
     console.error('[batch-save-relations] 嵌入触发异常:', e.message);
   }
 }
+
+// 实体保存后异步触发嵌入
+async function triggerEmbedAfterEntities(caseId) {
+  const { PORT } = await import('../config.js');
+  try {
+    const response = await fetch(`http://localhost:${PORT}/api/rag/embed-entities`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ caseId, force: false }),
+    });
+    if (response.ok) {
+      const data = await response.json();
+      console.log(`[batch-save-entities] 自动嵌入完成: ${data.count || 0} 个实体`);
+    }
+  } catch (e) {
+    console.error('[batch-save-entities] 嵌入触发异常:', e.message);
+  }
+}
+
+// 获取案例所有实体（用于关系审核时显示实体颜色）
+router.get('/:caseId/entities', authMiddleware, async (req, res) => {
+  try {
+    const { caseId } = req.params;
+    const result = await pool.query('SELECT id, name, entity_type, color FROM case_entities WHERE case_id = $1', [caseId]);
+    res.json({ entities: result.rows });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // 获取文本片段（溯源查看）
 router.get('/:caseId/segments', authMiddleware, async (req, res) => {

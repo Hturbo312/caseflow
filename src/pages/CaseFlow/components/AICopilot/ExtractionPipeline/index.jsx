@@ -10,6 +10,22 @@ import RelationReviewPanel from './RelationReviewPanel';
 import SegmentViewer from './SegmentViewer';
 import PipelineControls from './PipelineControls';
 
+// 合并候选实体和 DB 实体，优先使用 DB 实体的 color
+function mergeEntities(candidates, dbEntities) {
+  const byName = new Map();
+  // 先放 DB 实体（有 color）
+  for (const e of dbEntities) {
+    byName.set(e.name, { name: e.name, color: e.color || '#9ca3af', entityType: e.entity_type });
+  }
+  // 再放候选实体（补充 DB 中没有的），但不覆盖已有的 color
+  for (const c of candidates) {
+    if (!byName.has(c.name)) {
+      byName.set(c.name, { name: c.name, color: c.color || '#9ca3af', entityType: c.entityType });
+    }
+  }
+  return Array.from(byName.values());
+}
+
 const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
   const { t } = useI18n();
   const {
@@ -21,6 +37,7 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
 
   const { currentSchema } = useSchemaStore();
   const [activeTab, setActiveTab] = useState('progress'); // progress | entities | relations | segments
+  const [dbEntities, setDbEntities] = useState([]); // 从数据库加载的已保存实体（含 color）
 
   // 初始化
   useEffect(() => {
@@ -119,6 +136,23 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
     loadSegments(caseId);
   }, [caseId, loadProgress, loadSegments]);
 
+  // 加载已保存的实体（用于关系审核时显示实体颜色）
+  const loadDbEntities = useCallback(async () => {
+    if (!caseId) return;
+    try {
+      const token = authHelper.getToken();
+      const res = await fetch(`${API_BASE_URL}/extraction/${caseId}/entities`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDbEntities(data.entities || []);
+      }
+    } catch (e) {
+      console.error('加载 DB 实体失败:', e);
+    }
+  }, [caseId]);
+
   // 计算当前激活的 tab
   useEffect(() => {
     if (phase === 'extracting' || phase === 'consistency_checking') {
@@ -131,6 +165,13 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
       setActiveTab('progress');
     }
   }, [phase]);
+
+  // 切换到 relations tab 时加载 DB 实体（用于颜色显示）
+  useEffect(() => {
+    if (activeTab === 'relations' && dbEntities.length === 0) {
+      loadDbEntities();
+    }
+  }, [activeTab, dbEntities.length, loadDbEntities]);
 
   const tabs = [
     { id: 'progress', label: t('ai.progress'), icon: LayoutList },
@@ -226,7 +267,7 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
             <motion.div key="relations" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <RelationReviewPanel
                 relations={relationCandidates}
-                entities={Object.values(candidates).flat()}
+                entities={mergeEntities(Object.values(candidates).flat(), dbEntities)}
                 onUpdateStatus={updateRelationStatus}
               />
             </motion.div>
