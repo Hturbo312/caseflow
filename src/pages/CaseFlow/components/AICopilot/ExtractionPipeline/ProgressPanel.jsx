@@ -1,18 +1,21 @@
 import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2, CheckCircle, Circle, AlertCircle, ChevronRight } from 'lucide-react';
+import { useI18n } from '../../../../../i18n';
 
-const PHASES = [
-  { key: 'parsing', label: '解析文本', icon: 'text' },
-  { key: 'planning', label: '生成计划', icon: 'plan' },
-  { key: 'extracting', label: '实体提取', icon: 'extract', isMulti: true },
-  { key: 'consistency_checking', label: '一致性检查', icon: 'check' },
-  { key: 'inferring_relations', label: '关系推断', icon: 'relation' },
-  { key: 'finalizing', label: '保存入库', icon: 'save' },
+const PHASES = (t) => [
+  { key: 'parsing', label: t('pipeline.parseText'), icon: 'text' },
+  { key: 'planning', label: t('pipeline.generatePlan'), icon: 'plan' },
+  { key: 'extracting', label: t('pipeline.entityExtract'), icon: 'extract', isMulti: true },
+  { key: 'consistency_checking', label: t('pipeline.consistencyCheck'), icon: 'check' },
+  { key: 'inferring_relations', label: t('pipeline.inferRelations'), icon: 'relation' },
+  { key: 'finalizing', label: t('pipeline.saveToDb'), icon: 'save' },
 ];
 
 const ProgressPanel = memo(({ phase, plan, progress, onExtractType, onExtractAll, extractedTypes }) => {
-  const phaseOrder = PHASES.map(p => p.key);
+  const { t } = useI18n();
+  const phases = PHASES(t);
+  const phaseOrder = phases.map(p => p.key);
   const currentIdx = phaseOrder.indexOf(phase);
 
   const getStepStatus = (phaseKey) => {
@@ -30,7 +33,7 @@ const ProgressPanel = memo(({ phase, plan, progress, onExtractType, onExtractAll
 
   return (
     <div className="space-y-2">
-      {PHASES.map((p) => {
+      {phases.map((p) => {
         const status = getStepStatus(p.key);
         const isCurrent = p.key === phase;
         const isDone = status === 'done';
@@ -56,7 +59,7 @@ const ProgressPanel = memo(({ phase, plan, progress, onExtractType, onExtractAll
                       className="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs font-medium text-white bg-blue-500 rounded hover:bg-blue-600 transition-colors mb-1"
                     >
                       <Loader2 size={12} />
-                      全部并行提取 ({extractedTypes.length}/{plan.length})
+                      {t('pipeline.extractAll')} ({extractedTypes.length}/{plan.length})
                     </button>
                   )}
                   {plan.map((item, i) => {
@@ -75,7 +78,7 @@ const ProgressPanel = memo(({ phase, plan, progress, onExtractType, onExtractAll
                         <span className={`text-xs ${isExtracted ? 'text-green-600' : isCurrentType ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
                           {item.entity_type}
                           {item.hint_count > 0 && (
-                            <span className="text-gray-400 ml-1">({item.hint_count} 线索)</span>
+                            <span className="text-gray-400 ml-1">({item.hint_count} {t('pipeline.hint')})</span>
                           )}
                         </span>
                         {!isExtracted && (
@@ -86,7 +89,7 @@ const ProgressPanel = memo(({ phase, plan, progress, onExtractType, onExtractAll
                             }`}
                           >
                             <ChevronRight size={10} />
-                            {isExtracted ? '已完成' : isCurrentType ? '提取中' : '提取'}
+                            {isExtracted ? t('pipeline.done') : isCurrentType ? t('pipeline.extracting') : t('pipeline.extractBtn')}
                           </button>
                         )}
                       </div>

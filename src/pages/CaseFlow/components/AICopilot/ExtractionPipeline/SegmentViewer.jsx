@@ -1,9 +1,11 @@
 import React, { memo } from 'react';
 import { FileText } from 'lucide-react';
+import { useI18n } from '../../../../../i18n';
 
 const SegmentViewer = memo(({ segments }) => {
+  const { t } = useI18n();
   if (!segments || segments.length === 0) {
-    return <p className="text-xs text-gray-400 text-center py-4">暂无文本片段</p>;
+    return <p className="text-xs text-gray-400 text-center py-4">{t('pipeline.noSegments')}</p>;
   }
 
   return (
@@ -15,11 +17,11 @@ const SegmentViewer = memo(({ segments }) => {
             <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-1.5 text-xs text-gray-500">
                 <FileText size={12} />
-                <span className="font-medium">段落 {seg.segment_index + 1}</span>
+                <span className="font-medium">{t('pipeline.segmentLabel')} {seg.segment_index + 1}</span>
               </div>
               {hintCount > 0 && (
                 <span className="text-xs text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded">
-                  {hintCount} 线索
+                  {hintCount} {t('pipeline.hint')}
                 </span>
               )}
             </div>
