@@ -1,16 +1,6 @@
 // API 服务层 - 封装所有后端API调用
 import { API_BASE_URL, TOKEN_KEY, authHelper } from '../utils';
 
-// Token 管理 - 使用 utils 导出的 authHelper
-// const TOKEN_KEY = 'caseflow_token'; // 已移至 utils/constants.js
-
-// export const authHelper = { // 已移至 utils/authHelper.js
-//   getToken: () => localStorage.getItem(TOKEN_KEY),
-//   setToken: (token) => localStorage.setItem(TOKEN_KEY, token),
-//   removeToken: () => localStorage.removeItem(TOKEN_KEY),
-//   isAuthenticated: () => !!localStorage.getItem(TOKEN_KEY),
-// };
-
 // 通用请求函数
 async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
@@ -406,10 +396,16 @@ export const healthCheck = () => request('/health');
 // ============================================
 export const authApi = {
   // 注册
-  register: (username, password, email) => request('/auth/register', {
-    method: 'POST',
-    body: JSON.stringify({ username, password, email }),
-  }),
+  register: async (username, password, email) => {
+    const data = await request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ username, password, email }),
+    });
+    if (data.token) {
+      authHelper.setToken(data.token);
+    }
+    return data;
+  },
 
   // 登录
   login: async (username, password) => {

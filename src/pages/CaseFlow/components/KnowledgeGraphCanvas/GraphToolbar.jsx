@@ -15,16 +15,9 @@ import {
   ChevronDown,
   Layers
 } from 'lucide-react';
+import { useI18n } from '../../../../i18n';
 
 const primaryColor = 'var(--color-primary, #a855f7)';
-
-const DEPTH_OPTIONS = [
-  { value: 0, label: '仅当前节点' },
-  { value: 1, label: '1层邻居' },
-  { value: 2, label: '2层邻居' },
-  { value: 3, label: '3层邻居' },
-  { value: 4, label: '4层邻居' },
-];
 
 const GraphToolbar = ({
   // Search
@@ -63,9 +56,18 @@ const GraphToolbar = ({
   showNoCaseAlert,
   onDismissNoCaseAlert,
 }) => {
+  const { t } = useI18n();
   const prefersReducedMotion = useReducedMotion();
   const searchInputRef = useRef(null);
   const [showDepthDropdown, setShowDepthDropdown] = useState(false);
+
+  const DEPTH_OPTIONS = [
+    { value: 0, label: t('toolbar.neighbors0') },
+    { value: 1, label: t('toolbar.neighbors1') },
+    { value: 2, label: t('toolbar.neighbors2') },
+    { value: 3, label: t('toolbar.neighbors3') },
+    { value: 4, label: t('toolbar.neighbors4') },
+  ];
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -102,7 +104,7 @@ const GraphToolbar = ({
           <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: primaryColor }}>
             <Share2 className="w-4 h-4 text-white" />
           </div>
-          <span className="text-sm font-semibold text-gray-900 hidden sm:inline">知识图谱</span>
+          <span className="text-sm font-semibold text-gray-900 hidden sm:inline">{t('toolbar.title')}</span>
         </div>
 
         <div className="flex-1" />
@@ -114,11 +116,11 @@ const GraphToolbar = ({
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="搜索节点..."
+              placeholder={t('toolbar.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               onKeyDown={handleSearchKeyDown}
-              aria-label="搜索图谱节点"
+              aria-label={t('toolbar.search')}
               className="w-full sm:w-40 pl-7 pr-2.5 py-1.5 bg-gray-100 border border-transparent rounded-lg text-xs focus:bg-white focus:border-gray-300 focus:outline-none transition-all"
             />
             {/* 搜索按钮 */}
@@ -127,7 +129,7 @@ const GraphToolbar = ({
               onClick={handleSearchClick}
               disabled={!searchQuery.trim()}
               className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded bg-purple-500 text-white hover:bg-purple-600 disabled:opacity-50 disabled:bg-gray-300 disabled:text-gray-500"
-              title="搜索"
+              title={t('toolbar.search')}
             >
               <Search className="w-3 h-3" />
             </button>
@@ -141,7 +143,7 @@ const GraphToolbar = ({
                 onClick={() => onToggleSearchResults?.(!showSearchResults)}
                 className="h-8 px-2 rounded-lg text-xs font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center gap-1"
               >
-                <span>{searchResults.length} 个结果</span>
+                <span>{searchResults.length} {t('toolbar.results')}</span>
                 <ChevronDown className="w-3 h-3" />
               </button>
 
@@ -179,10 +181,11 @@ const GraphToolbar = ({
                 type="button"
                 onClick={() => setShowDepthDropdown(!showDepthDropdown)}
                 className="h-8 px-2 rounded-lg text-xs font-medium bg-green-50 text-green-600 hover:bg-green-100 flex items-center gap-1"
-                title="选择子图展开深度"
+              title={t('toolbar.depth')}
+              aria-label={t('toolbar.depth')}
               >
                 <Layers className="w-3 h-3" />
-                <span>{DEPTH_OPTIONS.find(d => d.value === searchDepth)?.label || '选择深度'}</span>
+                <span>{DEPTH_OPTIONS.find(d => d.value === searchDepth)?.label || t('toolbar.depth')}</span>
                 <ChevronDown className="w-3 h-3" />
               </button>
 
@@ -219,7 +222,7 @@ const GraphToolbar = ({
                 onToggleSearchResults?.(false);
               }}
               className="h-8 w-8 rounded-lg text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center"
-              title="清除搜索"
+              title={t('toolbar.clearSearch')}
             >
               <X className="w-3 h-3" />
             </button>
@@ -233,10 +236,10 @@ const GraphToolbar = ({
             type="button"
             onClick={onEntityButtonClick}
             className="h-8 px-2.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 bg-blue-500 text-white hover:bg-blue-600"
-            title={currentCaseId ? '添加实体到当前案例' : '请先在右侧创建或选择案例'}
+            title={currentCaseId ? t('toolbar.addEntity') : t('toolbar.selectCaseFirst')}
           >
             <Plus className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">实体</span>
+            <span className="hidden md:inline">{t('toolbar.entity')}</span>
           </button>
 
           {/* 添加关系按钮 */}
@@ -249,10 +252,10 @@ const GraphToolbar = ({
                 : 'bg-green-500 text-white hover:bg-green-600'
             }`}
             style={relationMode ? { backgroundColor: 'var(--color-success, #22c55e)' } : {}}
-            title={currentCaseId ? '点击两个节点创建关系' : '请先在右侧创建或选择案例'}
+            title={currentCaseId ? t('toolbar.relationHint') : t('toolbar.selectCaseFirst')}
           >
             <Link2 className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">{relationMode ? '取消' : '关系'}</span>
+            <span className="hidden md:inline">{relationMode ? t('common.cancel') : t('toolbar.relation')}</span>
           </button>
 
           {/* 路径分析按钮 */}
@@ -265,22 +268,22 @@ const GraphToolbar = ({
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
             style={showPathAnalysis ? { backgroundColor: 'var(--color-success, #22c55e)' } : {}}
-            title="路径分析"
+            title={t('toolbar.pathAnalysis')}
           >
             <Route className="w-3.5 h-3.5" />
-            <span className="hidden lg:inline">路径</span>
+            <span className="hidden lg:inline">{t('toolbar.path')}</span>
           </button>
 
           {/* 过滤按钮 */}
           <button
             type="button"
             onClick={onToggleFilters}
-            aria-label={showFilters ? '关闭过滤器' : '打开过滤器'}
+            aria-label={showFilters ? t('toolbar.closeFilter') : t('toolbar.openFilter')}
             aria-expanded={showFilters}
             className={`h-8 w-8 rounded-lg transition-colors flex items-center justify-center ${
               showFilters ? 'bg-purple-100 text-purple-600' : 'hover:bg-gray-100 text-gray-600'
             }`}
-            title="过滤"
+            title={t('toolbar.filter')}
           >
             <Filter className="w-3.5 h-3.5" />
           </button>
@@ -294,8 +297,8 @@ const GraphToolbar = ({
               type="button"
               onClick={onZoomOut}
               className="h-8 w-8 hover:bg-gray-50 transition-colors flex items-center justify-center"
-              aria-label="缩小"
-              title="缩小"
+              aria-label={t('toolbar.zoomOut')}
+              title={t('toolbar.zoomOut')}
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
@@ -303,20 +306,20 @@ const GraphToolbar = ({
               type="button"
               onClick={onFitToCanvas}
               className="h-8 px-2 hover:bg-gray-50 transition-colors border-l border-gray-200 flex items-center gap-1"
-              aria-label="适应画布"
-              title="适应画布"
+              aria-label={t('toolbar.fitCanvas')}
+              title={t('toolbar.fitCanvas')}
             >
               <Maximize className="w-3.5 h-3.5" />
               <span className="text-[10px] text-gray-500 w-8 text-center">
-                {zoomLevel && !isNaN(zoomLevel) ? `${Math.round(zoomLevel * 100)}%` : '适应'}
+                {zoomLevel && !isNaN(zoomLevel) ? `${Math.round(zoomLevel * 100)}%` : t('toolbar.fit')}
               </span>
             </button>
             <button
               type="button"
               onClick={onZoomIn}
               className="h-8 w-8 hover:bg-gray-50 transition-colors border-l border-gray-200 flex items-center justify-center"
-              aria-label="放大"
-              title="放大"
+              aria-label={t('toolbar.zoomIn')}
+              title={t('toolbar.zoomIn')}
             >
               <ZoomIn className="w-3.5 h-3.5" />
             </button>
@@ -334,11 +337,11 @@ const GraphToolbar = ({
           className="mt-2 p-2 bg-gray-50 rounded-lg overflow-hidden"
         >
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-xs font-semibold text-gray-700">过滤器</h4>
+            <h4 className="text-xs font-semibold text-gray-700">{t('toolbar.filters')}</h4>
             <button
               type="button"
               onClick={onToggleFilters}
-              aria-label="关闭过滤器面板"
+              aria-label={t('toolbar.closeFilter')}
               className="p-1 hover:bg-gray-200 rounded"
             >
               <X className="w-3 h-3" />
@@ -346,7 +349,7 @@ const GraphToolbar = ({
           </div>
           <div className="flex gap-3 flex-wrap">
             <div>
-              <label className="block text-[10px] text-gray-500 mb-1.5">实体类型</label>
+              <label className="block text-[10px] text-gray-500 mb-1.5">{t('toolbar.entityType')}</label>
               <div className="flex gap-1.5 flex-wrap">
                 {entityTypes?.map(type => (
                   <button
@@ -387,7 +390,7 @@ const GraphToolbar = ({
             <div className="flex items-center gap-1.5">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
               <span className="text-xs text-amber-700">
-                请先在右侧案例列表中创建或选择一个案例
+                {t('toolbar.noCaseAlert')}
               </span>
             </div>
             <button

@@ -1,6 +1,7 @@
 import React from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Plus } from 'lucide-react';
+import { useI18n } from '../../../../i18n';
 import CaseCard from './CaseCard';
 import PreviewPanel from './PreviewPanel';
 
@@ -12,7 +13,7 @@ const CaseListPanel = ({
   cases,
   filteredCasesList,
   focusCaseId,
-  viewMode,
+  focusMode,
   showCreateCase,
   setShowCreateCase,
   handleCaseSelect,
@@ -24,6 +25,7 @@ const CaseListPanel = ({
   onShowLogin,
   currentSchema
 }) => {
+  const { t } = useI18n();
   // 获取聚焦案例
   const focusedCase = cases.find(c => c.id === focusCaseId);
 
@@ -41,13 +43,13 @@ const CaseListPanel = ({
       <div className="caseflow-right-header">
         <div className="caseflow-right-header-top">
           <div>
-            <h2 className="caseflow-right-title">案例列表</h2>
-            <p className="caseflow-right-count">共 {filteredCasesList.length} 个案例</p>
+            <h2 className="caseflow-right-title">{t('case.title')}</h2>
+            <p className="caseflow-right-count">{t('case.total', { count: filteredCasesList.length })}</p>
           </div>
           <button
             onClick={handleCreateClick}
             className="caseflow-create-btn"
-            title={isAuthenticated ? "新建案例" : "登录后可创建案例"}
+            title={isAuthenticated ? t('case.new') : t('app.loginPrompt')}
           >
             <Plus size={16} />
           </button>
@@ -61,7 +63,7 @@ const CaseListPanel = ({
             caseItem={caseItem}
             isSelected={focusCaseId === caseItem.id}
             schemaName={getCaseSchemaName(caseItem)}
-            viewMode={viewMode}
+            focusMode={focusMode}
             entityTypes={currentSchema?.entityTypes || []}
             cardConfig={currentSchema?.cardConfig}
             onSelect={handleCaseSelect}

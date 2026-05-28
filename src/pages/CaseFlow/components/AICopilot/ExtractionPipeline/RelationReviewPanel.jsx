@@ -1,8 +1,10 @@
 import React, { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Check, X } from 'lucide-react';
+import { useI18n } from '../../../../../i18n';
 
 const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
+  const { t } = useI18n();
   const stats = {
     total: relations.length,
     approved: relations.filter(r => r.status === 'approved').length,
@@ -25,11 +27,11 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
     <div className="space-y-3">
       {/* 头部 */}
       <div className="flex items-center justify-between">
-        <span className="font-semibold text-gray-900 text-sm">关系</span>
+        <span className="font-semibold text-gray-900 text-sm">{t('toolbar.relation')}</span>
         <div className="flex gap-3 text-xs text-gray-500">
-          <span>共 {stats.total} 条</span>
-          <span className="text-green-600">已确认 {stats.approved}</span>
-          {stats.pending > 0 && <span className="text-amber-600">待审核 {stats.pending}</span>}
+          <span>{t('pipeline.totalRelations', { count: stats.total })}</span>
+          <span className="text-green-600">{t('pipeline.approved')} {stats.approved}</span>
+          {stats.pending > 0 && <span className="text-amber-600">{t('pipeline.pending')} {stats.pending}</span>}
         </div>
       </div>
 
@@ -80,14 +82,14 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
                     <button
                       onClick={() => onUpdateStatus(rel.id, 'skipped')}
                       className="p-1 hover:bg-red-50 rounded transition-colors text-gray-400 hover:text-red-500"
-                      title="跳过"
+                      title={t('pipeline.skip')}
                     >
                       <X size={14} />
                     </button>
                     <button
                       onClick={() => onUpdateStatus(rel.id, 'approved')}
                       className="p-1 hover:bg-green-50 rounded transition-colors text-gray-400 hover:text-green-500"
-                      title="确认"
+                      title={t('pipeline.confirm')}
                     >
                       <Check size={14} />
                     </button>
@@ -104,7 +106,7 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
         </AnimatePresence>
 
         {relations.length === 0 && (
-          <p className="text-center text-xs text-gray-400 py-4">暂无关系推断结果</p>
+          <p className="text-center text-xs text-gray-400 py-4">{t('ai.noRelations')}</p>
         )}
       </div>
     </div>

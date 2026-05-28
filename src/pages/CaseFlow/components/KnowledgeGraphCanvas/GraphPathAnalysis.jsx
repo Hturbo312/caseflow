@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Route, Target, ArrowRight, X, AlertTriangle } from 'lucide-react';
+import { useI18n } from '../../../../i18n';
 
 const GraphPathAnalysis = ({
   show,
@@ -11,6 +12,7 @@ const GraphPathAnalysis = ({
   pathResult,
   onResetSelection,
 }) => {
+  const { t } = useI18n();
   const prefersReducedMotion = useReducedMotion();
 
   if (!show) return null;
@@ -26,12 +28,12 @@ const GraphPathAnalysis = ({
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           <Route className="w-3.5 h-3.5 text-green-600" />
-          <h4 className="text-xs font-semibold text-green-700">路径分析</h4>
+          <h4 className="text-xs font-semibold text-green-700">{t('path.title')}</h4>
         </div>
         <button
           type="button"
           onClick={onClose}
-          aria-label="关闭路径分析面板"
+          aria-label={t('toolbar.close')}
           className="p-1 hover:bg-green-200 rounded"
         >
           <X className="w-3 h-3 text-green-600" />
@@ -41,36 +43,36 @@ const GraphPathAnalysis = ({
       {/* 使用指引 */}
       <div className="text-[10px] text-green-600 mb-2 bg-green-100/50 px-2 py-1 rounded">
         {nodes.length === 0 ? (
-          <span className="text-amber-600">当前图谱无节点，请先添加实体</span>
+          <span className="text-amber-600">{t('path.empty')}</span>
         ) : !pathStartNode ? (
-          <span>💡 点击图谱中的节点作为起点</span>
+          <span>{t('path.hintStart')}</span>
         ) : !pathEndNode ? (
-          <span>💡 再点击另一个节点作为终点</span>
+          <span>{t('path.hintEnd')}</span>
         ) : null}
       </div>
 
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-1.5">
           <Target className="w-3 h-3 text-blue-500" />
-          <span className="text-[10px] text-green-600">起点：</span>
+          <span className="text-[10px] text-green-600">{t('path.start')}：</span>
           {pathStartNode ? (
             <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-medium">
               {pathStartNode.name}
             </span>
           ) : (
-            <span className="text-[10px] text-gray-400 italic">等待选择</span>
+            <span className="text-[10px] text-gray-400 italic">{t('path.waiting')}</span>
           )}
         </div>
         <ArrowRight className="w-3 h-3 text-gray-400" />
         <div className="flex items-center gap-1.5">
           <Target className="w-3 h-3 text-purple-500" />
-          <span className="text-[10px] text-green-600">终点：</span>
+          <span className="text-[10px] text-green-600">{t('path.end')}：</span>
           {pathEndNode ? (
             <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-[10px] font-medium">
               {pathEndNode.name}
             </span>
           ) : (
-            <span className="text-[10px] text-gray-400 italic">等待选择</span>
+            <span className="text-[10px] text-gray-400 italic">{t('path.waiting')}</span>
           )}
         </div>
         {/* 重置选择按钮 */}
@@ -80,7 +82,7 @@ const GraphPathAnalysis = ({
             onClick={onResetSelection}
             className="text-[10px] text-green-600 hover:text-green-700 underline"
           >
-            重选
+            {t('path.reselect')}
           </button>
         )}
       </div>
@@ -89,7 +91,7 @@ const GraphPathAnalysis = ({
       {pathResult.length > 0 && (
         <div className="mt-3 pt-3 border-t border-green-200">
           <div className="text-xs text-green-600 mb-2">
-            找到路径（经过 {pathResult.length} 条关系）：
+            {t('path.found', { count: pathResult.length })}
           </div>
           <div className="flex flex-wrap items-center gap-1 text-[10px]">
             {/* 起点 */}
@@ -108,7 +110,7 @@ const GraphPathAnalysis = ({
                   </span>
                   <ArrowRight className="w-3 h-3 text-gray-400" />
                   <span className="px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded">
-                    {targetNode?.name || '未知'}
+                    {targetNode?.name || t('detail.link.unknown')}
                   </span>
                 </React.Fragment>
               );
@@ -119,7 +121,7 @@ const GraphPathAnalysis = ({
       {pathStartNode && pathEndNode && pathResult.length === 0 && (
         <div className="mt-3 text-xs text-amber-600 italic flex items-center gap-1">
           <AlertTriangle className="w-3 h-3" />
-          两个节点之间没有路径相连
+          {t('path.notFound')}
         </div>
       )}
     </motion.div>

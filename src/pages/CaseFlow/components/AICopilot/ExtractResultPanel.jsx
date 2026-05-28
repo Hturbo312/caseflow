@@ -8,6 +8,7 @@ import {
   RefreshCw,
   Loader2
 } from 'lucide-react';
+import { useI18n } from '../../../../i18n';
 
 /**
  * ExtractResultPanel - 案例拆解结果展示面板
@@ -21,6 +22,8 @@ const ExtractResultPanel = memo(({
   onConfirmSave,
   onRequestAdjustment
 }) => {
+  const { t } = useI18n();
+
   // 处理中状态
   if (isThinking && !extractResult) {
     return (
@@ -34,7 +37,7 @@ const ExtractResultPanel = memo(({
   if (extractResult?.parse_error) {
     return (
       <div className="p-4 bg-red-50 rounded-xl border border-red-200 text-center">
-        <p className="text-sm text-red-600">提取结果解析失败，请重试</p>
+        <p className="text-sm text-red-600">{t('ai.parseError')}</p>
       </div>
     );
   }
@@ -62,9 +65,9 @@ const ExtractResultPanel = memo(({
         <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Building className="w-4 h-4 text-indigo-500" />
-            <span className="font-semibold text-gray-700">提取的实体</span>
+            <span className="font-semibold text-gray-700">{t('ai.extractedEntities')}</span>
           </div>
-          <span className="text-sm text-gray-500">{extractResult.entities?.length || 0} 个</span>
+          <span className="text-sm text-gray-500">{extractResult.entities?.length || 0}</span>
         </div>
         <div className="max-h-48 overflow-y-auto">
           {extractResult.entities?.length > 0 ? (
@@ -93,7 +96,7 @@ const ExtractResultPanel = memo(({
               ))}
             </div>
           ) : (
-            <div className="p-4 text-center text-gray-500 text-sm">暂无实体</div>
+            <div className="p-4 text-center text-gray-500 text-sm">{t('ai.noEntities')}</div>
           )}
         </div>
       </div>
@@ -103,9 +106,9 @@ const ExtractResultPanel = memo(({
         <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Link2 className="w-4 h-4 text-purple-500" />
-            <span className="font-semibold text-gray-700">提取的关系</span>
+            <span className="font-semibold text-gray-700">{t('ai.extractedRelations')}</span>
           </div>
-          <span className="text-sm text-gray-500">{extractResult.relations?.length || 0} 条</span>
+          <span className="text-sm text-gray-500">{extractResult.relations?.length || 0}</span>
         </div>
         <div className="max-h-40 overflow-y-auto">
           {extractResult.relations?.length > 0 ? (
@@ -123,7 +126,7 @@ const ExtractResultPanel = memo(({
               ))}
             </div>
           ) : (
-            <div className="p-4 text-center text-gray-500 text-sm">暂无关系</div>
+            <div className="p-4 text-center text-gray-500 text-sm">{t('ai.noRelations')}</div>
           )}
         </div>
       </div>
@@ -138,12 +141,12 @@ const ExtractResultPanel = memo(({
           {isSaving ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              保存中...
+              {t('ai.saving')}
             </>
           ) : (
             <>
               <Save className="w-4 h-4" />
-              确认保存到图谱
+              {t('ai.confirmSave')}
             </>
           )}
         </button>
@@ -152,14 +155,14 @@ const ExtractResultPanel = memo(({
           className="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
         >
           <RefreshCw className="w-4 h-4" />
-          调整结果
+          {t('ai.adjustResult')}
         </button>
       </div>
 
       {/* 提示信息 */}
       {!selectedCaseId && (
         <p className="text-xs text-gray-500 text-center bg-amber-50 p-2 rounded-lg">
-          将创建新案例保存提取结果
+          {t('ai.hintNewCase')}
         </p>
       )}
     </motion.div>

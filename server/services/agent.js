@@ -1,7 +1,35 @@
 import pool from '../db.js';
 import { aiConfigCache } from '../config.js';
+import { graphRagSearch } from './graphRag.js';
 import https from 'https';
 import http from 'http';
+
+/**
+ * 解析 AI 配置：用户配置优先，回退到全局缓存
+ */
+function resolveAiConfig(userConfig) {
+  // 只使用用户自己的配置，不回退全局缓存
+  if (!userConfig || !userConfig.api_key) {
+    return {
+      apiKey: null,
+      endpoint: null,
+      model: 'glm-4-flash',
+      temperature: 0.7,
+      maxTokens: 16384,
+      useTemperature: true,
+      useMaxTokens: true,
+    };
+  }
+  return {
+    apiKey: userConfig.api_key || userConfig.apiKey,
+    endpoint: userConfig.endpoint,
+    model: userConfig.model || 'glm-4-flash',
+    temperature: parseFloat(userConfig.temperature ?? 0.7),
+    maxTokens: parseInt(userConfig.max_tokens ?? 16384),
+    useTemperature: userConfig.use_temperature !== undefined ? userConfig.use_temperature : true,
+    useMaxTokens: userConfig.use_max_tokens !== undefined ? userConfig.use_max_tokens : true,
+  };
+}
 
 // 内存中的 Agent 会话存储
 export const agentSessions = new Map();
@@ -71,9 +99,13 @@ export async function buildAgentContext(agentName, context, userInput) {
       const queries = [];
       const queryKeys = [];
 
-      // RAG 搜索
-      const keywords = extractKeywords(userInput);
-      queries.push(simpleRAGSearch(keywords, context?.schema_id, context?.case_id));
+      // GraphRAG 混合检索（向量 + 全文 + 图扩展）
+      queries.push(graphRagSearch(userInput, {
+        schemaId: context?.schema_id,
+        caseId: context?.case_id,
+        limit: 15,
+        depth: 2,
+      }));
       queryKeys.push('rag_context');
 
       // 图谱统计
@@ -108,7 +140,13 @@ export async function buildAgentContext(agentName, context, userInput) {
         const data = queryResults[i];
 
         if (key === 'rag_context') {
-          result[key] = data;
+          // graphRagSearch 返回 { entities, cases, relations, subgraph }
+          result[key] = {
+            entities: data.entities || [],
+            cases: data.cases || [],
+            relations: data.relations || [],
+            subgraph: data.subgraph || { nodes: [], edges: [] },
+          };
         } else if (key === 'graph_stats') {
           result[key] = data.rows[0];
         } else if (key === 'selected_case') {
@@ -278,15 +316,32 @@ export function buildSystemPrompt(agent, context) {
       if (context.graph_stats) {
         prompt += `\n\n## 当前图谱统计\n- 案例数：${context.graph_stats.case_count || 0}\n- 实体数：${context.graph_stats.entity_count || 0}\n- 关系数：${context.graph_stats.relation_count || 0}`;
       }
-      if (context.rag_context && context.rag_context.length > 0) {
-        prompt += `\n\n## 相关检索结果\n`;
-        context.rag_context.forEach(item => {
-          if (item.type === 'entity') {
-            prompt += `- 实体【${item.name}】(${item.entity_type}): ${JSON.stringify(item.properties || {})}`;
-          } else if (item.type === 'case') {
-            prompt += `- 案例【${item.name}】: ${(item.description || '').slice(0, 200)}...`;
-          }
-        });
+      if (context.rag_context) {
+        const rag = context.rag_context;
+        prompt += `\n\n## GraphRAG 检索结果（基于用户问题自动检索）\n`;
+        if (rag.entities && rag.entities.length > 0) {
+          prompt += `\n### 相关实体（${rag.entities.length} 个）\n`;
+          rag.entities.slice(0, 10).forEach(e => {
+            const props = e.properties ? Object.entries(e.properties).slice(0, 3).map(([k, v]) => `${k}: ${v}`).join(', ') : '';
+            prompt += `- 【${e.name}】(${e.entityType || ''}) — ${e.caseName ? `来自案例「${e.caseName}」` : ''}${props ? ` | ${props}` : ''}\n`;
+          });
+        }
+        if (rag.relations && rag.relations.length > 0) {
+          prompt += `\n### 图谱关系（${rag.relations.length} 条）\n`;
+          rag.relations.slice(0, 15).forEach(r => {
+            prompt += `- ${r.sourceName} --[${r.relationType}]--> ${r.targetName}\n`;
+          });
+        }
+        if (rag.cases && rag.cases.length > 0) {
+          prompt += `\n### 相关案例（${rag.cases.length} 个）\n`;
+          rag.cases.slice(0, 5).forEach(c => {
+            prompt += `- 【${c.name}】（相似度 ${(c.similarity || 0).toFixed(2)}）— ${(c.description || '').slice(0, 150)}\n`;
+          });
+        }
+        if (rag.subgraph && rag.subgraph.nodes && rag.subgraph.nodes.length > 0) {
+          prompt += `\n### 子图扩展\n`;
+          prompt += `从检索结果扩展出 ${rag.subgraph.nodes.length} 个关联节点、${rag.subgraph.edges.length} 条关系边\n`;
+        }
       }
       if (context.selected_case) {
         prompt += `\n\n## 当前选中案例\n名称：${context.selected_case.name}\n描述：${context.selected_case.description || '无'}\n实体数：${context.selected_case.entities?.length || 0}`;
@@ -301,24 +356,25 @@ export function buildSystemPrompt(agent, context) {
 }
 
 // 调用 AI - 使用 node:https 而非 fetch（fetch 有 300s bodyTimeout 限制）
-export async function callAI(systemPrompt, messages, agent) {
-  if (!aiConfigCache.apiKey || !aiConfigCache.endpoint) {
+export async function callAI(systemPrompt, messages, agent, userConfig) {
+  const cfg = resolveAiConfig(userConfig);
+  if (!cfg.apiKey || !cfg.endpoint) {
     throw new Error('请先配置 AI API');
   }
 
   const requestBody = {
-    model: aiConfigCache.model || 'glm-4-flash',
+    model: cfg.model || 'glm-4-flash',
     messages: [
       { role: 'system', content: systemPrompt },
       ...messages
     ]
   };
 
-  if (aiConfigCache.useTemperature) {
-    requestBody.temperature = aiConfigCache.temperature || 0.7;
+  if (cfg.useTemperature) {
+    requestBody.temperature = cfg.temperature || 0.7;
   }
-  if (aiConfigCache.useMaxTokens) {
-    requestBody.max_tokens = aiConfigCache.maxTokens || 4096;
+  if (cfg.useMaxTokens) {
+    requestBody.max_tokens = cfg.maxTokens || 4096;
   }
 
   if (agent.name === 'case_extractor') {
@@ -326,7 +382,7 @@ export async function callAI(systemPrompt, messages, agent) {
   }
 
   const body = JSON.stringify(requestBody);
-  const url = new URL(aiConfigCache.endpoint);
+  const url = new URL(cfg.endpoint);
   const client = url.protocol === 'https:' ? https : http;
 
   return new Promise((resolve, reject) => {
@@ -334,7 +390,7 @@ export async function callAI(systemPrompt, messages, agent) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${aiConfigCache.apiKey}`,
+        'Authorization': `Bearer ${cfg.apiKey}`,
         'Content-Length': Buffer.byteLength(body)
       },
       timeout: 600000 // 10分钟超时
@@ -366,13 +422,14 @@ export async function callAI(systemPrompt, messages, agent) {
 }
 
 // 流式调用 AI
-export async function callAIStream(systemPrompt, messages, agent, onChunk) {
-  if (!aiConfigCache.apiKey || !aiConfigCache.endpoint) {
+export async function callAIStream(systemPrompt, messages, agent, onChunk, userConfig) {
+  const cfg = resolveAiConfig(userConfig);
+  if (!cfg.apiKey || !cfg.endpoint) {
     throw new Error('请先配置 AI API');
   }
 
   const requestBody = {
-    model: aiConfigCache.model || 'glm-4-flash',
+    model: cfg.model || 'glm-4-flash',
     messages: [
       { role: 'system', content: systemPrompt },
       ...messages
@@ -380,11 +437,11 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk) {
     stream: true
   };
 
-  if (aiConfigCache.useTemperature) {
-    requestBody.temperature = aiConfigCache.temperature || 0.7;
+  if (cfg.useTemperature) {
+    requestBody.temperature = cfg.temperature || 0.7;
   }
-  if (aiConfigCache.useMaxTokens) {
-    requestBody.max_tokens = aiConfigCache.maxTokens || 4096;
+  if (cfg.useMaxTokens) {
+    requestBody.max_tokens = cfg.maxTokens || 4096;
   }
 
   if (agent.name === 'case_extractor') {
@@ -394,11 +451,11 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 600000); // 10分钟超时
 
-  const response = await fetch(aiConfigCache.endpoint, {
+  const response = await fetch(cfg.endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${aiConfigCache.apiKey}`
+      'Authorization': `Bearer ${cfg.apiKey}`
     },
     body: JSON.stringify(requestBody),
     signal: controller.signal

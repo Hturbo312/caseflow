@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 import { X, Clock, Trash2, MessageCirclePlus } from 'lucide-react';
+import { useI18n } from '../../../../i18n';
 
 /**
  * HistorySidebar - 历史会话侧边栏组件
@@ -16,6 +17,7 @@ const HistorySidebar = memo(({
   onNewSession,
   onClose
 }) => {
+  const { t } = useI18n();
   if (!showHistory || !isAuthenticated) return null;
 
   return (
@@ -26,7 +28,7 @@ const HistorySidebar = memo(({
       className="absolute left-0 top-0 bottom-0 w-72 bg-gray-50 border-r border-gray-200 z-10 flex flex-col"
     >
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        <h3 className="font-semibold text-gray-700">历史会话</h3>
+        <h3 className="font-semibold text-gray-700">{t('ai.historyTitle')}</h3>
         <button
           onClick={onClose}
           className="p-1 hover:bg-gray-200 rounded"
@@ -37,7 +39,7 @@ const HistorySidebar = memo(({
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {sessionHistory.length === 0 ? (
           <div className="text-center text-gray-500 text-sm py-8">
-            暂无历史记录
+            {t('ai.historyEmpty')}
           </div>
         ) : (
           sessionHistory.map((session) => (
@@ -51,11 +53,11 @@ const HistorySidebar = memo(({
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-700 truncate">
-                    {session.title || '未命名会话'}
+                    {session.title || t('ai.untitled')}
                   </p>
                   <div className="flex items-center gap-1 mt-1 text-xs text-gray-400">
                     <Clock className="w-3 h-3" />
-                    {formatDate(session.updated_at || session.created_at)}
+                    {formatDate(session.updated_at || session.created_at, t)}
                   </div>
                 </div>
                 <button
@@ -78,7 +80,7 @@ const HistorySidebar = memo(({
           className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-white rounded-lg hover:bg-gray-100 transition-colors text-sm text-gray-600"
         >
           <MessageCirclePlus className="w-4 h-4" />
-          开始新会话
+          {t('ai.newSessionBtn')}
         </button>
       </div>
     </motion.div>
@@ -90,7 +92,7 @@ const HistorySidebar = memo(({
  * @param {string} dateString - ISO日期字符串
  * @returns {string} 格式化后的日期
  */
-const formatDate = (dateString) => {
+const formatDate = (dateString, t) => {
   if (!dateString) return '';
   const date = new Date(dateString);
   const now = new Date();
@@ -99,10 +101,10 @@ const formatDate = (dateString) => {
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return '刚刚';
-  if (diffMins < 60) return `${diffMins}分钟前`;
-  if (diffHours < 24) return `${diffHours}小时前`;
-  if (diffDays < 7) return `${diffDays}天前`;
+  if (diffMins < 1) return t('ai.justNow');
+  if (diffMins < 60) return t('ai.minutesAgo', { count: diffMins });
+  if (diffHours < 24) return t('ai.hoursAgo', { count: diffHours });
+  if (diffDays < 7) return t('ai.daysAgo', { count: diffDays });
 
   return date.toLocaleDateString('zh-CN', {
     month: 'short',

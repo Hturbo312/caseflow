@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Plus, X, Check } from 'lucide-react';
+import { useI18n } from '../../../../i18n';
 
 const GraphEntityPanel = ({
   open,
@@ -12,6 +13,7 @@ const GraphEntityPanel = ({
   onSave,
   saving,
 }) => {
+  const { t } = useI18n();
   const prefersReducedMotion = useReducedMotion();
 
   if (!open) return null;
@@ -29,7 +31,7 @@ const GraphEntityPanel = ({
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           <Plus className="w-3.5 h-3.5 text-blue-600" />
-          <h4 className="text-xs font-semibold text-blue-700">添加实体</h4>
+          <h4 className="text-xs font-semibold text-blue-700">{t('entity.add')}</h4>
           {currentCase && (
             <span className="text-[10px] text-blue-500 ml-1">→ {currentCase.name}</span>
           )}
@@ -44,23 +46,23 @@ const GraphEntityPanel = ({
       </div>
       <div className="flex flex-wrap items-end gap-2">
         <div className="flex-1 min-w-[120px]">
-          <label className="block text-[10px] text-blue-600 mb-0.5">名称 *</label>
+          <label className="block text-[10px] text-blue-600 mb-0.5">{t('entity.name')} *</label>
           <input
             type="text"
             value={entityForm.name}
             onChange={(e) => onFormChange({ ...entityForm, name: e.target.value })}
-            placeholder="输入名称"
+            placeholder={t('entity.name')}
             className="w-full px-2 py-1.5 text-xs border border-blue-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
           />
         </div>
         <div className="min-w-[100px]">
-          <label className="block text-[10px] text-blue-600 mb-0.5">类型 *</label>
+          <label className="block text-[10px] text-blue-600 mb-0.5">{t('entity.type')} *</label>
           <select
             value={entityForm.entityType}
             onChange={(e) => onFormChange({ ...entityForm, entityType: e.target.value, properties: {} })}
             className="w-full px-2 py-1.5 text-xs border border-blue-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
           >
-            <option value="">选择</option>
+            <option value="">{t('entity.selectType')}</option>
             {currentSchema?.entityTypes?.map(type => (
               <option key={type.id} value={type.name}>{type.name}</option>
             ))}
@@ -75,7 +77,7 @@ const GraphEntityPanel = ({
                 onChange={(e) => onFormChange({ ...entityForm, properties: { ...entityForm.properties, [prop.name]: e.target.value } })}
                 className="w-full px-2 py-1.5 text-xs border border-blue-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
               >
-                <option value="">选择</option>
+                <option value="">{t('entity.selectType')}</option>
                 {prop.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
               </select>
             ) : (
@@ -97,12 +99,12 @@ const GraphEntityPanel = ({
           {saving ? (
             <>
               <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              保存
+              {t('entity.save')}
             </>
           ) : (
             <>
               <Check className="w-3 h-3" />
-              保存
+              {t('entity.save')}
             </>
           )}
         </button>

@@ -22,10 +22,13 @@ export const useGraphData = () => {
     removeLinkFromGraph,
     loadAllCasesToGraph,
     initializeGraph,
-    viewMode,
-    setViewMode,
+    focusMode,
     focusCaseId,
-    setFocusCase
+    focusNodeId,
+    setFocusMode,
+    setFocusCase,
+    setFocusNode,
+    setFocusDepth
   } = useGraphStore();
 
   const { currentCaseId, setCurrentCase } = useCaseStore();
@@ -125,8 +128,9 @@ export const useGraphData = () => {
     selectedNode,
     selectedLink,
     filter,
-    viewMode,
+    focusMode,
     focusCaseId,
+    focusNodeId,
     currentCaseId,
     isLoading,
     dimensions,
@@ -147,8 +151,10 @@ export const useGraphData = () => {
     removeLinkFromGraph,
     loadAllCasesToGraph,
     initializeGraph,
-    setViewMode,
+    setFocusMode,
     setFocusCase,
+    setFocusNode,
+    setFocusDepth,
     setCurrentCase,
 
     // Zoom controls

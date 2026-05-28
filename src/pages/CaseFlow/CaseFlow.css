@@ -320,6 +320,25 @@
   font-weight: 500;
 }
 
+.caseflow-lang-switch {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.5px;
+}
+
+.caseflow-lang-switch:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--text-tertiary);
+}
+
 .caseflow-main-content {
   flex: 1;
   padding: 16px;

@@ -95,6 +95,17 @@ router.post('/:name/invoke', authMiddleware, async (req, res) => {
   }
 
   try {
+    // 获取用户 AI 配置
+    let userConfig = null;
+    try {
+      const cfgResult = await pool.query('SELECT * FROM user_ai_configs WHERE user_id = $1', [userId]);
+      if (cfgResult.rows.length > 0) {
+        userConfig = cfgResult.rows[0];
+      }
+    } catch (e) {
+      console.error('获取用户 AI 配置失败:', e);
+    }
+
     // 使用缓存的 Agent 元数据
     const agent = await getAgentMeta(name);
     if (!agent) {
@@ -123,7 +134,7 @@ router.post('/:name/invoke', authMiddleware, async (req, res) => {
 
     const systemPrompt = buildSystemPrompt(agent, fullContext);
 
-    const aiResponse = await callAI(systemPrompt, messages, agent);
+    const aiResponse = await callAI(systemPrompt, messages, agent, userConfig);
 
     const output = parseAgentOutput(aiResponse, agent.output_format);
 
@@ -163,6 +174,17 @@ router.post('/:name/invoke/stream', authMiddleware, async (req, res) => {
     return res.status(400).json({ error: 'user_input 是必需的' });
   }
 
+  // 获取用户 AI 配置
+  let userConfig = null;
+  try {
+    const cfgResult = await pool.query('SELECT * FROM user_ai_configs WHERE user_id = $1', [userId]);
+    if (cfgResult.rows.length > 0) {
+      userConfig = cfgResult.rows[0];
+    }
+  } catch (e) {
+    console.error('获取用户 AI 配置失败:', e);
+  }
+
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
@@ -196,7 +218,7 @@ router.post('/:name/invoke/stream', authMiddleware, async (req, res) => {
     await callAIStream(systemPrompt, messages, agent, (chunk) => {
       fullResponse += chunk;
       res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
-    });
+    }, userConfig);
 
     // 解析输出
     const output = parseAgentOutput(fullResponse, agent.output_format);

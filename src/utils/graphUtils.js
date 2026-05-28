@@ -165,11 +165,10 @@ export const buildEntityTypeColorMap = (entityTypes) => {
 export const buildRelationStyleMap = (relations) => {
   const map = {};
   relations?.forEach(r => {
-    map[r.name] = {
-      color: r.color || '#9ca3af',
-      style: r.style || 'solid',
-      direction: r.direction || 'directed'
-    };
+    const baseName = r.name.replace(/[（(].*$/, '');
+    const style = { color: r.color || '#9ca3af', style: r.style || 'solid', direction: r.direction || 'directed' };
+    map[r.name] = style;
+    if (baseName !== r.name) map[baseName] = style;
   });
   return map;
 };

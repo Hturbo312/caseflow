@@ -1,6 +1,7 @@
 import React, { memo, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Focus, Trash2, ChevronDown, ChevronUp, Building, Link2, Hash, Activity, MapPin, Calendar, FileText, Settings } from 'lucide-react';
+import { useI18n } from '../../../../i18n';
 import { calculateTopologyMetrics } from './utils';
 
 /**
@@ -57,13 +58,14 @@ const CaseCard = memo(({
   caseItem,
   isSelected,
   schemaName,
-  viewMode,
+  focusMode,
   entityTypes = [],
   cardConfig,
   onSelect,
   onDeselect,
   onDelete
 }) => {
+  const { t } = useI18n();
   const [expanded, setExpanded] = useState(false);
 
   const entityCount = caseItem.entities?.length || 0;
@@ -159,10 +161,10 @@ const CaseCard = memo(({
     }
     if (coreEntities.length > 0) {
       const names = coreEntities.slice(0, 3).map(e => e.name).join('、');
-      return `涉及 ${names} 等核心要素`;
+      return t('case.summaryFallback', { count: names });
     }
-    return '暂无摘要信息';
-  }, [caseItem.description, coreEntities]);
+    return t('case.noSummary');
+  }, [caseItem.description, coreEntities, t]);
 
   // 计算自定义字段值
   const customFieldValues = useMemo(() => {
@@ -216,14 +218,14 @@ const CaseCard = memo(({
             <h3 className="caseflow-card-title">{caseItem.name}</h3>
             <div className="caseflow-card-actions">
               {isSelected && (
-                <button onClick={handleDeselectClick} className="caseflow-card-action-btn" title="取消聚焦">
+                <button onClick={handleDeselectClick} className="caseflow-card-action-btn" title={t('case.backGlobal')}>
                   <Focus size={14} />
                 </button>
               )}
-              <button onClick={handleDeleteClick} className="caseflow-card-action-btn caseflow-card-delete" title="删除案例">
+              <button onClick={handleDeleteClick} className="caseflow-card-action-btn caseflow-card-delete" title={t('delete.entity.title')}>
                 <Trash2 size={14} />
               </button>
-              <button onClick={handleToggleExpand} className="caseflow-card-action-btn" title={expanded ? '收起详情' : '展开详情'}>
+              <button onClick={handleToggleExpand} className="caseflow-card-action-btn" title={expanded ? t('case.collapse') : t('case.info')}>
                 {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </button>
             </div>
@@ -245,7 +247,7 @@ const CaseCard = memo(({
         {config.showEntities && coreEntities.length > 0 && (
           <div className="caseflow-card-entities">
             <span className="caseflow-card-section-label">
-              <Building size={10} /> 核心实体
+              <Building size={10} /> {t('case.coreEntities')}
             </span>
             <div className="caseflow-card-entity-list">
               {coreEntities.map((entity, index) => (
@@ -263,29 +265,29 @@ const CaseCard = memo(({
         {config.showMetrics && (
           <div className="caseflow-card-metrics">
             <span className="caseflow-card-section-label">
-              <Activity size={10} /> 拓扑指标
+              <Activity size={10} /> {t('case.metrics')}
             </span>
             <div className="caseflow-card-metric-list">
               <div className="caseflow-card-metric-item">
                 <Building size={12} />
                 <span className="caseflow-card-metric-value">{entityCount}</span>
-                <span className="caseflow-card-metric-label">实体</span>
+                <span className="caseflow-card-metric-label">{t('case.entityCount')}</span>
               </div>
               <div className="caseflow-card-metric-item">
                 <Link2 size={12} />
                 <span className="caseflow-card-metric-value">{relationCount}</span>
-                <span className="caseflow-card-metric-label">关系</span>
+                <span className="caseflow-card-metric-label">{t('case.linkCount')}</span>
               </div>
               <div className="caseflow-card-metric-item">
                 <Activity size={12} />
                 <span className="caseflow-card-metric-value">{topologyMetrics.avgDegree}</span>
-                <span className="caseflow-card-metric-label">平均度</span>
+                <span className="caseflow-card-metric-label">{t('case.avgDegree')}</span>
               </div>
               <div className="caseflow-card-metric-item">
                 <div className="caseflow-card-metric-density" style={{ '--density': topologyMetrics.completeness + '%' }}>
                   <div className="caseflow-card-metric-density-fill" />
                 </div>
-                <span className="caseflow-card-metric-label">完整度</span>
+                <span className="caseflow-card-metric-label">{t('case.completeness')}</span>
               </div>
             </div>
           </div>
@@ -295,7 +297,7 @@ const CaseCard = memo(({
         {(config.customFields || []).length > 0 && (
           <div className="caseflow-card-custom-fields">
             <span className="caseflow-card-section-label">
-              <Settings size={10} /> 自定义字段
+              <Settings size={10} /> {t('case.custom')}
             </span>
             <div className="caseflow-card-custom-list">
               {config.customFields.map(field => (
@@ -312,7 +314,7 @@ const CaseCard = memo(({
         {config.showTags && semanticTags.length > 0 && (
           <div className="caseflow-card-tags">
             <span className="caseflow-card-section-label">
-              <Hash size={10} /> 语义标签
+              <Hash size={10} /> {t('case.semanticTags')}
             </span>
             <div className="caseflow-card-tag-list">
               {semanticTags.map((tag, index) => (
@@ -322,10 +324,10 @@ const CaseCard = memo(({
           </div>
         )}
 
-        {isSelected && viewMode === 'focused' && (
+        {isSelected && focusMode === 'case' && (
           <div className="caseflow-card-focus-indicator">
             <Focus size={12} />
-            <span>聚焦中</span>
+            <span>{t('case.focusing')}</span>
           </div>
         )}
       </div>
@@ -342,7 +344,7 @@ const CaseCard = memo(({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="caseflow-card-detail-section">
-              <h4 className="caseflow-card-detail-title">案例信息</h4>
+              <h4 className="caseflow-card-detail-title">{t('case.info')}</h4>
               <div className="caseflow-card-detail-grid">
                 {caseItem.location && (
                   <div className="caseflow-card-detail-item">
@@ -353,7 +355,7 @@ const CaseCard = memo(({
                 {caseItem.year && (
                   <div className="caseflow-card-detail-item">
                     <Calendar size={14} />
-                    <span>{caseItem.year}年</span>
+                    <span>{caseItem.year}{t('case.yearSuffix')}</span>
                   </div>
                 )}
               </div>
@@ -366,7 +368,7 @@ const CaseCard = memo(({
               <div className="caseflow-card-detail-section">
                 <h4 className="caseflow-card-detail-title">
                   <Building size={14} />
-                  全部实体 ({entityCount})
+                  {t('case.allEntities')} ({entityCount})
                 </h4>
                 <div className="caseflow-card-detail-entities">
                   {caseItem.entities.map((entity, index) => {
@@ -387,7 +389,7 @@ const CaseCard = memo(({
               <div className="caseflow-card-detail-section">
                 <h4 className="caseflow-card-detail-title">
                   <Link2 size={14} />
-                  全部关系 ({relationCount})
+                  {t('case.allLinks')} ({relationCount})
                 </h4>
                 <div className="caseflow-card-detail-relations">
                   {caseItem.relations.slice(0, 6).map((rel, index) => {
@@ -404,14 +406,14 @@ const CaseCard = memo(({
                     );
                   })}
                   {caseItem.relations.length > 6 && (
-                    <span className="caseflow-card-detail-more">还有 {caseItem.relations.length - 6} 条关系...</span>
+                    <span className="caseflow-card-detail-more">{t('case.moreRelations', { count: caseItem.relations.length - 6 })}</span>
                   )}
                 </div>
               </div>
             )}
 
             <div className="caseflow-card-detail-actions">
-              <button onClick={handleToggleExpand} className="caseflow-card-detail-btn">收起详情</button>
+              <button onClick={handleToggleExpand} className="caseflow-card-detail-btn">{t('case.collapse')}</button>
             </div>
           </motion.div>
         )}

@@ -1,12 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Focus, X, MessageSquare } from 'lucide-react';
+import { useI18n } from '../../../../i18n';
 
 /**
  * PreviewPanel - 案例预览面板子组件
  * 显示选中案例的预览信息和快捷操作
  */
 const PreviewPanel = ({ focusedCase, onDeselect, setMainView }) => {
+  const { t } = useI18n();
   const entityCount = focusedCase.entities?.length || 0;
   const relationCount = focusedCase.relations?.length || 0;
   const tags = focusedCase.tags || [];
@@ -27,13 +29,13 @@ const PreviewPanel = ({ focusedCase, onDeselect, setMainView }) => {
         <div className="caseflow-preview-header-info">
           <h4 className="caseflow-preview-name">{focusedCase.name}</h4>
           <span className="caseflow-preview-badge">
-            {focusedCase.location || '未知地点'} · {focusedCase.year || '未知年份'}
+            {focusedCase.location || t('case.unknownLocation')} · {focusedCase.year || t('case.unknownYear')}
           </span>
         </div>
         <button
           onClick={onDeselect}
           className="caseflow-preview-close"
-          aria-label="关闭详情"
+          aria-label={t('toolbar.close')}
         >
           <X size={16} />
         </button>
@@ -48,12 +50,12 @@ const PreviewPanel = ({ focusedCase, onDeselect, setMainView }) => {
       <div className="caseflow-preview-stats">
         <div className="caseflow-preview-stat">
           <span className="caseflow-preview-stat-value">{entityCount}</span>
-          <span className="caseflow-preview-stat-label">实体</span>
+          <span className="caseflow-preview-stat-label">{t('case.entityCount')}</span>
         </div>
         <div className="caseflow-preview-stat-divider" />
         <div className="caseflow-preview-stat">
           <span className="caseflow-preview-stat-value">{relationCount}</span>
-          <span className="caseflow-preview-stat-label">关系</span>
+          <span className="caseflow-preview-stat-label">{t('case.linkCount')}</span>
         </div>
       </div>
 
@@ -74,18 +76,18 @@ const PreviewPanel = ({ focusedCase, onDeselect, setMainView }) => {
         <button
           className="caseflow-preview-btn"
           onClick={() => setMainView('ai')}
-          aria-label="在AI助手查看案例"
+          aria-label={t('case.aiAnalyze')}
         >
           <MessageSquare size={14} />
-          <span>AI 助手分析</span>
+          <span>{t('case.aiAnalyze')}</span>
         </button>
         <button
           className="caseflow-preview-btn-secondary"
           onClick={onDeselect}
-          aria-label="返回全量视图"
+          aria-label={t('case.backGlobal')}
         >
           <Focus size={14} />
-          <span>返回全局模式</span>
+          <span>{t('case.backGlobal')}</span>
         </button>
       </div>
     </motion.div>

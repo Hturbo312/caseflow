@@ -14,6 +14,7 @@ import agentsRoutes from './routes/agents.js';
 import chatRoutes from './routes/chat.js';
 import aiRoutes from './routes/ai.js';
 import ragRoutes from './routes/rag.js';
+import graphRagRoutes from './routes/graphRag.js';
 import extractionRoutes from './routes/extraction.js';
 
 dotenv.config();
@@ -33,6 +34,7 @@ app.use('/api/agents', agentsRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/rag', ragRoutes);
+app.use('/api/graph-rag', graphRagRoutes);
 app.use('/api/extraction', extractionRoutes);
 
 // 启动服务器 - 设置较长超时（LLM 调用较慢）

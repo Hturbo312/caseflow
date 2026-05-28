@@ -2,6 +2,7 @@ import React, { memo, useState, useCallback, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FileText, Network, LayoutList } from 'lucide-react';
 import { useExtractionStore, useSchemaStore } from '@store';
+import { useI18n } from '../../../../../i18n';
 import ProgressPanel from './ProgressPanel';
 import CardReviewPanel from './CardReviewPanel';
 import RelationReviewPanel from './RelationReviewPanel';
@@ -9,6 +10,7 @@ import SegmentViewer from './SegmentViewer';
 import PipelineControls from './PipelineControls';
 
 const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
+  const { t } = useI18n();
   const {
     phase, phaseLabel, isProcessing, plan, candidates, relationCandidates,
     segments, currentSchemaId, setContext, parseText, generatePlan,
@@ -112,10 +114,10 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
   }, [phase]);
 
   const tabs = [
-    { id: 'progress', label: '进度', icon: LayoutList },
-    { id: 'entities', label: '实体', icon: FileText },
-    { id: 'relations', label: '关系', icon: Network },
-    { id: 'segments', label: '原文', icon: FileText },
+    { id: 'progress', label: t('ai.progress'), icon: LayoutList },
+    { id: 'entities', label: t('toolbar.entity'), icon: FileText },
+    { id: 'relations', label: t('toolbar.relation'), icon: Network },
+    { id: 'segments', label: t('ai.caseText'), icon: FileText },
   ];
 
   return (

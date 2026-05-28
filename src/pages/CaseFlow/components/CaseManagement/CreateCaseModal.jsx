@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { X, Check } from 'lucide-react';
+import { useI18n } from '../../../../i18n';
 
 /**
  * CreateCaseModal - 创建案例弹窗组件
@@ -15,6 +16,7 @@ const CreateCaseModal = ({
   schemas,
   currentSchemaId
 }) => {
+  const { t } = useI18n();
   if (!show) return null;
 
   const handleOverlayClick = () => {
@@ -51,7 +53,7 @@ const CreateCaseModal = ({
         className="caseflow-modal"
       >
         <div className="caseflow-modal-header">
-          <h3>新建案例</h3>
+          <h3>{t('case.new')}</h3>
           <button
             onClick={onClose}
             className="caseflow-modal-close"
@@ -61,28 +63,28 @@ const CreateCaseModal = ({
         </div>
         <div className="caseflow-modal-body">
           <div className="caseflow-form-group">
-            <label>案例名称 <span className="required">*</span></label>
+            <label>{t('case.name')} <span className="required">*</span></label>
             <input
               type="text"
               value={newCaseForm.name}
               onChange={handleNameChange}
-              placeholder="输入案例名称"
+              placeholder={t('case.name')}
               autoFocus
             />
           </div>
           <div className="caseflow-form-group">
-            <label>案例描述</label>
+            <label>{t('case.description')}</label>
             <textarea
               value={newCaseForm.description}
               onChange={handleDescriptionChange}
-              placeholder="输入案例描述（可选）"
+              placeholder={t('case.description')}
               rows={3}
             />
           </div>
           <div className="caseflow-form-group">
-            <label>关联 Schema</label>
+            <label>{t('case.schema')}</label>
             <div className="caseflow-schema-tag">
-              {schemas.find(s => s.id === currentSchemaId || s.id === parseInt(currentSchemaId))?.name || '默认 Schema'}
+              {schemas.find(s => s.id === currentSchemaId || s.id === parseInt(currentSchemaId))?.name || t('schema.defaultName')}
             </div>
           </div>
         </div>
@@ -91,7 +93,7 @@ const CreateCaseModal = ({
             onClick={onClose}
             className="caseflow-btn caseflow-btn-secondary"
           >
-            取消
+            {t('toolbar.cancel')}
           </button>
           <button
             onClick={onCreate}
@@ -101,12 +103,12 @@ const CreateCaseModal = ({
             {creatingCase ? (
               <>
                 <span className="caseflow-spinner"></span>
-                创建中...
+                {t('case.creating')}
               </>
             ) : (
               <>
                 <Check size={16} />
-                创建案例
+                {t('case.create')}
               </>
             )}
           </button>

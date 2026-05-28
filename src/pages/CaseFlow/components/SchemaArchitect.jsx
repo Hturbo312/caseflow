@@ -44,6 +44,7 @@ import {
   Minimize2
 } from 'lucide-react';
 import { useSchemaStore } from '../../../store';
+import { useI18n } from '../../../i18n';
 import {
   PROPERTY_TYPES,
   RELATION_STYLES,
@@ -71,6 +72,8 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
     deleteRelation,
     getCurrentSchema
   } = useSchemaStore();
+
+  const { t } = useI18n();
 
   // UI 状态
   const [activeTab, setActiveTab] = useState('overview'); // overview, entities, relations, visualizer
@@ -123,7 +126,7 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
       <div className="h-full flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <Database className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500 text-sm">加载中...</p>
+          <p className="text-gray-500 text-sm">{t('app.loading')}</p>
         </div>
       </div>
     );
@@ -142,10 +145,10 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
 
   const handleDeleteSchema = (schemaId, e) => {
     e.stopPropagation();
-    if (schemas.length > 1 && confirm('确定要删除此 Schema 吗？')) {
+    if (schemas.length > 1 && confirm(t('schema.confirmDeleteSchema'))) {
       deleteSchema(schemaId);
     } else if (schemas.length <= 1) {
-      alert('至少需要保留一个 Schema');
+      alert(t('schema.mustKeepOneSchema'));
     }
   };
 
@@ -167,7 +170,7 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
           const jsonData = JSON.parse(event.target.result);
           importSchema(jsonData);
         } catch {
-          alert('导入失败：文件格式不正确');
+          alert(t('schema.importFailed'));
         }
       };
       reader.readAsText(file);
@@ -198,7 +201,7 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
 
   const handleSaveEntity = () => {
     if (!entityForm.name.trim()) {
-      alert('请输入实体名称');
+      alert(t('schema.enterEntityName'));
       return;
     }
     // 新建实体类型需要认证
@@ -219,7 +222,7 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
   };
 
   const handleDeleteEntity = (entityId) => {
-    if (confirm('确定要删除此实体类型吗？相关关系也会受影响。')) {
+    if (confirm(t('schema.confirmDeleteEntityType'))) {
       deleteEntityType(currentSchema.id, entityId);
       setEntityDrawerOpen(false);
     }
@@ -242,7 +245,7 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
 
   const handleSaveProperty = () => {
     if (!propertyForm.name.trim()) {
-      alert('请输入属性名称');
+      alert(t('schema.enterPropertyName'));
       return;
     }
     const entityTypeId = editingEntity?.id;
@@ -345,11 +348,11 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
 
   const handleSaveRelation = () => {
     if (!relationForm.name.trim()) {
-      alert('请输入关系名称');
+      alert(t('schema.enterRelationName'));
       return;
     }
     if (!relationForm.from || !relationForm.to) {
-      alert('请选择源实体和目标实体');
+      alert(t('schema.selectSourceTarget'));
       return;
     }
     // 新建关系需要认证
@@ -363,7 +366,7 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
   };
 
   const handleDeleteRelation = (relationId) => {
-    if (confirm('确定要删除此关系定义吗？')) {
+    if (confirm(t('schema.confirmDeleteRelation'))) {
       deleteRelation(currentSchema.id, relationId);
       setRelationDrawerOpen(false);
     }
@@ -393,17 +396,17 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             className={`p-1.5 rounded-lg transition-colors mr-2 ${sidebarCollapsed ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-            title={sidebarCollapsed ? '展开 Schema 列表' : '收起 Schema 列表'}
+            title={sidebarCollapsed ? t('schema.expandList') : t('schema.collapseList')}
           >
             <Database className="w-3.5 h-3.5" />
           </button>
 
           {/* 标签页 */}
           {[
-            { id: 'overview', label: '概览', icon: LayoutGrid },
-            { id: 'entities', label: '实体', icon: Tag },
-            { id: 'relations', label: '关系', icon: Link2 },
-            { id: 'visualizer', label: '可视化', icon: Network },
+            { id: 'overview', label: t('schema.overview'), icon: LayoutGrid },
+            { id: 'entities', label: t('schema.entities'), icon: Tag },
+            { id: 'relations', label: t('schema.relations'), icon: Link2 },
+            { id: 'visualizer', label: t('schema.visualization'), icon: Network },
           ].map(tab => (
             <button
               key={tab.id}
@@ -436,8 +439,8 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="搜索..."
-                  aria-label={`搜索${activeTab === 'entities' ? '实体类型' : '关系定义'}`}
+                  placeholder={t('toolbar.searchPlaceholder')}
+                  aria-label={`${t('schema.searchAriaLabel')}${activeTab === 'entities' ? t('schema.entities') : t('schema.relations')}`}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-7 pr-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs focus:border-blue-400 focus:outline-none transition-all w-40"
@@ -450,7 +453,7 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
               className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 text-white rounded-lg text-xs font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="w-3.5 h-3.5" />
-              新建{activeTab === 'entities' ? '实体' : '关系'}
+              {t(activeTab === 'entities' ? 'schema.createNew' : 'schema.confirmAdd')}
             </button>
           </div>
         </div>
@@ -475,12 +478,12 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
                     <div className="w-7 h-7 bg-blue-500 rounded-lg flex items-center justify-center">
                       <Database className="w-3.5 h-3.5 text-white" />
                     </div>
-                    <span className="text-sm font-semibold text-gray-900">Schema 列表</span>
+                    <span className="text-sm font-semibold text-gray-900">{t('schema.listTitle')}</span>
                   </div>
                   <button
                     onClick={() => setSidebarCollapsed(true)}
                     className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                    title="关闭列表"
+                    title={t('schema.closeList')}
                   >
                     <X className="w-4 h-4 text-gray-500" />
                   </button>
@@ -514,7 +517,7 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-gray-900 truncate">{schema.name}</div>
                       <div className="text-[10px] text-gray-500 truncate">
-                        {schema.entityTypes.length} 实体 · {schema.relations.length} 关系
+                        {schema.entityTypes.length} {t('schema.entityType')} · {schema.relations.length} {t('schema.relations')}
                       </div>
                     </div>
                     {/* 删除按钮 */}
@@ -538,7 +541,7 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
                   className="w-full flex items-center justify-center gap-2 px-3 py-3 border-2 border-dashed border-gray-300 rounded-lg text-sm font-medium text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors mt-2"
                 >
                   <Plus className="w-4 h-4" />
-                  新建 Schema
+                  {t('schema.newSchemaTitle')}
                 </button>
               </div>
 
@@ -549,24 +552,24 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
                   className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors"
                 >
                   <Settings className="w-4 h-4" />
-                  编辑当前 Schema
+                  {t('schema.editCurrentSchema')}
                 </button>
                 <div className="flex gap-2">
                   <button
                     onClick={handleExportSchema}
                     className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs text-gray-600 hover:bg-gray-100 transition-colors"
-                    title="导出 Schema"
+                    title={t('schema.exportSchema')}
                   >
                     <Download className="w-4 h-4" />
-                    导出
+                    {t('schema.export')}
                   </button>
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs text-gray-600 hover:bg-gray-100 transition-colors"
-                    title="导入 Schema"
+                    title={t('schema.importSchema')}
                   >
                     <Upload className="w-4 h-4" />
-                    导入
+                    {t('schema.import')}
                   </button>
                 </div>
                 <input
@@ -599,7 +602,7 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-xl font-bold">{stats.entities}</div>
-                        <div className="text-blue-100 text-[10px] mt-0.5">实体类型</div>
+                        <div className="text-blue-100 text-[10px] mt-0.5">{t('schema.entityType')}</div>
                       </div>
                       <Box className="w-6 h-6 text-blue-200" />
                     </div>
@@ -608,7 +611,7 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-xl font-bold">{stats.relations}</div>
-                        <div className="text-purple-100 text-[10px] mt-0.5">关系定义</div>
+                        <div className="text-purple-100 text-[10px] mt-0.5">{t('schema.relationDef')}</div>
                       </div>
                       <Network className="w-6 h-6 text-purple-200" />
                     </div>
@@ -617,7 +620,7 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-xl font-bold">{stats.totalProperties}</div>
-                        <div className="text-amber-100 text-[10px] mt-0.5">属性字段</div>
+                        <div className="text-amber-100 text-[10px] mt-0.5">{t('schema.propertyFields')}</div>
                       </div>
                       <FileText className="w-6 h-6 text-amber-200" />
                     </div>
@@ -628,17 +631,17 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
                 <div className="bg-white rounded-xl border border-gray-200 p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <FileJson className="w-4 h-4 text-blue-500" />
-                    <h3 className="text-xs font-semibold text-gray-900">Schema 信息</h3>
+                    <h3 className="text-xs font-semibold text-gray-900">{t('schema.name')}</h3>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between py-1.5 border-b border-gray-100">
-                      <span className="text-[10px] text-gray-500">名称</span>
+                      <span className="text-[10px] text-gray-500">{t('schema.name')}</span>
                       <span className="text-xs font-medium text-gray-900">{currentSchema.name}</span>
                     </div>
                     <div className="py-1">
-                      <span className="text-[10px] text-gray-500 block mb-1">描述</span>
+                      <span className="text-[10px] text-gray-500 block mb-1">{t('schema.desc')}</span>
                       <p className="text-[10px] text-gray-700 leading-relaxed bg-gray-50 rounded-lg p-2">
-                        {currentSchema.description || '暂无描述，点击编辑按钮添加'}
+                        {currentSchema.description || t('schema.noDescription')}
                       </p>
                     </div>
                   </div>
@@ -652,9 +655,9 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
                         <Zap className="w-4 h-4 text-white" />
                       </div>
                       <div>
-                        <h4 className="text-xs font-semibold text-gray-900 mb-1">快速开始</h4>
+                        <h4 className="text-xs font-semibold text-gray-900 mb-1">{t('schema.quickStart')}</h4>
                         <p className="text-[10px] text-gray-600 mb-2">
-                          开始构建你的知识图谱 Schema
+                          {t('schema.quickStartDesc')}
                         </p>
                         <div className="flex flex-wrap gap-1.5">
                           <button
@@ -662,14 +665,14 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
                             className="flex items-center gap-1 px-2.5 py-1 bg-white rounded-md text-[10px] font-medium text-blue-600 border border-blue-200 hover:bg-blue-50 transition-colors"
                           >
                             <Plus className="w-3 h-3" />
-                            添加实体类型
+                            {t('schema.addEntityType')}
                           </button>
                           <button
                             onClick={() => openCreateEntityDrawer()}
                             className="flex items-center gap-1 px-2.5 py-1 bg-blue-500 text-white rounded-md text-[10px] font-medium hover:bg-blue-600 transition-colors"
                           >
                             <Plus className="w-3 h-3" />
-                            直接新建
+                            {t('schema.createNew')}
                           </button>
                         </div>
                       </div>
@@ -694,16 +697,16 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
                     <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mb-3">
                       <Tag className="w-7 h-7 text-gray-400" />
                     </div>
-                    <h3 className="text-sm font-semibold text-gray-900 mb-1">暂无实体类型</h3>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1">{t('schema.noEntities')}</h3>
                     <p className="text-[10px] text-gray-500 mb-4 text-center">
-                      实体类型定义知识图谱的节点结构
+                      {t('schema.entityTypeDefine')}
                     </p>
                     <button
                       onClick={openCreateEntityDrawer}
                       className="flex items-center gap-1.5 px-4 py-2 bg-blue-500 text-white rounded-lg text-xs font-medium hover:bg-blue-600 transition-colors"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      创建实体类型
+                      {t('schema.createEntityType')}
                     </button>
                   </div>
                 ) : filteredEntities.length === 0 ? (
@@ -711,9 +714,9 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
                     <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mb-3">
                       <Search className="w-7 h-7 text-gray-400" />
                     </div>
-                    <h3 className="text-sm font-semibold text-gray-900 mb-1">未找到匹配结果</h3>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1">{t('schema.noResults')}</h3>
                     <p className="text-[10px] text-gray-500">
-                      没有找到包含"{searchQuery}"的实体类型
+                      {t('schema.searchNoResults').replace('{query}', searchQuery)}
                     </p>
                   </div>
                 ) : (
@@ -764,9 +767,9 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
                         {/* 属性列表 */}
                         <div className="px-3 py-2">
                           <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-[10px] font-medium text-gray-500">属性字段</span>
+                            <span className="text-[10px] font-medium text-gray-500">{t('schema.propertyFieldsLabel')}</span>
                             <span className="text-[10px] text-gray-400">
-                              {entity.properties?.length || 0} 个
+                              {t('schema.propertyCount').replace('{count}', entity.properties?.length || 0)}
                             </span>
                           </div>
                           <div className="flex flex-wrap gap-1">
@@ -787,7 +790,7 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
                               </span>
                             )}
                             {(entity.properties?.length || 0) === 0 && (
-                              <span className="text-[10px] text-gray-400 italic">暂无属性</span>
+                              <span className="text-[10px] text-gray-400 italic">{t('schema.noProperties')}</span>
                             )}
                           </div>
                         </div>
@@ -813,9 +816,9 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
                     <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mb-3">
                       <Link2 className="w-7 h-7 text-gray-400" />
                     </div>
-                    <h3 className="text-sm font-semibold text-gray-900 mb-1">暂无关系定义</h3>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1">{t('schema.noRelations')}</h3>
                     <p className="text-[10px] text-gray-500 mb-4 text-center">
-                      关系用于连接不同实体类型
+                      {t('schema.relationConnect')}
                     </p>
                     <button
                       onClick={openCreateRelationDrawer}
@@ -823,11 +826,11 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
                       className="flex items-center gap-1.5 px-4 py-2 bg-blue-500 text-white rounded-lg text-xs font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      创建关系
+                      {t('schema.createRelation')}
                     </button>
                     {currentSchema.entityTypes.length === 0 && (
                       <p className="text-[10px] text-amber-600 mt-2">
-                        请先添加实体类型
+                        {t('schema.addFirstEntity')}
                       </p>
                     )}
                   </div>
@@ -878,14 +881,14 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
                               </div>
                               <div className="flex items-center gap-1 mt-1">
                                 <span className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] text-gray-600">
-                                  {RELATION_DIRECTIONS.find(d => d.value === rel.direction)?.label || '有向'}
+                                  {RELATION_DIRECTIONS.find(d => d.value === rel.direction)?.label || t('rel.directed')}
                                 </span>
                                 <span className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] text-gray-600">
-                                  {RELATION_STYLES.find(s => s.value === rel.style)?.label || '实线'}
+                                  {RELATION_STYLES.find(s => s.value === rel.style)?.label || t('rel.solid')}
                                 </span>
                                 {(rel.properties?.length || 0) > 0 && (
                                   <span className="px-1.5 py-0.5 bg-blue-50 rounded text-[10px] text-blue-600">
-                                    {rel.properties?.length || 0} 个属性
+                                    {rel.properties?.length || 0} {t('schema.properties')}
                                   </span>
                                 )}
                               </div>
@@ -930,7 +933,7 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
                     <button
                       onClick={() => setShowMaximizedVisualizer(true)}
                       className="p-1.5 bg-white/90 hover:bg-white border border-gray-200 rounded-lg shadow-sm transition-colors"
-                      title="全屏查看"
+                      title={t('schema.fullscreen')}
                     >
                       <Maximize2 className="w-3.5 h-3.5 text-gray-600" />
                     </button>
@@ -941,8 +944,8 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
                         <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2">
                           <Network className="w-6 h-6 text-gray-400" />
                         </div>
-                        <h3 className="text-xs font-semibold text-gray-900 mb-1">暂无可视化数据</h3>
-                        <p className="text-[10px] text-gray-500">添加实体类型和关系后查看结构图</p>
+                        <h3 className="text-xs font-semibold text-gray-900 mb-1">{t('schema.noVisualData')}</h3>
+                        <p className="text-[10px] text-gray-500">{t('schema.visualHint')}</p>
                       </div>
                     ) : (
                       <SchemaVisualization schema={currentSchema} />
@@ -1055,7 +1058,7 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">
-                  Schema 可视化 - {currentSchema.name}
+                  Schema {t('schema.visualization')} - {currentSchema.name}
                 </h3>
                 <div className="flex items-center gap-2">
                   <button
@@ -1085,6 +1088,7 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
 
 // ============ 编辑 Schema 弹窗组件 ============
 const EditSchemaModal = ({ schema, onSave, onClose }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState('basic');
   const [editingFieldId, setEditingFieldId] = useState(null);
   const [editingFieldData, setEditingFieldData] = useState({});
@@ -1102,15 +1106,15 @@ const EditSchemaModal = ({ schema, onSave, onClose }) => {
 
   // 预设函数列表
   const presetFunctions = [
-    { id: 'entityCount', name: '实体数量', desc: '统计案例中的实体总数' },
-    { id: 'relationCount', name: '关系数量', desc: '统计案例中的关系总数' },
-    { id: 'avgDegree', name: '平均度', desc: '计算节点平均连接数' },
-    { id: 'density', name: '网络密度', desc: '关系数/最大可能关系数' },
-    { id: 'completeness', name: '完整度', desc: '图谱填充程度' },
-    { id: 'entityTypes', name: '实体类型数', desc: '涉及的实体类型数量' },
-    { id: 'coreEntities', name: '核心实体名', desc: '展示核心实体名称' },
-    { id: 'year', name: '年份', desc: '案例发生年份' },
-    { id: 'location', name: '地点', desc: '案例发生地点' },
+    { id: 'entityCount', name: t('schema.funcEntityCount'), desc: t('schema.funcEntityCountDesc') },
+    { id: 'relationCount', name: t('schema.funcRelationCount'), desc: t('schema.funcRelationCountDesc') },
+    { id: 'avgDegree', name: t('schema.funcAvgDegree'), desc: t('schema.funcAvgDegreeDesc') },
+    { id: 'density', name: t('schema.funcDensity'), desc: t('schema.funcDensityDesc') },
+    { id: 'completeness', name: t('schema.funcCompleteness'), desc: t('schema.funcCompletenessDesc') },
+    { id: 'entityTypes', name: t('schema.funcEntityTypes'), desc: t('schema.funcEntityTypesDesc') },
+    { id: 'coreEntities', name: t('schema.funcCoreEntities'), desc: t('schema.funcCoreEntitiesDesc') },
+    { id: 'year', name: t('schema.funcYear'), desc: t('schema.funcYearDesc') },
+    { id: 'location', name: t('schema.funcLocation'), desc: t('schema.funcLocationDesc') },
   ];
 
   const addPresetField = (func) => {
@@ -1184,7 +1188,7 @@ const EditSchemaModal = ({ schema, onSave, onClose }) => {
         className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-hidden flex flex-col"
       >
         <div className="flex items-center justify-between p-5 border-b border-gray-200">
-          <h3 className="text-lg font-semibold">编辑 Schema</h3>
+          <h3 className="text-lg font-semibold">{t('schema.editSchemaTitle')}</h3>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
             <X className="w-4 h-4" />
           </button>
@@ -1198,7 +1202,7 @@ const EditSchemaModal = ({ schema, onSave, onClose }) => {
               activeTab === 'basic' ? 'text-blue-600 border-blue-600' : 'text-gray-500 border-transparent hover:text-gray-700'
             }`}
           >
-            基本信息
+            {t('schema.editSchemaBasic')}
           </button>
           <button
             onClick={() => setActiveTab('card')}
@@ -1207,7 +1211,7 @@ const EditSchemaModal = ({ schema, onSave, onClose }) => {
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
-            案例名片
+            {t('schema.editSchemaCard')}
           </button>
         </div>
 
@@ -1215,7 +1219,7 @@ const EditSchemaModal = ({ schema, onSave, onClose }) => {
           {activeTab === 'basic' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">名称</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('schema.name')}</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -1224,13 +1228,13 @@ const EditSchemaModal = ({ schema, onSave, onClose }) => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">描述</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('schema.desc')}</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={4}
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder="描述此 Schema 的用途..."
+                  placeholder={t('schema.schemaDescPlaceholder')}
                 />
               </div>
             </div>
@@ -1239,21 +1243,21 @@ const EditSchemaModal = ({ schema, onSave, onClose }) => {
           {activeTab === 'card' && (
             <div className="space-y-4">
               <p className="text-xs text-gray-500">
-                配置案例卡片展示的内容，让每个案例都能清晰呈现关键信息
+                {t('schema.cardConfigDesc')}
               </p>
 
               {/* 基础展示项配置 */}
               <div>
                 <h4 className="text-xs font-medium text-gray-700 mb-2 flex items-center gap-1">
                   <Zap className="w-3 h-3" />
-                  基础展示项
+                  {t('schema.basicItems')}
                 </h4>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { key: 'showSummary', name: '逻辑摘要', desc: '显示案例描述或核心要素' },
-                    { key: 'showMetrics', name: '拓扑指标', desc: '实体数、关系数、完整度' },
-                    { key: 'showEntities', name: '核心实体', desc: '展示各类型代表实体' },
-                    { key: 'showTags', name: '语义标签', desc: '显示案例标签和类型' },
+                    { key: 'showSummary', name: t('schema.logicSummary'), desc: t('schema.logicSummaryDesc') },
+                    { key: 'showMetrics', name: t('schema.topologyMetrics'), desc: t('schema.topologyMetricsDesc') },
+                    { key: 'showEntities', name: t('schema.coreEntities'), desc: t('schema.coreEntitiesDesc') },
+                    { key: 'showTags', name: t('schema.semanticTags'), desc: t('schema.semanticTagsDesc') },
                   ].map(item => (
                     <label key={item.key} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
                       <input
@@ -1278,7 +1282,7 @@ const EditSchemaModal = ({ schema, onSave, onClose }) => {
               <div>
                 <h4 className="text-xs font-medium text-gray-700 mb-2 flex items-center gap-1">
                   <Box className="w-3 h-3" />
-                  预设展示函数
+                  {t('schema.defaultFuncs')}
                 </h4>
                 <div className="flex flex-wrap gap-1.5">
                   {presetFunctions.map(func => (
@@ -1300,15 +1304,15 @@ const EditSchemaModal = ({ schema, onSave, onClose }) => {
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-xs font-medium text-gray-700 flex items-center gap-1">
                     <Settings className="w-3 h-3" />
-                    已添加的展示项
+                    {t('schema.addedItems')}
                   </h4>
                   <button
                     onClick={() => {
                       const newField = {
                         id: `custom-${Date.now()}`,
                         type: 'custom',
-                        name: '自定义字段',
-                        label: '标签',
+                        name: t('schema.customField'),
+                        label: t('schema.label'),
                         source: 'entity',
                         property: ''
                       };
@@ -1323,7 +1327,7 @@ const EditSchemaModal = ({ schema, onSave, onClose }) => {
                     className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
                   >
                     <Plus className="w-3 h-3" />
-                    添加自定义
+                    {t('schema.addCustom')}
                   </button>
                 </div>
 
@@ -1338,7 +1342,7 @@ const EditSchemaModal = ({ schema, onSave, onClose }) => {
                               type="text"
                               value={editingFieldData.name || ''}
                               onChange={(e) => setEditingFieldData({ ...editingFieldData, name: e.target.value })}
-                              placeholder="字段名称"
+                              placeholder={t('schema.fieldName')}
                               className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-blue-400"
                             />
                             {field.type === 'custom' && (
@@ -1347,8 +1351,8 @@ const EditSchemaModal = ({ schema, onSave, onClose }) => {
                                 onChange={(e) => setEditingFieldData({ ...editingFieldData, source: e.target.value })}
                                 className="px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-blue-400"
                               >
-                                <option value="entity">实体属性</option>
-                                <option value="case">案例属性</option>
+                                <option value="entity">{t('schema.entityAttr')}</option>
+                                <option value="case">{t('schema.caseAttr')}</option>
                               </select>
                             )}
                           </div>
@@ -1357,7 +1361,7 @@ const EditSchemaModal = ({ schema, onSave, onClose }) => {
                               type="text"
                               value={editingFieldData.property || ''}
                               onChange={(e) => setEditingFieldData({ ...editingFieldData, property: e.target.value })}
-                              placeholder="属性名（如: name, year, location）"
+                              placeholder={t('schema.propertyName')}
                               className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-blue-400"
                             />
                           )}
@@ -1367,14 +1371,14 @@ const EditSchemaModal = ({ schema, onSave, onClose }) => {
                               className="flex items-center gap-1 px-2 py-1 text-xs bg-green-50 text-green-600 rounded hover:bg-green-100 transition-colors"
                             >
                               <Save className="w-3 h-3" />
-                              保存
+                              {t('schema.saveBtn')}
                             </button>
                             <button
                               onClick={cancelEditField}
                               className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
                             >
                               <X className="w-3 h-3" />
-                              取消
+                              {t('schema.cancelBtn')}
                             </button>
                           </div>
                         </div>
@@ -1387,19 +1391,19 @@ const EditSchemaModal = ({ schema, onSave, onClose }) => {
                             <span className="text-[10px] text-blue-500">{field.source}.{field.property}</span>
                           )}
                           <span className="text-[10px] text-gray-500 bg-white px-1.5 py-0.5 rounded border">
-                            {field.type === 'preset' ? '预设' : '自定义'}
+                            {field.type === 'preset' ? t('schema.preset') : t('schema.custom')}
                           </span>
                           <button
                             onClick={() => startEditField(field)}
                             className="p-1 hover:bg-blue-50 rounded transition-colors"
-                            title="编辑"
+                            title={t('schema.edit')}
                           >
                             <Edit2 className="w-3 h-3 text-blue-500" />
                           </button>
                           <button
                             onClick={() => removeField(field.id)}
                             className="p-1 hover:bg-red-50 rounded transition-colors"
-                            title="删除"
+                            title={t('detail.delete')}
                           >
                             <Trash2 className="w-3 h-3 text-red-500" />
                           </button>
@@ -1409,7 +1413,7 @@ const EditSchemaModal = ({ schema, onSave, onClose }) => {
                   ))}
                   {(formData.cardConfig.customFields || []).length === 0 && (
                     <p className="text-xs text-gray-400 text-center py-3">
-                      点击上方预设函数按钮添加展示项
+                      {t('schema.noItemsYet')}
                     </p>
                   )}
                 </div>
@@ -1419,29 +1423,29 @@ const EditSchemaModal = ({ schema, onSave, onClose }) => {
               <div className="bg-gray-50 rounded-lg p-3">
                 <h4 className="text-[11px] font-medium text-gray-500 mb-2 flex items-center gap-1">
                   <Eye className="w-3 h-3" />
-                  名片预览
+                  {t('schema.cardPreview')}
                 </h4>
                 <div className="bg-white rounded-lg border border-gray-200 p-2.5">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-semibold text-gray-900">示例案例名称</span>
-                    <span className="text-[10px] text-gray-500">{formData.name || 'Schema名'}</span>
+                    <span className="text-xs font-semibold text-gray-900">{t('schema.exampleCaseName')}</span>
+                    <span className="text-[10px] text-gray-500">{formData.name || t('schema.schemaNamePlaceholder')}</span>
                   </div>
                   {formData.cardConfig.showSummary && (
                     <div className="text-[10px] text-gray-600 bg-gray-50 rounded px-2 py-1 mb-1.5">
-                      涉及核心实体A、核心实体B等关键要素...
+                      {t('schema.coreEntitySample')}
                     </div>
                   )}
                   {formData.cardConfig.showEntities && (
                     <div className="flex flex-wrap gap-1 mb-1.5">
-                      <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">实体A</span>
-                      <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded">实体B</span>
+                      <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">{t('schema.entityA')}</span>
+                      <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded">{t('schema.entityB')}</span>
                     </div>
                   )}
                   {formData.cardConfig.showMetrics && (
                     <div className="flex gap-2 text-[9px] text-gray-500 border-t border-gray-100 pt-1.5">
-                      <span>3 实体</span>
-                      <span>2 关系</span>
-                      <span>完整度 60%</span>
+                      <span>{t('schema.entitySuffix').replace('{count}', '3')}</span>
+                      <span>{t('schema.relationSuffix').replace('{count}', '2')}</span>
+                      <span>{t('schema.completenessSuffix').replace('{percent}', '60')}</span>
                     </div>
                   )}
                 </div>
@@ -1456,7 +1460,7 @@ const EditSchemaModal = ({ schema, onSave, onClose }) => {
             className="w-full py-2.5 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
           >
             <Save className="w-4 h-4" />
-            保存修改
+            {t('schema.save')}
           </button>
         </div>
       </motion.div>
@@ -1466,6 +1470,7 @@ const EditSchemaModal = ({ schema, onSave, onClose }) => {
 
 // ============ 新建 Schema 弹窗组件 ============
 const CreateSchemaModal = ({ value, onChange, onCreate, onClose }) => {
+  const { t } = useI18n();
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -1482,19 +1487,19 @@ const CreateSchemaModal = ({ value, onChange, onCreate, onClose }) => {
         className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl"
       >
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg font-semibold">新建 Schema</h3>
+          <h3 className="text-lg font-semibold">{t('schema.newSchemaTitle')}</h3>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
             <X className="w-4 h-4" />
           </button>
         </div>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Schema 名称</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('schema.schemaNameLabel')}</label>
             <input
               type="text"
               value={value}
               onChange={(e) => onChange(e.target.value)}
-              placeholder="例如：法律案例 Schema"
+              placeholder={t('schema.schemaNamePlaceholder2')}
               className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               autoFocus
             />
@@ -1505,7 +1510,7 @@ const CreateSchemaModal = ({ value, onChange, onCreate, onClose }) => {
             className="w-full py-2.5 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
-            创建 Schema
+            {t('schema.create')}
           </button>
         </div>
       </motion.div>
@@ -1531,6 +1536,7 @@ const EntityDrawer = ({
   onCancelEditProperty,
   presetColors
 }) => {
+  const { t } = useI18n();
   return (
     <>
       {/* 遮罩层 */}
@@ -1553,10 +1559,10 @@ const EntityDrawer = ({
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-gray-900">
-              {entity ? '编辑实体类型' : '新建实体类型'}
+              {entity ? t('schema.editEntityTitle') : t('schema.newEntityTitle')}
             </h3>
             <p className="text-sm text-gray-500 mt-0.5">
-              {entity ? `编辑 "${entity.name}"` : '定义新的实体类型结构'}
+              {entity ? `编辑 "${entity.name}"` : t('schema.newEntitySubtitle')}
             </p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
@@ -1569,18 +1575,18 @@ const EntityDrawer = ({
           {/* 基本信息 */}
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">实体名称</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('schema.entityName')}</label>
               <input
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="输入实体名称，如：用户、订单"
+                placeholder={t('schema.entityPlaceholder')}
                 className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">颜色标识</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('schema.color')}</label>
               <div className="flex flex-wrap gap-2">
                 {presetColors.map(color => (
                   <button
@@ -1605,13 +1611,13 @@ const EntityDrawer = ({
           {/* 属性列表 */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <label className="block text-sm font-medium text-gray-700">属性字段</label>
+              <label className="block text-sm font-medium text-gray-700">{t('schema.propertyFieldsLabel')}</label>
               <button
                 onClick={onAddProperty}
                 className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
-                添加属性
+                {t('schema.addProp')}
               </button>
             </div>
 
@@ -1619,14 +1625,14 @@ const EntityDrawer = ({
             {editingProperty !== null && (
               <div className="mb-3 p-3 bg-green-50 rounded-lg border border-green-200 space-y-2">
                 <div className="text-xs font-medium text-green-700 mb-2">
-                  {editingProperty === 'new' ? '添加新属性' : '编辑属性'}
+                  {editingProperty === 'new' ? t('schema.addNewProp') : t('schema.editProp')}
                 </div>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={propertyForm.name}
                     onChange={(e) => setPropertyForm({ ...propertyForm, name: e.target.value })}
-                    placeholder="属性名"
+                    placeholder={t('schema.propName')}
                     className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <select
@@ -1647,7 +1653,7 @@ const EntityDrawer = ({
                       ...propertyForm,
                       options: e.target.value.split(',').filter(Boolean)
                     })}
-                    placeholder="选项，用逗号分隔"
+                    placeholder={t('schema.optionsPlaceholder')}
                     className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 )}
@@ -1657,14 +1663,14 @@ const EntityDrawer = ({
                     className="flex-1 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors flex items-center justify-center gap-1"
                   >
                     <Check className="w-3.5 h-3.5" />
-                    确认添加
+                    {t('schema.confirmAdd')}
                   </button>
                   <button
                     onClick={onCancelEditProperty}
                     className="flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors flex items-center justify-center gap-1"
                   >
                     <X className="w-3.5 h-3.5" />
-                    取消
+                    {t('schema.cancelBtn')}
                   </button>
                 </div>
               </div>
@@ -1706,7 +1712,7 @@ const EntityDrawer = ({
               ))}
               {(form.properties?.length || 0) === 0 && editingProperty === null && (
                 <p className="text-sm text-gray-500 text-center py-4">
-                  暂无属性，点击上方"添加属性"按钮添加
+                  {t('schema.noPropertiesHint')}
                 </p>
               )}
             </div>
@@ -1715,7 +1721,7 @@ const EntityDrawer = ({
             <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
               <div className="text-xs font-medium text-blue-700 mb-2 flex items-center gap-1">
                 <Eye className="w-3.5 h-3.5" />
-                案例卡片展示配置
+                {t('schema.cardConfigTitle')}
               </div>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -1725,7 +1731,7 @@ const EntityDrawer = ({
                     onChange={(e) => setForm({ ...form, isCore: e.target.checked })}
                     className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-xs text-gray-700">标记为核心实体（在卡片中优先展示）</span>
+                  <span className="text-xs text-gray-700">{t('schema.coreEntityPriority')}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -1734,7 +1740,7 @@ const EntityDrawer = ({
                     onChange={(e) => setForm({ ...form, showAsTag: e.target.checked })}
                     className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-xs text-gray-700">显示为语义标签</span>
+                  <span className="text-xs text-gray-700">{t('schema.showAsSemanticTag')}</span>
                 </label>
               </div>
             </div>
@@ -1749,7 +1755,7 @@ const EntityDrawer = ({
               className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
             >
               <Trash2 className="w-4 h-4" />
-              删除实体
+              {t('schema.deleteEntity')}
             </button>
           )}
           <div className="flex gap-2 ml-auto">
@@ -1757,14 +1763,14 @@ const EntityDrawer = ({
               onClick={onClose}
               className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              取消
+              {t('schema.cancelBtn')}
             </button>
             <button
               onClick={onSave}
               className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center gap-2"
             >
               <Save className="w-4 h-4" />
-              保存
+              {t('schema.save')}
             </button>
           </div>
         </div>
@@ -1788,6 +1794,7 @@ const RelationDrawer = ({
   setPropertyForm,
   presetColors
 }) => {
+  const { t } = useI18n();
   // 属性编辑操作
   const onAddProperty = () => {
     setEditingProperty('new');
@@ -1860,10 +1867,10 @@ const RelationDrawer = ({
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-gray-900">
-              {relation ? '编辑关系' : '新建关系'}
+              {relation ? t('schema.editRelationTitle') : t('schema.newRelationTitle')}
             </h3>
             <p className="text-sm text-gray-500 mt-0.5">
-              {relation ? `编辑 "${relation.name}"` : '定义实体间的关系'}
+              {relation ? `编辑 "${relation.name}"` : t('schema.relationSubtitle')}
             </p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
@@ -1875,23 +1882,23 @@ const RelationDrawer = ({
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
           {/* 关系名称 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">关系名称</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('schema.relationName')}</label>
             <input
               type="text"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="如：拥有、属于、关联"
+              placeholder={t('schema.relationPlaceholder')}
               className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           {/* 关系含义 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">关系含义</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('schema.relationMeaning')}</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="描述此关系的含义和用途..."
+              placeholder={t('schema.relationDescPlaceholder')}
               rows={3}
               className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             />
@@ -1900,7 +1907,7 @@ const RelationDrawer = ({
           {/* 源实体和目标实体 */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">源实体</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('schema.source')}</label>
               <select
                 value={form.from}
                 onChange={(e) => setForm({ ...form, from: e.target.value })}
@@ -1912,7 +1919,7 @@ const RelationDrawer = ({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">目标实体</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('schema.target')}</label>
               <select
                 value={form.to}
                 onChange={(e) => setForm({ ...form, to: e.target.value })}
@@ -1927,7 +1934,7 @@ const RelationDrawer = ({
 
           {/* 方向 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">关系方向</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('schema.direction')}</label>
             <div className="grid grid-cols-3 gap-2">
               {RELATION_DIRECTIONS.map(d => (
                 <button
@@ -1947,7 +1954,7 @@ const RelationDrawer = ({
 
           {/* 线型 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">线条样式</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('schema.lineStyle')}</label>
             <div className="grid grid-cols-3 gap-2">
               {RELATION_STYLES.map(s => (
                 <button
@@ -1967,7 +1974,7 @@ const RelationDrawer = ({
 
           {/* 颜色 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">颜色</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('schema.colorLabel')}</label>
             <div className="flex items-center gap-3">
               <input
                 type="color"
@@ -1985,13 +1992,13 @@ const RelationDrawer = ({
           {/* 属性字段 */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <label className="block text-sm font-medium text-gray-700">属性字段</label>
+              <label className="block text-sm font-medium text-gray-700">{t('schema.propertyFieldsLabel')}</label>
               <button
                 onClick={onAddProperty}
                 className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
-                添加属性
+                {t('schema.addProp')}
               </button>
             </div>
 
@@ -2003,7 +2010,7 @@ const RelationDrawer = ({
                     type="text"
                     value={propertyForm.name}
                     onChange={(e) => setPropertyForm({ ...propertyForm, name: e.target.value })}
-                    placeholder="属性名"
+                    placeholder={t('schema.propName')}
                     className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <select
@@ -2024,7 +2031,7 @@ const RelationDrawer = ({
                       ...propertyForm,
                       options: e.target.value.split(',').filter(Boolean)
                     })}
-                    placeholder="选项，用逗号分隔"
+                    placeholder={t('schema.optionsPlaceholder')}
                     className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 )}
@@ -2035,14 +2042,14 @@ const RelationDrawer = ({
                     className="flex-1 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Check className="w-3.5 h-3.5" />
-                    保存
+                    {t('schema.saveBtn')}
                   </button>
                   <button
                     onClick={onCancelEditProperty}
                     className="flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors flex items-center justify-center gap-1"
                   >
                     <X className="w-3.5 h-3.5" />
-                    取消
+                    {t('schema.cancelBtn')}
                   </button>
                 </div>
               </div>
@@ -2084,7 +2091,7 @@ const RelationDrawer = ({
               ))}
               {(form.properties?.length || 0) === 0 && (
                 <p className="text-sm text-gray-500 text-center py-4">
-                  暂无属性，点击上方"添加属性"按钮添加
+                  {t('schema.noPropertiesHint')}
                 </p>
               )}
             </div>
@@ -2099,7 +2106,7 @@ const RelationDrawer = ({
               className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
             >
               <Trash2 className="w-4 h-4" />
-              删除关系
+              {t('schema.deleteRelation')}
             </button>
           )}
           <div className="flex gap-2 ml-auto">
@@ -2107,14 +2114,14 @@ const RelationDrawer = ({
               onClick={onClose}
               className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              取消
+              {t('schema.cancelBtn')}
             </button>
             <button
               onClick={onSave}
               className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center gap-2"
             >
               <Save className="w-4 h-4" />
-              保存
+              {t('schema.save')}
             </button>
           </div>
         </div>
@@ -2127,6 +2134,7 @@ const RelationDrawer = ({
 
 // 自定义实体节点
 const EntityNode = ({ data }) => {
+  const { t } = useI18n();
   return (
     <div
       style={{
@@ -2149,7 +2157,7 @@ const EntityNode = ({ data }) => {
       </div>
       {data.propertyCount > 0 && (
         <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
-          {data.propertyCount} 属性
+          {data.propertyCount} {t('schema.properties')}
         </div>
       )}
       <Handle

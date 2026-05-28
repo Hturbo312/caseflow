@@ -1,11 +1,13 @@
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
+import * as d3Force from 'd3-force';
 import { Share2, Globe, Focus } from 'lucide-react';
 import { useCaseStore, useSchemaStore } from '@store';
 import { useGraphData } from './hooks';
 import { caseApi } from '@services/api';
 import { useToastStore } from '@components/Toast/ToastStore';
 import ConfirmModal from '@components/Toast/ConfirmModal';
+import { useI18n } from '../../../../i18n';
 import {
   buildAdjacencyList,
   bfsSearch,
@@ -20,7 +22,7 @@ import {
   searchNodesByName,
   getSubgraphFromNode,
 } from '@utils';
-import { renderNode, renderLink } from './canvasRenderers';
+import { renderNode, renderLink, buildSpatialGrid } from './canvasRenderers';
 // 子组件
 import GraphToolbar from './GraphToolbar';
 import GraphPathAnalysis from './GraphPathAnalysis';
@@ -46,10 +48,12 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
     addLinkToGraph,
     removeNodeFromGraph,
     removeLinkFromGraph,
-    viewMode,
-    setViewMode,
+    focusMode,
     focusCaseId,
+    focusNodeId,
+    setFocusMode,
     setFocusCase,
+    setFocusNode,
     currentCaseId,
     isLoading,
     dimensions,
@@ -66,6 +70,7 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
 
   const { cases, addEntityToCase, addRelationToCase } = useCaseStore();
   const { schemas, currentSchemaId } = useSchemaStore();
+  const { t } = useI18n();
 
   // Toast 通知
   const { error: showError, success: showSuccess, warning: showWarning } = useToastStore();
@@ -103,9 +108,51 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
   // 无案例提示状态
   const [showNoCaseAlert, setShowNoCaseAlert] = useState(false);
 
+  // Hover & focus state for dynamic highlighting
+  const [hoveredNode, setHoveredNode] = useState(null);
+  const [showLegend, setShowLegend] = useState(true);
+  const lastClickTimeRef = useRef(0);
+  const lastClickNodeRef = useRef(null);
+  const handleNodeClickRef = useRef(null);
+
+  // Derive focusedNode object from store for canvasRenderers compatibility
+  const focusedNode = useMemo(() => {
+    if (focusMode !== 'node' || !focusNodeId) return null;
+    return nodes.find(n => n.id === focusNodeId) || null;
+  }, [focusMode, focusNodeId, nodes]);
+
   // 删除确认弹窗状态
   const [deleteEntityModal, setDeleteEntityModal] = useState({ open: false, node: null });
   const [deleteRelationModal, setDeleteRelationModal] = useState({ open: false, link: null });
+  // Handle node click with double-click detection
+  const handleNodeClickWithDbl = useCallback((node) => {
+    const now = Date.now();
+    const timeDiff = now - lastClickTimeRef.current;
+    const isSameNode = lastClickNodeRef.current && lastClickNodeRef.current.id === node.id;
+    if (timeDiff < 350 && isSameNode) {
+      if (focusMode === 'node' && focusNodeId === node.id) {
+        setFocusNode(null);
+      } else {
+        setFocusNode(node);
+      }
+      lastClickTimeRef.current = 0;
+      lastClickNodeRef.current = null;
+    } else {
+      handleNodeClickRef.current?.(node);
+      lastClickTimeRef.current = now;
+      lastClickNodeRef.current = node;
+    }
+  }, [focusMode, focusNodeId, setFocusNode]);
+
+  const handleBackgroundClick = useCallback(() => {
+    setFocusNode(null);
+  }, [setFocusNode]);
+
+  // Handle hover node
+  const handleHoverNode = useCallback((node) => {
+    if (focusMode === 'node') { setHoveredNode(null); return; }
+    setHoveredNode(node);
+  }, [focusMode]);
 
   // 当前案例
   const currentCase = cases.find(c => c.id === currentCaseId);
@@ -164,14 +211,6 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
   // 深度变化时重新计算子图
   const handleSearchDepthChange = useCallback((depth) => {
     setSearchDepth(depth);
-  }, []);
-
-  // 清除搜索状态
-  const clearSearchState = useCallback(() => {
-    setSearchQuery('');
-    setSearchResults([]);
-    setSelectedSearchNode(null);
-    setShowSearchResults(false);
   }, []);
 
   // 构建邻接表（可缓存）
@@ -246,6 +285,9 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
     }
   }, [showPathAnalysis, relationMode, handlePathAnalysisClick, handleRelationModeClick, handleNormalClick]);
 
+  // Keep handleNodeClickRef in sync
+  useEffect(() => { handleNodeClickRef.current = handleNodeClick; }, [handleNodeClick]);
+
   // 重置路径分析
   const resetPathAnalysis = useCallback(() => {
     setShowPathAnalysis(false);
@@ -296,11 +338,11 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
   // 保存实体
   const handleSaveEntity = useCallback(async () => {
     if (!entityForm.name.trim() || !entityForm.entityType) {
-      showWarning('请填写实体名称和类型');
+      showWarning(t('toast.fillNameType'));
       return;
     }
     if (!currentCaseId) {
-      showWarning('请先选择一个案例');
+      showWarning(t('toast.selectCaseFirst'));
       return;
     }
 
@@ -323,10 +365,10 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
 
       setEntityDrawerOpen(false);
       setEntityForm({ name: '', entityType: '', properties: {} });
-      showSuccess('实体创建成功');
+      showSuccess(t('toast.entityCreated'));
     } catch (error) {
       console.error('创建实体失败:', error);
-      showError('创建实体失败: ' + error.message);
+      showError(t('toast.entityCreateFailed') + error.message);
     }
     setEntitySaving(false);
   }, [entityForm, currentCaseId, addEntityToCase, addNodeToGraph, showWarning, showSuccess, showError]);
@@ -335,7 +377,7 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
   const handleCreateRelation = useCallback(async (relationType) => {
     if (!relationSource || !relationTarget || !relationType) return;
     if (!currentCaseId) {
-      showWarning('请先选择一个案例');
+      showWarning(t('toast.selectCaseFirst'));
       return;
     }
 
@@ -357,10 +399,10 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
       });
 
       resetRelationMode();
-      showSuccess('关系创建成功');
+      showSuccess(t('toast.relationCreated'));
     } catch (error) {
       console.error('创建关系失败:', error);
-      showError('创建关系失败: ' + error.message);
+      showError(t('toast.relationCreateFailed') + error.message);
     }
     setRelationSaving(false);
   }, [relationSource, relationTarget, currentCaseId, addRelationToCase, addLinkToGraph, resetRelationMode, showWarning, showSuccess, showError]);
@@ -374,10 +416,10 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
       await caseApi.deleteEntity(node.caseId, node.id);
       removeNodeFromGraph(node.id);
       setSelectedNode(null);
-      showSuccess('实体删除成功');
+      showSuccess(t('toast.entityDeleted'));
     } catch (error) {
       console.error('删除实体失败:', error);
-      showError('删除实体失败: ' + error.message);
+      showError(t('toast.entityDeleteFailed') + error.message);
     }
     setDeleteEntityModal({ open: false, node: null });
   }, [deleteEntityModal.node, removeNodeFromGraph, setSelectedNode, showSuccess, showError]);
@@ -391,15 +433,14 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
       await caseApi.deleteRelation(link.caseId, link.linkId);
       removeLinkFromGraph(link.linkId);
       setSelectedLink(null);
-      showSuccess('关系删除成功');
+      showSuccess(t('toast.relationDeleted'));
     } catch (error) {
       console.error('删除关系失败:', error);
-      showError('删除关系失败: ' + error.message);
+      showError(t('toast.relationDeleteFailed') + error.message);
     }
     setDeleteRelationModal({ open: false, link: null });
   }, [deleteRelationModal.link, removeLinkFromGraph, setSelectedLink, showSuccess, showError]);
 
-  // 过滤节点（添加 null 检查）
   // 搜索子图模式：只显示选中节点及其邻居
   const subgraphData = useMemo(() => {
     if (selectedSearchNode) {
@@ -411,15 +452,14 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
     return null;
   }, [nodes, links, selectedSearchNode, searchDepth]);
 
-  // 实体类型过滤（非搜索模式时）
+  // 实体类型过滤
   const typeFilteredNodes = useMemo(() => {
     return filterNodes(nodes, '', filter.entityTypes);
   }, [nodes, filter.entityTypes]);
 
-  // 最终显示的节点（搜索模式优先，否则使用类型过滤）
+  // 最终显示的节点（搜索子图 > 类型过滤）
   const filteredNodes = useMemo(() => {
     if (subgraphData) {
-      // 搜索子图模式：先应用子图，再应用类型过滤
       if (filter.entityTypes.length > 0) {
         return subgraphData.nodes.filter(n => filter.entityTypes.includes(n.type));
       }
@@ -442,15 +482,36 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
     return filterLinksByNodeIds(links, nodeIds);
   }, [subgraphData, filteredNodes, links]);
 
-  // 子图节点ID集合（用于高亮）
-  const subgraphNodeIds = useMemo(() => {
-    return subgraphData?.nodeIds || new Set();
-  }, [subgraphData]);
+  // Compute highlighted node IDs (1-hop neighbors of hovered node)
+  const highlightedNodeIds = useMemo(() => {
+    const activeNode = hoveredNode;
+    if (!activeNode) return new Set();
+    const neighbors = new Set([activeNode.id]);
+    filteredLinks.forEach(link => {
+      const src = typeof link.source === 'object' ? link.source.id : link.source;
+      const tgt = typeof link.target === 'object' ? link.target.id : link.target;
+      if (src === activeNode.id) neighbors.add(tgt);
+      if (tgt === activeNode.id) neighbors.add(src);
+    });
+    return neighbors;
+  }, [hoveredNode, filteredLinks]);
 
-  const graphData = useMemo(() => ({
-    nodes: filteredNodes,
-    links: filteredLinks,
-  }), [filteredNodes, filteredLinks]);
+  // Compute node degrees for size mapping
+  const nodeDegreeMap = useMemo(() => {
+    const degreeMap = new Map();
+    filteredLinks.forEach(link => {
+      const src = typeof link.source === 'object' ? link.source.id : link.source;
+      const tgt = typeof link.target === 'object' ? link.target.id : link.target;
+      degreeMap.set(src, (degreeMap.get(src) || 0) + 1);
+      degreeMap.set(tgt, (degreeMap.get(tgt) || 0) + 1);
+    });
+    return degreeMap;
+  }, [filteredLinks]);
+
+  const graphData = useMemo(() => {
+    const nodesWithDegree = filteredNodes.map(n => ({ ...n, degree: nodeDegreeMap.get(n.id) || 0 }));
+    return { nodes: nodesWithDegree, links: filteredLinks };
+  }, [filteredNodes, filteredLinks, nodeDegreeMap]);
 
   // 使用 useMemo 缓存路径节点 ID
   const pathNodeIds = useMemo(() => {
@@ -462,59 +523,201 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
     return getPathLinkIds(pathResult);
   }, [pathResult]);
 
-  // 键盘导航支持（修复依赖问题，使用 ref 存储 selectedNode）
+  // 键盘导航支持 — 用 ref 避免 filteredNodes 变化导致频繁注册/注销
   const selectedNodeRef = useRef(selectedNode);
-  useEffect(() => {
-    selectedNodeRef.current = selectedNode;
-  }, [selectedNode]);
+  const filteredNodesRef = useRef(filteredNodes);
+  useEffect(() => { selectedNodeRef.current = selectedNode; }, [selectedNode]);
+  useEffect(() => { filteredNodesRef.current = filteredNodes; }, [filteredNodes]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (!fgRef.current || filteredNodes.length === 0) return;
+      const currentNodes = filteredNodesRef.current;
+      if (!fgRef.current || currentNodes.length === 0) return;
 
       const currentIndex = selectedNodeRef.current
-        ? filteredNodes.findIndex(n => n.id === selectedNodeRef.current.id)
+        ? currentNodes.findIndex(n => n.id === selectedNodeRef.current.id)
         : -1;
 
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
         e.preventDefault();
-        const nextIndex = currentIndex < filteredNodes.length - 1 ? currentIndex + 1 : 0;
-        setSelectedNode(filteredNodes[nextIndex]);
+        const nextIndex = currentIndex < currentNodes.length - 1 ? currentIndex + 1 : 0;
+        setSelectedNode(currentNodes[nextIndex]);
       } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
         e.preventDefault();
-        const prevIndex = currentIndex > 0 ? currentIndex - 1 : filteredNodes.length - 1;
-        setSelectedNode(filteredNodes[prevIndex]);
+        const prevIndex = currentIndex > 0 ? currentIndex - 1 : currentNodes.length - 1;
+        setSelectedNode(currentNodes[prevIndex]);
       } else if (e.key === 'Escape') {
-        setSelectedNode(null);
+        if (focusMode === 'node') {
+          setFocusNode(null);
+        } else if (focusMode === 'case') {
+          setFocusMode('full');
+        } else {
+          setSelectedNode(null);
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [filteredNodes, setSelectedNode]);
+  }, [setSelectedNode, setFocusNode, focusMode]);
 
-  // 配置力导向布局参数
+  // Force layout: wider spacing for CPI-style global labels
+  const nodeCount = filteredNodes.length;
+  const linkCount = filteredLinks.length;
+  const communityKey = useMemo(() => filteredNodes.map(n => `${n.caseId}:${n.type}`).sort().join(','), [filteredNodes]);
+
+  // Collision force to prevent node overlap — radius includes node visual + label area below
+  const forceCollide = useMemo(() => {
+    return d3Force.forceCollide().radius((node) => {
+      const degree = node.degree || 0;
+      let radius;
+      if (degree >= 10) radius = 20;
+      else if (degree >= 5) radius = 12;
+      else if (degree >= 2) radius = 8;
+      else radius = 4;
+      // Label sits radius+4 below center, ~15px tall. Total clearance from center = radius + 24px.
+      // Add another 8px gap between adjacent nodes.
+      return radius + 32;
+    }).strength(0.8).iterations(3);
+  }, []);
   useEffect(() => {
     if (!fgRef.current) return;
 
-    // 连接力：控制边的长度和强度
-    fgRef.current.d3Force('link')
-      ?.distance(70)
-      ?.strength(0.7);
+    if (focusMode === 'node' || focusMode === 'case') {
+      // Focus mode: strong links, moderate repulsion, compact layout
+      fgRef.current.d3Force('link')?.distance(50)?.strength(1.0)?.iterations(3);
+      fgRef.current.d3Force('charge')?.strength(-80)?.distanceMin(10)?.distanceMax(200);
+      fgRef.current.d3Force('center')?.strength(0.15);
+      fgRef.current.d3Force('x', null);
+      fgRef.current.d3Force('y', null);
+      fgRef.current.d3Force('collide', forceCollide);
+    } else {
+      // Global mode: case-based clustering with concepts in center
+      fgRef.current.d3Force('link')?.distance(60)?.strength(0.6)?.iterations(2);
+      fgRef.current.d3Force('charge')?.strength(-150)?.distanceMin(15)?.distanceMax(300);
 
-    // 节点斥力：防止节点聚集
-    fgRef.current.d3Force('charge')
-      ?.strength(-180)
-      ?.distanceMin(25)
-      ?.distanceMax(400);
+      // Always ensure center force exists (it may have been nulled in focus mode)
+      const center = fgRef.current.d3Force('center');
+      if (center) {
+        center.strength(0.05);
+      } else {
+        fgRef.current.d3Force('center', (a) => { filteredNodes.forEach(n => { n.x += (dimensions.width / 2 - n.x) * a * 0.05; n.y += (dimensions.height / 2 - n.y) * a * 0.05; }); });
+      }
 
-    // 中心引力：将节点拉向画布中心
-    fgRef.current.d3Force('center')
-      ?.strength(0.1);
+      // 按案例分簇：根据共享概念邻居相似度将案例分组成 ~8 个簇
+      const cx = dimensions.width / 2;
+      const cy = dimensions.height / 2;
+      const nonConceptNodes = filteredNodes.filter(n => n.type !== 'Concept');
+      const conceptNodes = filteredNodes.filter(n => n.type === 'Concept');
 
-    // 重新加热模拟
+      if (nonConceptNodes.length > 0) {
+        // 1. 按 caseId 分组
+        const caseGroups = new Map();
+        for (const n of nonConceptNodes) {
+          const cid = n.caseId ?? 'unknown';
+          if (!caseGroups.has(cid)) caseGroups.set(cid, []);
+          caseGroups.get(cid).push(n.id);
+        }
+
+        const caseIds = [...caseGroups.keys()];
+
+        if (caseIds.length > 1) {
+          // 2. 计算案例间相似度（共享案例数 Jaccard）
+          const simMatrix = [];
+          for (let i = 0; i < caseIds.length; i++) {
+            simMatrix[i] = [];
+            const setA = new Set(caseGroups.get(caseIds[i]));
+            for (let j = 0; j < caseIds.length; j++) {
+              if (i === j) { simMatrix[i][j] = 1; continue; }
+              const setB = new Set(caseGroups.get(caseIds[j]));
+              let intersection = 0;
+              for (const id of setA) { if (setB.has(id)) intersection++; }
+              const union = setA.size + setB.size - intersection;
+              simMatrix[i][j] = union > 0 ? intersection / union : 0;
+            }
+          }
+
+          // 3. 贪心聚类：将相似度高的案例分到同一簇（目标 8 个簇）
+          const numClusters = Math.min(8, caseIds.length);
+          const clusterAssignment = new Array(caseIds.length).fill(-1);
+          const clusterSizes = new Array(numClusters).fill(0);
+          const caseWeights = caseIds.map(cid => caseGroups.get(cid).length); // 按实体数排序
+          const sortedIndices = caseIds.map((_, i) => i).sort((a, b) => caseWeights[b] - caseWeights[a]);
+
+          // 按实体数从大到小分配
+          let currentCluster = 0;
+          for (const idx of sortedIndices) {
+            if (clusterAssignment[idx] !== -1) continue;
+            clusterAssignment[idx] = currentCluster;
+            clusterSizes[currentCluster]++;
+            // 找到最相似的未分配案例
+            for (let round = 0; round < 3; round++) {
+              let bestSim = -1, bestJ = -1;
+              for (let j = 0; j < caseIds.length; j++) {
+                if (clusterAssignment[j] === -1 && simMatrix[idx][j] > bestSim) {
+                  bestSim = simMatrix[idx][j];
+                  bestJ = j;
+                }
+              }
+              if (bestJ >= 0 && bestSim > 0.1) {
+                clusterAssignment[bestJ] = currentCluster;
+                clusterSizes[currentCluster]++;
+              } else break;
+            }
+            currentCluster = (currentCluster + 1) % numClusters;
+          }
+
+          // 4. 为每个簇分配圆周位置
+          const cr = Math.min(dimensions.width, dimensions.height) * 0.32;
+          const clusterCenters = [];
+          for (let i = 0; i < numClusters; i++) {
+            const angle = (2 * Math.PI * i) / numClusters - Math.PI / 2;
+            clusterCenters.push({ x: cx + Math.cos(angle) * cr, y: cy + Math.sin(angle) * cr });
+          }
+
+          // 构建 caseId → 簇中心 的映射
+          const caseCenterMap = new Map();
+          for (let i = 0; i < caseIds.length; i++) {
+            const ci = clusterAssignment[i];
+            caseCenterMap.set(caseIds[i], clusterCenters[ci]);
+          }
+
+          fgRef.current.d3Force('x', (a) => {
+            for (const n of filteredNodes) {
+              if (n.type === 'Concept') {
+                n.x += (cx - n.x) * a * 0.08;
+              } else {
+                const c = caseCenterMap.get(n.caseId ?? 'unknown');
+                if (c) n.x += (c.x - n.x) * a * 0.04;
+              }
+            }
+          });
+          fgRef.current.d3Force('y', (a) => {
+            for (const n of filteredNodes) {
+              if (n.type === 'Concept') {
+                n.y += (cy - n.y) * a * 0.08;
+              } else {
+                const c = caseCenterMap.get(n.caseId ?? 'unknown');
+                if (c) n.y += (c.y - n.y) * a * 0.04;
+              }
+            }
+          });
+        } else {
+          if (!fgRef.current.d3Force('x')) {
+            fgRef.current.d3Force('x', () => {});
+            fgRef.current.d3Force('y', () => {});
+          }
+        }
+      } else {
+        if (!fgRef.current.d3Force('x')) {
+          fgRef.current.d3Force('x', () => {});
+          fgRef.current.d3Force('y', () => {});
+        }
+      }
+      fgRef.current.d3Force('collide', forceCollide);
+    }
     fgRef.current.d3ReheatSimulation();
-  }, [graphData]);
+  }, [nodeCount, linkCount, communityKey, focusMode]);
 
   // ForceGraph2D 渲染函数（性能优化）
   const getNodeColorRender = useCallback((node) => {
@@ -534,42 +737,38 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
   }, [selectedSearchNode, pathNodeIds, pathStartNode, pathEndNode, relationSource, relationTarget, getNodeColorFromMap]);
 
   const getNodeValRender = useCallback((node) => {
-    // 搜索子图模式：中心节点放大
     if (selectedSearchNode && node.id === selectedSearchNode.id) return 14;
     if (pathStartNode && node.id === pathStartNode.id) return 12;
     if (pathEndNode && node.id === pathEndNode.id) return 12;
     if (pathNodeIds.size > 0 && pathNodeIds.has(node.id)) return 10;
-    // 关系创建模式高亮
     if (relationSource && node.id === relationSource.id) return 12;
     if (relationTarget && node.id === relationTarget.id) return 12;
-    return 8;
-  }, [pathNodeIds, pathStartNode, pathEndNode, relationSource, relationTarget]);
+    const degree = node.degree || 0;
+    if (degree >= 10) return 40;
+    if (degree >= 5) return 24;
+    if (degree >= 2) return 12;
+    return 4;
+  }, [selectedSearchNode, pathNodeIds, pathStartNode, pathEndNode, relationSource, relationTarget]);
+
+  // Spatial grid for O(n) collision detection — rebuilt per render frame
+  const spatialGrid = useMemo(() => {
+    return buildSpatialGrid(filteredNodes, getNodeValRender, 60);
+  }, [filteredNodes, getNodeValRender]);
 
   // Canvas 渲染函数（使用提取的纯函数，通过 useCallback 保持稳定引用）
   const handleNodeCanvasObject = useCallback((node, ctx, globalScale) => {
     renderNode({
-      node,
-      ctx,
-      globalScale,
-      selectedNode,
-      pathStartNode,
-      pathEndNode,
-      relationSource,
-      relationTarget,
-      pathNodeIds,
-      getNodeColor: getNodeColorRender,
-      getNodeSize: getNodeValRender,
+      node, ctx, globalScale, selectedNode,
+      hoveredNode, focusedNode, highlightedNodeIds,
+      pathStartNode, pathEndNode, relationSource, relationTarget,
+      pathNodeIds, getNodeColor: getNodeColorRender, getNodeSize: getNodeValRender,
+      spatialGrid,
     });
-  }, [selectedNode, pathStartNode, pathEndNode, relationSource, relationTarget, pathNodeIds, getNodeColorRender, getNodeValRender]);
+  }, [selectedNode, hoveredNode, focusedNode, highlightedNodeIds, pathStartNode, pathEndNode, relationSource, relationTarget, pathNodeIds, getNodeColorRender, getNodeValRender, spatialGrid]);
 
   const handleLinkCanvasObject = useCallback((link, ctx) => {
-    renderLink({
-      link,
-      ctx,
-      relationStyleMap,
-      pathLinkIds,
-    });
-  }, [relationStyleMap, pathLinkIds]);
+    renderLink({ link, ctx, relationStyleMap, pathLinkIds, highlightedNodeIds });
+  }, [relationStyleMap, pathLinkIds, highlightedNodeIds]);
 
   return (
     <div className="h-full bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col">
@@ -654,12 +853,12 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
       {/* 画布区域 */}
       <div
         ref={containerRef}
-        className="flex-1 relative bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden"
+        className="flex-1 relative bg-white overflow-hidden"
         role="img"
-        aria-label={`知识图谱：${filteredNodes.length} 个节点，${filteredLinks.length} 条关系`}
+        aria-label={`${t('toolbar.title')}：${filteredNodes.length} ${t('status.nodes')}，${filteredLinks.length} ${t('status.links')}`}
       >
         {/* 隐藏的节点列表供屏幕阅读器使用 */}
-        <div className="sr-only" role="list" aria-label="图谱节点列表">
+        <div className="sr-only" role="list" aria-label={t('toolbar.title')}>
           {filteredNodes.map(node => (
             <div key={node.id} role="listitem">
               {node.name} - {node.type}
@@ -672,16 +871,17 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center p-8">
               <Share2 className="w-16 h-16 mx-auto mb-4 opacity-50 text-gray-400" />
-              <p className="text-lg font-medium text-gray-700 mb-2">暂无图谱数据</p>
+              <p className="text-lg font-medium text-gray-700 mb-2">{t('empty.graphTitle')}</p>
               <p className="text-sm text-gray-500 mb-4">
                 {currentCaseId
-                  ? '点击上方"添加实体"按钮创建节点'
-                  : '请先在右侧选择一个案例，或创建新案例'}
+                  ? t('empty.graphHint')
+                  : t('empty.graphHintNoCase')}
               </p>
             </div>
           </div>
         ) : (
           <ForceGraph2D
+            key={`graph-${focusMode}-${focusNodeId ?? ''}-${focusCaseId ?? ''}`}
             ref={fgRef}
             graphData={graphData}
             width={dimensions.width}
@@ -696,27 +896,29 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
             linkWidth={1.5}
             linkDirectionalArrowLength={6}
             linkDirectionalArrowRelPos={1}
-            onNodeClick={handleNodeClick}
+            onNodeClick={handleNodeClickWithDbl}
             onLinkClick={(link) => {
               setSelectedLink(link);
               setSelectedNode(null);
             }}
             onNodeHover={(node) => {
+              handleHoverNode(node);
               if (fgRef.current && fgRef.current.canvas) {
                 fgRef.current.canvas().style.cursor = node ? 'pointer' : 'default';
               }
             }}
+            onBackgroundClick={handleBackgroundClick}
             onEngineStop={handleEngineStop}
             onZoom={(zoom) => {
               zoomRef.current = zoom;
               setZoomLevel(zoom);
             }}
-            cooldownTicks={150}
-            cooldownTime={10000}
+            cooldownTicks={30}
+            cooldownTime={5000}
             forceEngine="d3"
-            d3AlphaDecay={0.012}
-            d3VelocityDecay={0.35}
-            warmupTicks={100}
+            d3AlphaDecay={0.025}
+            d3VelocityDecay={0.6}
+            warmupTicks={300}
             linkCanvasObjectMode={() => 'replace'}
             linkCanvasObject={handleLinkCanvasObject}
           />
@@ -746,41 +948,52 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
         />
 
         {/* 图例 */}
-        <GraphLegend entityTypes={currentSchema?.entityTypes} />
+        {showLegend && <GraphLegend entityTypes={currentSchema?.entityTypes} onClose={() => setShowLegend(false)} />}
+        {!showLegend && (
+          <button
+            onClick={() => setShowLegend(true)}
+            className="absolute bottom-4 left-4 p-2 bg-white/90 rounded-lg shadow-sm border border-gray-200 text-gray-500 hover:text-gray-700 transition-colors text-xs"
+            title={t('legend.show')}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </button>
+        )}
       </div>
 
       {/* 底部状态栏 */}
       <div className="border-t border-gray-200 px-3 py-2 bg-gray-50">
         <div className="flex items-center justify-between text-xs text-gray-500">
           <div className="flex items-center gap-4">
-            <span>节点：{filteredNodes.length}</span>
-            <span>关系：{filteredLinks.length}</span>
+            <span>{t('status.nodes')}：{filteredNodes.length}</span>
+            <span>{t('status.links')}：{filteredLinks.length}</span>
             {/* 搜索子图提示 */}
             {selectedSearchNode && (
               <span className="text-blue-600 flex items-center gap-1">
                 <Share2 className="w-3 h-3" />
-                子图: {selectedSearchNode.name} (深度 {searchDepth})
+                {t('status.subgraphHint')}: {selectedSearchNode.name} ({t('status.depth')} {searchDepth})
               </span>
             )}
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden sm:inline">
               {selectedSearchNode
-                ? `搜索子图模式`
-                : viewMode === 'focused' ? `聚焦: ${currentCase?.name || '未选择'}` : '全局模式'}
+                ? t('status.subgraph')
+                : focusMode === 'case' ? `${t('status.caseFocus')}: ${currentCase?.name || t('case.unspecified')}`
+                : focusMode === 'node' ? t('status.nodeFocus')
+                : t('status.global')}
             </span>
             {/* 模式切换按钮 */}
             <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
               <button
                 type="button"
-                onClick={() => setViewMode('full')}
+                onClick={() => setFocusMode('full')}
                 className={`h-7 px-2 transition-colors flex items-center gap-1 ${
-                  viewMode === 'full' ? 'bg-blue-500 text-white' : 'hover:bg-gray-100 text-gray-600'
+                  focusMode === 'full' ? 'bg-blue-500 text-white' : 'hover:bg-gray-100 text-gray-600'
                 }`}
-                title="全局模式 - 显示当前Schema下的所有案例实体"
+                title={t('status.global')}
               >
                 <Globe className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline text-[10px]">全局</span>
+                <span className="hidden sm:inline text-[10px]">{t('status.globalBtn')}</span>
               </button>
               <button
                 type="button"
@@ -789,16 +1002,16 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
                     setShowNoCaseAlert(true);
                     return;
                   }
-                  setViewMode('focused');
+                  setFocusMode('case');
                   setFocusCase(currentCaseId);
                 }}
                 className={`h-7 px-2 border-l border-gray-200 transition-colors flex items-center gap-1 ${
-                  viewMode === 'focused' ? 'bg-purple-500 text-white' : 'hover:bg-gray-100 text-gray-600'
+                  focusMode === 'case' ? 'bg-purple-500 text-white' : 'hover:bg-gray-100 text-gray-600'
                 }`}
-                title={currentCaseId ? "聚焦模式 - 仅显示当前选中案例的实体" : "请先选择案例"}
+                title={currentCaseId ? t('status.caseFocus') : t('toolbar.selectCaseFirst')}
               >
                 <Focus className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline text-[10px]">聚焦</span>
+                <span className="hidden sm:inline text-[10px]">{t('status.focusBtn')}</span>
               </button>
             </div>
           </div>
@@ -810,10 +1023,10 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
         isOpen={deleteEntityModal.open}
         onClose={() => setDeleteEntityModal({ open: false, node: null })}
         onConfirm={handleDeleteEntityConfirm}
-        title="删除实体"
-        message={`确定要删除实体"${deleteEntityModal.node?.name}"吗？此操作不可撤销。`}
-        confirmText="删除"
-        cancelText="取消"
+        title={t('delete.entity.title')}
+        message={t('delete.entity.message', { name: deleteEntityModal.node?.name })}
+        confirmText={t('delete.confirm')}
+        cancelText={t('delete.cancel')}
         variant="danger"
       />
 
@@ -822,10 +1035,10 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
         isOpen={deleteRelationModal.open}
         onClose={() => setDeleteRelationModal({ open: false, link: null })}
         onConfirm={handleDeleteRelationConfirm}
-        title="删除关系"
-        message="确定要删除此关系吗？此操作不可撤销。"
-        confirmText="删除"
-        cancelText="取消"
+        title={t('delete.link.title')}
+        message={t('delete.link.message')}
+        confirmText={t('delete.confirm')}
+        cancelText={t('delete.cancel')}
         variant="danger"
       />
 

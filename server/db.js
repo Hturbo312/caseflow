@@ -9,7 +9,7 @@ const pool = new Pool({
   user: 'postgres',
   database: 'knowledge_graph',
   host: '/var/run/postgresql',
-  port: 5433,
+  port: 5432,
 });
 
 export default pool;

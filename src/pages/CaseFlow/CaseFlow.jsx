@@ -10,13 +10,14 @@ import {
   User
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useGraphStore, useSchemaStore } from '../../store';
+import { useGraphStore, useSchemaStore, useAuthStore } from '../../store';
 import { useAuth, useCaseData } from '../../hooks';
 import SchemaArchitect from './components/SchemaArchitect';
 import KnowledgeGraphCanvas from './components/KnowledgeGraphCanvas';
 import AICopilot from './components/AICopilot';
 import LoginModal from './components/LoginModal';
 import { CaseListPanel, CreateCaseModal } from './components/CaseManagement';
+import { useI18n } from '../../i18n';
 import './CaseFlow.css';
 
 const CaseFlow = () => {
@@ -25,7 +26,8 @@ const CaseFlow = () => {
 
   // Use extracted hooks
   const { isAuthenticated, user, logout, verifyAuth } = useAuth();
-  const { initializeGraph, focusCaseId, viewMode, loadAllCasesToGraph } = useGraphStore();
+  const { initializeGraph, focusCaseId, focusMode, loadAllCasesToGraph } = useGraphStore();
+  const { t, locale, setLocale } = useI18n();
   const {
     cases,
     loadCases,
@@ -92,7 +94,7 @@ const CaseFlow = () => {
   }, [handleCaseDeselect]);
 
   const leftModules = useMemo(() => [
-    { id: 'schema', title: 'Schema 建模', icon: Database, component: SchemaArchitect },
+    { id: 'schema', titleKey: 'schema.overview', icon: Database, component: SchemaArchitect },
   ], []);
 
   const filteredCasesList = filteredCases;
@@ -101,7 +103,7 @@ const CaseFlow = () => {
   return (
     <div className="caseflow-wrapper">
       <a href="#caseflow-main-content" className="caseflow-skip-link">
-        跳过导航，直接访问主内容
+        {t('app.skipNav')}
       </a>
 
       {/* 左栏 - Schema 管理栏 */}
@@ -113,7 +115,7 @@ const CaseFlow = () => {
             </div>
             <div>
               <div className="caseflow-logo-text">CaseFlow</div>
-              <div className="caseflow-logo-subtitle">知识图谱案例平台</div>
+              <div className="caseflow-logo-subtitle">{t('app.logo.subtitle')}</div>
             </div>
           </div>
 
@@ -128,7 +130,7 @@ const CaseFlow = () => {
                 <button
                   onClick={logout}
                   className="caseflow-logout-btn"
-                  title="退出登录"
+                  title={t('app.logout')}
                 >
                   <LogOut size={14} />
                 </button>
@@ -139,7 +141,7 @@ const CaseFlow = () => {
                 className="caseflow-login-btn"
               >
                 <LogIn size={14} />
-                <span>登录</span>
+                <span>{t('app.login')}</span>
               </button>
             )}
           </div>
@@ -155,7 +157,7 @@ const CaseFlow = () => {
                 aria-controls={`tabpanel-${module.id}`}
               >
                 <module.icon size={18} aria-hidden="true" />
-                {module.title}
+                {t(module.titleKey)}
               </button>
             ))}
           </nav>
@@ -171,7 +173,7 @@ const CaseFlow = () => {
         <div className="caseflow-left-footer">
           <Link to="/" className="caseflow-back-link">
             <ChevronLeft size={18} />
-            返回主页
+            {t('app.backHome')}
           </Link>
         </div>
       </aside>
@@ -185,25 +187,32 @@ const CaseFlow = () => {
               className={`caseflow-view-tab ${mainView === 'graph' ? 'active' : ''}`}
               role="tab"
               aria-selected={mainView === 'graph'}
-              aria-label="切换到知识图谱视图"
+              aria-label={t('tab.graph')}
             >
               <Share2 size={16} aria-hidden="true" />
-              <span className="caseflow-view-tab-text">知识图谱</span>
+              <span className="caseflow-view-tab-text">{t('tab.graph')}</span>
             </button>
             <button
               onClick={() => setMainView('ai')}
               className={`caseflow-view-tab ${mainView === 'ai' ? 'active' : ''}`}
               role="tab"
               aria-selected={mainView === 'ai'}
-              aria-label="切换到 AI 助手视图"
+              aria-label={t('tab.ai')}
             >
               <MessageSquare size={16} aria-hidden="true" />
-              <span className="caseflow-view-tab-text">AI 助手</span>
+              <span className="caseflow-view-tab-text">{t('tab.ai')}</span>
             </button>
           </div>
           <span className="caseflow-date">
-            {new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })}
+            {new Date().toLocaleDateString(locale === 'zh' ? 'zh-CN' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
           </span>
+          <button
+            onClick={() => setLocale(locale === 'zh' ? 'en' : 'zh')}
+            className="caseflow-lang-switch"
+            title={locale === 'zh' ? 'Switch to English' : '切换到中文'}
+          >
+            {locale === 'zh' ? 'EN' : '中'}
+          </button>
         </div>
 
         <div className="caseflow-main-content">
@@ -243,7 +252,7 @@ const CaseFlow = () => {
         cases={cases}
         filteredCasesList={filteredCasesList}
         focusCaseId={focusCaseId}
-        viewMode={viewMode}
+        focusMode={focusMode}
         showCreateCase={showCreateCase}
         setShowCreateCase={setShowCreateCase}
         handleCaseSelect={onCaseSelect}

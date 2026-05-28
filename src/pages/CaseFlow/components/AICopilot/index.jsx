@@ -22,49 +22,52 @@ import {
   Upload
 } from 'lucide-react';
 import { useAgentStore, useGraphStore, useCaseStore, useSchemaStore, useAuthStore, useExtractionStore } from '@store';
-import { caseApi } from '@services/api';
+import { caseApi, schemaApi } from '@services/api';
 import { useAIConfig, useSessionHistory } from './hooks';
 import { useToastStore } from '@components/Toast/ToastStore.js';
 import { parseDocument, extractFileExtension } from '@utils/documentParser';
+import { useI18n } from '../../../../i18n';
 
 // 子组件
 import HistorySidebar from './HistorySidebar';
 import ExtractResultPanel from './ExtractResultPanel';
 import SettingsModal from './SettingsModal';
 import ExtractionPipeline from './ExtractionPipeline';
+import SchemaResultPanel from './SchemaResultPanel';
 
 // Agent 配置
-const AGENT_CONFIG = {
+const createAgentConfig = (t) => ({
   schema_builder: {
     icon: Database,
     color: 'from-emerald-500 to-teal-500',
     bgColor: 'bg-emerald-50',
     textColor: 'text-emerald-600',
-    title: 'Schema构建',
-    subtitle: '对话式创建知识结构',
-    placeholder: '描述你想要的Schema结构，例如："我想分析城市更新案例，关注项目主体、改造方式、资金来源..."'
+    title: t('ai.schemaBuilder'),
+    subtitle: t('ai.schemaBuilderDesc'),
+    placeholder: t('ai.schemaBuilderPlaceholder')
   },
   case_extractor: {
     icon: Wand2,
     color: 'from-indigo-500 to-purple-500',
     bgColor: 'bg-indigo-50',
     textColor: 'text-indigo-600',
-    title: '案例拆解',
-    subtitle: '基于Schema智能提取',
-    placeholder: '输入或粘贴案例描述文本...'
+    title: t('ai.caseBreakdown'),
+    subtitle: t('ai.caseBreakdownDesc'),
+    placeholder: t('ai.caseBreakdownPlaceholder')
   },
   analysis_assistant: {
     icon: MessageSquare,
     color: 'from-cyan-500 to-blue-500',
     bgColor: 'bg-cyan-50',
     textColor: 'text-cyan-600',
-    title: '对话分析',
-    subtitle: 'Graph-RAG 专业咨询',
-    placeholder: '输入你的问题，我会结合图谱数据进行分析...'
+    title: t('ai.conversationAnalysis'),
+    subtitle: t('ai.conversationDesc'),
+    placeholder: t('ai.conversationPlaceholder')
   }
-};
+});
 
 const AICopilot = ({ onShowLogin }) => {
+  const { t } = useI18n();
   const {
     currentAgentName,
     sessions,
@@ -106,8 +109,9 @@ const AICopilot = ({ onShowLogin }) => {
     handleDeleteSession
   } = useSessionHistory(currentAgentName);
 
+  const agentConfig = createAgentConfig(t);
   const currentSession = sessions[currentAgentName] || {};
-  const currentConfig = AGENT_CONFIG[currentAgentName] || AGENT_CONFIG.schema_builder;
+  const currentConfig = agentConfig[currentAgentName] || agentConfig.schema_builder;
 
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef(null);
@@ -117,6 +121,7 @@ const AICopilot = ({ onShowLogin }) => {
   const [caseText, setCaseText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [extractionMode, setExtractionMode] = useState('chat'); // 'chat' | 'pipeline'
+  const [isCreatingSchema, setIsCreatingSchema] = useState(false);
   const [isParsingFile, setIsParsingFile] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -182,7 +187,7 @@ const AICopilot = ({ onShowLogin }) => {
       setInputValue('');
     } catch (error) {
       console.error('invokeAgent 调用失败:', error);
-      toast.error('发送消息失败: ' + (error.message || '未知错误'));
+      toast.error(t('common.sendFailed'));
     }
   }, [isAuthenticated, inputValue, currentSession?.isThinking, buildContext, invokeAgent, onShowLogin, toast]);
 
@@ -205,7 +210,7 @@ const AICopilot = ({ onShowLogin }) => {
       // 如果没有选择案例，创建新案例
       if (!targetCaseId) {
         const response = await caseApi.create({
-          name: caseText.substring(0, 30) || `案例-${Date.now()}`,
+          name: caseText.substring(0, 30) || `${t('common.case')}-${Date.now()}`,
           description: caseText,
           schemaId: currentSchemaId
         });
@@ -260,20 +265,84 @@ const AICopilot = ({ onShowLogin }) => {
       setCaseText('');
       setInputValue('');
 
-      toast.success(`成功保存 ${addedEntities.length} 个实体和 ${result.relations?.length || 0} 条关系！`);
+      toast.success(t('ai.saveSuccess', { entities: addedEntities.length, relations: result.relations?.length || 0 }));
     } catch (error) {
       console.error('保存失败:', error);
-      toast.error('保存失败: ' + error.message);
+      toast.error(t('common.saveFailed') + ': ' + error.message);
     }
     setIsSaving(false);
   }, [currentSession.extractResult, currentCaseId, caseText, currentSchemaId, addNodeToGraph, addLinkToGraph, loadAllCasesToGraph, setExtractResult, toast]);
 
   // 案例拆解：开始调整
   const handleRequestAdjustment = useCallback(() => {
-    setInputValue('请对以上提取结果进行调整：');
+    setInputValue(t('ai.adjustTitle'));
     inputRef.current?.focus();
-  }, []);
+  }, [t]);
 
+
+  // Schema 构建：确认创建
+  const handleConfirmSchema = useCallback(async (selectedTypes, selectedRels) => {
+    const result = currentSession.extractResult;
+    if (!result) return;
+
+    setIsCreatingSchema(true);
+    try {
+      const selectedEntityTypes = result.entityTypes.filter((_, i) => selectedTypes.has(i));
+      const selectedRelations = result.relations.filter((_, i) => selectedRels.has(i));
+
+      // 1. 创建 Schema
+      const schemaName = result.schemaName || `AI Schema - ${new Date().toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
+      const schemaDesc = result.message || 'AI 辅助生成的 Schema 结构';
+      const schemaResponse = await schemaApi.create({ name: schemaName, description: schemaDesc });
+      const schemaId = schemaResponse.schema.id?.toString();
+
+      // 2. 批量添加实体类型
+      for (const et of selectedEntityTypes) {
+        try {
+          await schemaApi.addEntityType(schemaId, {
+            name: et.name,
+            color: et.color || '#3b82f6',
+            properties: (et.properties || []).map(p => ({
+              name: p.name,
+              type: p.type || 'text',
+              options: p.options || []
+            }))
+          });
+        } catch (e) {
+          console.error(`添加实体类型 ${et.name} 失败:`, e);
+        }
+      }
+
+      // 3. 批量添加关系
+      for (const rel of selectedRelations) {
+        try {
+          await schemaApi.addRelation(schemaId, {
+            name: rel.name,
+            from: rel.from,
+            to: rel.to,
+            direction: rel.direction || 'directed',
+            color: '#9ca3af',
+            style: 'solid',
+            properties: []
+          });
+        } catch (e) {
+          console.error(`添加关系 ${rel.name} 失败:`, e);
+        }
+      }
+
+      // 4. 重新加载 Schema 列表并切换到新 Schema
+      await useSchemaStore.getState().loadSchemas();
+      useSchemaStore.getState().setCurrentSchema(schemaId);
+
+      // 5. 清理状态
+      setExtractResult(null);
+      toast.success(t('ai.schemaCreated', { entities: selectedEntityTypes.length, relations: selectedRelations.length }));
+    } catch (error) {
+      console.error('创建 Schema 失败:', error);
+      toast.error(t('common.saveFailed') + ': ' + error.message);
+    }
+    setIsCreatingSchema(false);
+  }, [currentSession.extractResult, setExtractResult, toast, t]);
   // 上传文档文件（PDF / DOCX / TXT）
   const handleFileUpload = useCallback(async (e) => {
     const file = e.target.files?.[0];
@@ -284,9 +353,9 @@ const AICopilot = ({ onShowLogin }) => {
       const text = await parseDocument(file);
       setCaseText(text);
       const preview = file.name.length > 20 ? file.name.slice(0, 20) + '…' : file.name;
-      toast.success(`已解析 ${preview}，${text.length.toLocaleString()} 字`);
+      toast.success(t('ai.fileParsed', { name: preview, count: text.length.toLocaleString() }));
     } catch (err) {
-      toast.error(err.message || '文件解析失败');
+      toast.error(err.message || t('common.fileParseFailed'));
     } finally {
       setIsParsingFile(false);
       // 清空 input 以便重复选择同一文件
@@ -303,7 +372,7 @@ const AICopilot = ({ onShowLogin }) => {
     if (!targetCaseId) {
       try {
         const response = await caseApi.create({
-          name: caseText.substring(0, 30) || `案例-${Date.now()}`,
+          name: caseText.substring(0, 30) || `${t('common.case')}-${Date.now()}`,
           description: caseText,
           schemaId: currentSchemaId
         });
@@ -313,7 +382,7 @@ const AICopilot = ({ onShowLogin }) => {
         // 刷新案例列表
         useCaseStore.getState().loadCases();
       } catch (error) {
-        toast.error('创建案例失败: ' + error.message);
+        toast.error(t('common.createCaseFailed') + ': ' + error.message);
         return;
       }
     }
@@ -327,7 +396,7 @@ const AICopilot = ({ onShowLogin }) => {
     setExtractionMode('chat');
     setCaseText('');
     resetExtraction();
-    toast.success('案例拆解完成，知识图谱已更新');
+    toast.success(t('ai.caseBreakdownComplete'));
   }, [loadAllCasesToGraph, resetExtraction, toast]);
 
   // 退出 Pipeline 模式
@@ -347,17 +416,17 @@ const AICopilot = ({ onShowLogin }) => {
 
   const suggestions = {
     schema_builder: [
-      "我想分析城市更新案例，需要追踪项目主体、改造方式和资金来源",
-      "帮我设计一个文创产业的Schema，包含企业、作品和人物关系",
-      "创建一个政策分析的Schema结构"
+      t('ai.suggestionSchema1'),
+      t('ai.suggestionSchema2'),
+      t('ai.suggestionSchema3')
     ],
     case_extractor: [
-      "点击上方选择案例后，粘贴案例文本进行拆解"
+      t('ai.suggestionExtract1')
     ],
     analysis_assistant: [
-      "总结所有采用'工业遗产改造'模式的项目",
-      "这个项目的资金来源与政策之间有什么逻辑关系？",
-      "比较政府主导和市场主导模式的差异"
+      t('ai.suggestionAnalysis1'),
+      t('ai.suggestionAnalysis2'),
+      t('ai.suggestionAnalysis3')
     ]
   };
 
@@ -394,7 +463,7 @@ const AICopilot = ({ onShowLogin }) => {
           <div className="flex items-center gap-2">
             {/* Agent 切换按钮 */}
             <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
-              {Object.entries(AGENT_CONFIG).map(([name, config]) => {
+              {Object.entries(agentConfig).map(([name, config]) => {
                 const AgentIcon = config.icon;
                 return (
                   <button
@@ -417,21 +486,21 @@ const AICopilot = ({ onShowLogin }) => {
                 <button
                   onClick={handleNewSession}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="新会话"
+                  title={t('ai.newSession')}
                 >
                   <MessageCirclePlus className="w-5 h-5 text-gray-500" />
                 </button>
                 <button
                   onClick={() => setShowHistory(!showHistory)}
                   className={`p-2 rounded-lg transition-colors ${showHistory ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                  title="历史记录"
+                  title={t('ai.history')}
                 >
                   <History className="w-5 h-5 text-gray-500" />
                 </button>
                 <button
                   onClick={handleOpenSettings}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="AI 配置"
+                  title={t('ai.aiConfig')}
                 >
                   <Settings className="w-5 h-5 text-gray-500" />
                 </button>
@@ -440,17 +509,17 @@ const AICopilot = ({ onShowLogin }) => {
               <button
                 onClick={() => onShowLogin?.()}
                 className="flex items-center gap-1 px-2 py-1 text-xs bg-cyan-50 text-cyan-600 rounded-lg hover:bg-cyan-100 transition-colors"
-                title="登录后配置 AI"
+                title={t('ai.loginToConfigure')}
               >
                 <Lock className="w-3 h-3" />
-                登录
+                {t('common.login')}
               </button>
             )}
             <button
               onClick={clearCurrentSession}
               className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
             >
-              清空
+              {t('ai.clear')}
             </button>
           </div>
         </div>
@@ -460,13 +529,13 @@ const AICopilot = ({ onShowLogin }) => {
           <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-amber-50 rounded-lg">
             <Lock className="w-3.5 h-3.5 text-amber-600" />
             <span className="text-xs text-amber-700">
-              请先登录以使用 AI 功能
+              {t('ai.authPrompt')}
             </span>
             <button
               onClick={() => onShowLogin?.()}
               className="ml-auto text-xs text-amber-700 hover:text-amber-800 font-medium"
             >
-              立即登录
+              {t('ai.loginNow')}
             </button>
           </div>
         )}
@@ -476,7 +545,7 @@ const AICopilot = ({ onShowLogin }) => {
           <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-green-50 rounded-lg">
             <CheckCircle className="w-3.5 h-3.5 text-green-600" />
             <span className="text-xs text-green-700">
-              已配置 AI: {configStatus.endpoint} ({configStatus.apiKeyMasked})
+              {t('ai.configured')}: {configStatus.endpoint} ({configStatus.apiKeyMasked})
             </span>
           </div>
         )}
@@ -488,12 +557,12 @@ const AICopilot = ({ onShowLogin }) => {
           {/* 当前选择状态 */}
           <div className="flex items-center gap-2 text-xs text-gray-500">
             <Database className="w-3.5 h-3.5" />
-            <span>Schema: {currentSchema?.name || '未选择'}</span>
+            <span>Schema: {currentSchema?.name || t('common.notSelected')}</span>
             {currentCaseId && (
               <>
                 <span className="text-gray-300">|</span>
                 <FileText className="w-3.5 h-3.5" />
-                <span>案例: {cases.find(c => c.id === currentCaseId)?.name || '未选择'}</span>
+                <span>{t('common.case')}: {cases.find(c => c.id === currentCaseId)?.name || t('common.notSelected')}</span>
               </>
             )}
           </div>
@@ -501,9 +570,9 @@ const AICopilot = ({ onShowLogin }) => {
           {/* 案例文本 */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-medium text-gray-500">案例文本</label>
+              <label className="text-xs font-medium text-gray-500">{t('ai.caseText')}</label>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">{caseText.length.toLocaleString()} 字</span>
+                <span className="text-xs text-gray-400">{caseText.length.toLocaleString()} {t('ai.characters')}</span>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -516,21 +585,21 @@ const AICopilot = ({ onShowLogin }) => {
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isParsingFile}
                   className="inline-flex items-center gap-1 px-2 py-0.5 text-xs text-indigo-500 bg-indigo-50 rounded hover:bg-indigo-100 transition-colors disabled:opacity-50"
-                  title="上传 PDF / DOCX / TXT 文件"
+                  title={t('ai.upload')}
                 >
                   {isParsingFile ? (
                     <Loader2 className="w-3 h-3 animate-spin" />
                   ) : (
                     <Upload className="w-3 h-3" />
                   )}
-                  上传
+                  {t('ai.upload')}
                 </button>
               </div>
             </div>
             <textarea
               value={caseText}
               onChange={(e) => setCaseText(e.target.value)}
-              placeholder="粘贴文本，或点击「上传」导入 PDF / DOCX / TXT 文件..."
+              placeholder={t('ai.caseTextPlaceholder')}
               rows={4}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
             />
@@ -539,7 +608,7 @@ const AICopilot = ({ onShowLogin }) => {
           {/* Schema 预览 */}
           {currentSchema && (
             <div className="p-3 bg-gray-50 rounded-lg">
-              <div className="text-xs font-semibold text-gray-500 mb-2">Schema 结构</div>
+              <div className="text-xs font-semibold text-gray-500 mb-2">{t('ai.schemaStructure')}</div>
               <div className="flex flex-wrap gap-1.5">
                 {(currentSchema.entityTypes || []).slice(0, 5).map(type => (
                   <div key={type.id} className="flex items-center gap-1.5 px-2 py-1 bg-white rounded border border-gray-200">
@@ -562,7 +631,7 @@ const AICopilot = ({ onShowLogin }) => {
               className={`flex-1 py-2.5 bg-gradient-to-r ${currentConfig.color} text-white rounded-lg font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
             >
               <Sparkles className="w-4 h-4" />
-              开始多轮提取
+              {t('ai.startExtraction')}
             </button>
             <button
               onClick={async () => {
@@ -575,7 +644,7 @@ const AICopilot = ({ onShowLogin }) => {
                     });
                   } catch (error) {
                     console.error('invokeAgent 调用失败:', error);
-                    toast.error('案例拆解失败: ' + (error.message || '未知错误'));
+                    toast.error(t('common.extractionFailed') + ': ' + (error.message || t('common.unknownError')));
                   }
                 }
               }}
@@ -583,7 +652,7 @@ const AICopilot = ({ onShowLogin }) => {
               className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-lg font-medium hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <Wand2 className="w-4 h-4" />
-              AI 单次拆解
+              {t('ai.singleExtract')}
             </button>
           </div>
         </div>
@@ -614,7 +683,7 @@ const AICopilot = ({ onShowLogin }) => {
                 <div className="w-full max-w-md space-y-2">
                   <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
                     <Lightbulb className="w-4 h-4" />
-                    推荐提问
+                    {t('ai.suggestions')}
                   </div>
                   {suggestions[currentAgentName]?.map((suggestion, index) => (
                     <button
@@ -695,6 +764,19 @@ const AICopilot = ({ onShowLogin }) => {
                   </div>
                 )}
 
+                {/* Schema 构建：AI 建议预览面板 */}
+                {currentAgentName === 'schema_builder' && (
+                  <div className="pt-2">
+                    <SchemaResultPanel
+                      schemaResult={currentSession.extractResult}
+                      isThinking={currentSession.isThinking}
+                      isSaving={isCreatingSchema}
+                      onCreateSchema={handleConfirmSchema}
+                      onRequestAdjustment={handleRequestAdjustment}
+                    />
+                  </div>
+                )}
+
                 <div ref={messagesEndRef} />
               </>
             )}
@@ -748,12 +830,12 @@ const AICopilot = ({ onShowLogin }) => {
             >
               <div className="flex items-center gap-2 mb-3">
                 <RefreshCw className="w-4 h-4 text-indigo-500" />
-                <span className="font-medium text-gray-700">调整提取结果</span>
+                <span className="font-medium text-gray-700">{t('ai.adjustTitle')}</span>
               </div>
               <textarea
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                placeholder="描述你想要的调整，例如：添加遗漏的实体、修改关系类型..."
+                placeholder={t('ai.adjustPlaceholder')}
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                 autoFocus
@@ -763,7 +845,7 @@ const AICopilot = ({ onShowLogin }) => {
                   onClick={() => setInputValue('')}
                   className="flex-1 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                 >
-                  取消
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={async () => {
@@ -776,7 +858,7 @@ const AICopilot = ({ onShowLogin }) => {
                         });
                       } catch (error) {
                         console.error('invokeAgent 调用失败:', error);
-                        toast.error('调整发送失败: ' + (error.message || '未知错误'));
+                        toast.error(t('common.adjustmentFailed'));
                       }
                     }
                   }}
@@ -786,12 +868,12 @@ const AICopilot = ({ onShowLogin }) => {
                   {currentSession.isThinking ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      处理中...
+                      {t('ai.processing')}
                     </>
                   ) : (
                     <>
                       <Send className="w-4 h-4" />
-                      发送调整
+                      {t('ai.sendAdjustment')}
                     </>
                   )}
                 </button>

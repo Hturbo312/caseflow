@@ -88,6 +88,13 @@ export const useAuthStore = create((set) => ({
 
   // 清除错误
   clearError: () => set({ error: null }),
+
+  // 语言设置
+  locale: localStorage.getItem('caseflow_locale') || 'zh',
+  setLocale: (locale) => {
+    localStorage.setItem('caseflow_locale', locale);
+    set({ locale });
+  },
 }));
 
 // 默认 Schema 数据
@@ -215,7 +222,7 @@ export const useSchemaStore = create((set, get) => ({
 
         set({
           schemas: fullSchemas,
-          currentSchemaId: fullSchemas[0]?.id?.toString() || null,
+          currentSchemaId: (fullSchemas.find(s => s.id === '3') || fullSchemas[0])?.id?.toString() || null,
           isLoading: false
         });
       } else {
@@ -750,9 +757,10 @@ export const useGraphStore = create((set, get) => ({
   allLinks: [],  // 全量链接缓存
 
   // 视图状态
-  viewMode: 'full', // 'full' 全量模式 | 'focused' 聚焦模式
-  focusDepth: 1,    // 聚焦深度 1 或 2
-  focusCaseId: null, // 聚焦的案例 ID
+  focusMode: 'full',    // 'full' 全量 | 'case' 案例聚焦 | 'node' 节点聚焦
+  focusDepth: 1,        // 聚焦深度 1 或 2
+  focusCaseId: null,    // 聚焦的案例 ID
+  focusNodeId: null,    // 聚焦的节点 ID
 
   // 交互状态
   highlightedNodes: [],
@@ -766,23 +774,29 @@ export const useGraphStore = create((set, get) => ({
   setSelectedLink: (link) => set({ selectedLink: link }),
   setFilter: (filter) => set((state) => ({ filter: { ...state.filter, ...filter } })),
 
-  // 设置视图模式
-  setViewMode: (mode) => {
-    set({ viewMode: mode });
+  // 设置聚焦模式
+  setFocusMode: (mode) => {
+    set({ focusMode: mode, focusCaseId: mode === 'full' ? null : get().focusCaseId, focusNodeId: mode === 'full' ? null : get().focusNodeId });
     get().applyViewFilter();
   },
 
   // 设置聚焦深度
   setFocusDepth: (depth) => {
     set({ focusDepth: depth });
-    if (get().viewMode === 'focused') {
+    if (get().focusMode === 'case') {
       get().applyViewFilter();
     }
   },
 
   // 设置聚焦案例
   setFocusCase: (caseId) => {
-    set({ focusCaseId: caseId, viewMode: caseId ? 'focused' : 'full' });
+    set({ focusCaseId: caseId, focusNodeId: null, focusMode: caseId ? 'case' : 'full' });
+    get().applyViewFilter();
+  },
+
+  // 设置聚焦节点
+  setFocusNode: (node) => {
+    set({ focusNodeId: node?.id || null, focusCaseId: null, focusMode: node ? 'node' : 'full' });
     get().applyViewFilter();
   },
 
@@ -846,45 +860,59 @@ export const useGraphStore = create((set, get) => ({
       allLinks.push(...links);
     });
 
-    set({ allNodes, allLinks, nodes: allNodes, links: allLinks, viewMode: 'full', focusCaseId: null });
+    set({ allNodes, allLinks, nodes: allNodes, links: allLinks, focusMode: 'full', focusCaseId: null, focusNodeId: null });
   },
 
-  // 应用视图过滤器
+  // 应用视图过滤器（统一处理 full / case / node 三种模式）
   applyViewFilter: () => {
-    const { allNodes, allLinks, viewMode, focusCaseId, focusDepth } = get();
+    const { allNodes, allLinks, focusMode, focusCaseId, focusDepth, focusNodeId } = get();
 
-    if (viewMode === 'full' || !focusCaseId) {
-      // 全量模式：显示所有节点
-      set({ nodes: allNodes, links: allLinks });
+    // 全量模式：显示所有节点，赋予随机初始位置，links 规范化防止 d3 对象引用污染
+    if (focusMode === 'full' || !focusCaseId) {
+      const resetNodes = allNodes.map(n => ({ ...n, x: Math.random() * 400 + 200, y: Math.random() * 300 + 150 }));
+      const normalizedLinks = allLinks.map(l => ({
+        ...l,
+        source: typeof l.source === 'object' ? String(l.source.id) : String(l.source),
+        target: typeof l.target === 'object' ? String(l.target.id) : String(l.target),
+      }));
+      set({ nodes: resetNodes, links: normalizedLinks });
       return;
     }
-
-    // 聚焦模式：查找案例相关节点和邻居
-    const focusCase = useCaseStore.getState().cases.find(c => c.id === focusCaseId);
-    if (!focusCase) {
-      set({ nodes: allNodes, links: allLinks });
-      return;
-    }
-
-    // 获取该案例的所有节点 ID
-    const caseNodeIds = new Set(focusCase.entities?.map(e => e.id) || []);
 
     // 构建邻接表
     const adjacencyList = {};
     allLinks.forEach(link => {
       const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
       const targetId = typeof link.target === 'object' ? link.target.id : link.target;
-
       if (!adjacencyList[sourceId]) adjacencyList[sourceId] = [];
       if (!adjacencyList[targetId]) adjacencyList[targetId] = [];
-
       adjacencyList[sourceId].push(targetId);
       adjacencyList[targetId].push(sourceId);
     });
 
+    // 确定种子节点
+    let seedIds;
+    if (focusMode === 'case') {
+      const focusCase = useCaseStore.getState().cases.find(c => c.id === focusCaseId);
+      if (!focusCase) {
+        const resetNodes = allNodes.map(n => ({ ...n, x: Math.random() * 400 + 200, y: Math.random() * 300 + 150 }));
+        const normalizedLinks = allLinks.map(l => ({
+          ...l,
+          source: typeof l.source === 'object' ? String(l.source.id) : String(l.source),
+          target: typeof l.target === 'object' ? String(l.target.id) : String(l.target),
+        }));
+        set({ nodes: resetNodes, links: normalizedLinks });
+        return;
+      }
+      seedIds = new Set(focusCase.entities?.map(e => e.id) || []);
+    } else {
+      // node 模式
+      seedIds = new Set([focusNodeId]);
+    }
+
     // BFS 扩展邻居节点
-    const visibleNodeIds = new Set(caseNodeIds);
-    let frontier = [...caseNodeIds];
+    const visibleNodeIds = new Set(seedIds);
+    let frontier = [...seedIds];
 
     for (let d = 0; d < focusDepth; d++) {
       const nextFrontier = [];
@@ -900,13 +928,23 @@ export const useGraphStore = create((set, get) => ({
       frontier = nextFrontier;
     }
 
-    // 过滤节点和链接
-    const filteredNodes = allNodes.filter(n => visibleNodeIds.has(n.id));
+    // 过滤节点和链接，赋予圆形初始位置
+    const filteredArr = allNodes.filter(n => visibleNodeIds.has(n.id));
+    const cx = 400, cy = 300, r = Math.min(200, visibleNodeIds.size * 15);
+    const filteredNodes = filteredArr.map((n, i) => {
+      const angle = (2 * Math.PI * i) / (filteredArr.length || 1);
+      return { ...n, x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r };
+    });
     const filteredLinks = allLinks.filter(link => {
       const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
       const targetId = typeof link.target === 'object' ? link.target.id : link.target;
       return visibleNodeIds.has(sourceId) && visibleNodeIds.has(targetId);
+    }).map(link => {
+      const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+      const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+      return { ...link, source: String(sourceId), target: String(targetId) };
     });
+
 
     set({ nodes: filteredNodes, links: filteredLinks });
   },
@@ -923,10 +961,12 @@ export const useGraphStore = create((set, get) => ({
     get().loadAllCasesToGraph();
   },
 
-  addNodeToGraph: (entity) => set((state) => ({
-    allNodes: [...state.allNodes, { id: entity.id, name: entity.name, type: entity.type || entity.entityType, properties: entity.properties }],
-    nodes: [...state.nodes, { id: entity.id, name: entity.name, type: entity.type || entity.entityType, properties: entity.properties, x: Math.random() * 400 + 100, y: Math.random() * 300 + 100 }]
-  })),
+  addNodeToGraph: (entity) => set((state) => {
+    const nodeData = { id: entity.id, name: entity.name, type: entity.type || entity.entityType, properties: entity.properties, x: Math.random() * 400 + 100, y: Math.random() * 300 + 100 };
+    return ({
+    allNodes: [...state.allNodes, nodeData],
+    nodes: [...state.nodes, nodeData]
+  })}),
   addLinkToGraph: (relation) => set((state) => ({
     allLinks: [...state.allLinks, { id: relation.id, source: relation.source || relation.sourceId, target: relation.target || relation.targetId, name: relation.name }],
     links: [...state.links, { id: relation.id, source: relation.source || relation.sourceId, target: relation.target || relation.targetId, name: relation.name }]
@@ -1171,7 +1211,7 @@ export const useAgentStore = create((set, get) => ({
                 : msg
             ),
             isThinking: false,
-            extractResult: currentAgentName === 'case_extractor' ? output : null
+            extractResult: (currentAgentName === 'case_extractor' || currentAgentName === 'schema_builder') ? output : null
           }
         }
       });

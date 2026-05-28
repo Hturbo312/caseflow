@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useCaseStore, useSchemaStore, useGraphStore } from '@store';
 import { generateEntityId, generateRelationId } from '@utils';
+import { useI18n } from '../../../../i18n';
 import {
   CASE_DETAIL_TAB_CONFIG,
   DEFAULT_CASE_FORM_FULL,
@@ -25,6 +26,7 @@ import {
 } from './utils';
 
 const CaseDetail = () => {
+  const { t } = useI18n();
   const { getCurrentSchema, currentSchemaId } = useSchemaStore();
   const {
     cases,
@@ -145,8 +147,8 @@ const CaseDetail = () => {
               <Wand2 className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-bold">案例管理</h2>
-              <p className="text-sm text-gray-500">查看和编辑案例的实体与关系</p>
+              <h2 className="text-lg font-bold">{t('case.title')}</h2>
+              <p className="text-sm text-gray-500">{t('case.entityList')} / {t('case.linkList')}</p>
             </div>
           </div>
           <button
@@ -154,7 +156,7 @@ const CaseDetail = () => {
             className="px-4 py-2 bg-indigo-500 text-white rounded-lg text-sm font-medium hover:bg-indigo-600 transition-colors flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            新建案例
+            {t('case.new')}
           </button>
         </div>
 
@@ -198,11 +200,11 @@ const CaseDetail = () => {
             })}
 
             <div className="mt-auto pt-3 border-t border-gray-200">
-              <div className="text-xs text-gray-500 mb-2">当前 Schema</div>
+              <div className="text-xs text-gray-500 mb-2">{t('case.currentSchema')}</div>
               <div className="p-2 bg-blue-50 rounded-lg">
                 <div className="text-xs font-medium text-blue-700">{currentSchema?.name}</div>
                 <div className="text-xs text-blue-500 mt-1">
-                  {entityTypes.length} 实体类型
+                  {entityTypes.length} {t('case.entityTypes')}
                 </div>
               </div>
             </div>
@@ -221,7 +223,7 @@ const CaseDetail = () => {
                   <div>
                     <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                       <Building className="w-4 h-4" />
-                      实体列表 ({entities.length})
+                      {t('case.entityList')} ({entities.length})
                     </h3>
                     <div className="space-y-2">
                       {entities.length > 0 ? entities.map(entity => (
@@ -266,7 +268,7 @@ const CaseDetail = () => {
                       )) : (
                         <div className="text-center py-8 text-gray-400">
                           <Building className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                          <p className="text-sm">暂无实体</p>
+                          <p className="text-sm">{t('ai.noEntities')}</p>
                         </div>
                       )}
                     </div>
@@ -275,7 +277,7 @@ const CaseDetail = () => {
                   <div>
                     <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                       <Link2 className="w-4 h-4" />
-                      关系列表 ({relations.length})
+                      {t('case.linkList')} ({relations.length})
                     </h3>
                     <div className="space-y-2">
                       {relations.length > 0 ? relations.map(rel => {
@@ -306,7 +308,7 @@ const CaseDetail = () => {
                       }) : (
                         <div className="text-center py-8 text-gray-400">
                           <Link2 className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                          <p className="text-sm">暂无关系</p>
+                          <p className="text-sm">{t('ai.noRelations')}</p>
                         </div>
                       )}
                     </div>
@@ -323,11 +325,11 @@ const CaseDetail = () => {
                   className="space-y-6"
                 >
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3">添加实体</h3>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3">{t('case.addEntity')}</h3>
                     <div className="flex gap-2">
                       <input
                         type="text"
-                        placeholder="实体名称"
+                        placeholder={t('entity.name')}
                         value={newEntity.name}
                         onChange={(e) => setNewEntity({ ...newEntity, name: e.target.value })}
                         className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -337,7 +339,7 @@ const CaseDetail = () => {
                         onChange={(e) => setNewEntity({ ...newEntity, entityType: e.target.value })}
                         className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       >
-                        <option value="">选择类型</option>
+                        <option value="">{t('entity.selectType')}</option>
                         {entityTypes.map(e => (
                           <option key={e.id} value={e.name}>{e.name}</option>
                         ))}
@@ -352,21 +354,21 @@ const CaseDetail = () => {
                   </div>
 
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3">添加关系</h3>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3">{t('case.addRelation')}</h3>
                     <div className="flex gap-2 flex-wrap">
                       <select
                         value={newRelation.sourceId}
                         onChange={(e) => setNewRelation({ ...newRelation, sourceId: e.target.value })}
                         className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       >
-                        <option value="">源实体</option>
+                        <option value="">{t('relation.source')}</option>
                         {entities.map(e => (
                           <option key={e.id} value={e.id}>{e.name}</option>
                         ))}
                       </select>
                       <input
                         type="text"
-                        placeholder="关系名称"
+                        placeholder={t('relation.name')}
                         value={newRelation.name}
                         onChange={(e) => setNewRelation({ ...newRelation, name: e.target.value })}
                         className="w-32 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -376,7 +378,7 @@ const CaseDetail = () => {
                         onChange={(e) => setNewRelation({ ...newRelation, targetId: e.target.value })}
                         className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       >
-                        <option value="">目标实体</option>
+                        <option value="">{t('relation.target')}</option>
                         {entities.map(e => (
                           <option key={e.id} value={e.id}>{e.name}</option>
                         ))}
@@ -391,19 +393,19 @@ const CaseDetail = () => {
                   </div>
 
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3">案例信息</h3>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3">{t('case.info')}</h3>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="p-3 bg-gray-50 rounded-lg">
                         <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
-                          <MapPin className="w-3 h-3" /> 位置
+                          <MapPin className="w-3 h-3" /> {t('case.location')}
                         </div>
-                        <div className="text-sm font-medium">{currentCase.location || '未指定'}</div>
+                        <div className="text-sm font-medium">{currentCase.location || t('case.unspecified')}</div>
                       </div>
                       <div className="p-3 bg-gray-50 rounded-lg">
                         <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
-                          <Calendar className="w-3 h-3" /> 年份
+                          <Calendar className="w-3 h-3" /> {t('case.year')}
                         </div>
-                        <div className="text-sm font-medium">{currentCase.year || '未指定'}</div>
+                        <div className="text-sm font-medium">{currentCase.year || t('case.unspecified')}</div>
                       </div>
                     </div>
                     {currentCase.tags?.length > 0 && (
@@ -425,8 +427,8 @@ const CaseDetail = () => {
         <div className="flex-1 flex items-center justify-center text-gray-400">
           <div className="text-center">
             <Wand2 className="w-16 h-16 mx-auto mb-4 opacity-50" />
-            <p className="text-sm mb-2">请选择或创建一个案例</p>
-            <p className="text-xs text-gray-300">在右侧 AI 助手中进行案例拆解</p>
+            <p className="text-sm mb-2">{t('case.noSummary')}</p>
+            <p className="text-xs text-gray-300">{t('tab.ai')}</p>
           </div>
         </div>
       )}
@@ -448,35 +450,35 @@ const CaseDetail = () => {
               className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold">新建案例</h3>
+                <h3 className="text-lg font-bold">{t('case.new')}</h3>
                 <button onClick={() => setEditingCase(false)} className="p-2 hover:bg-gray-100 rounded-lg">
                   <X className="w-4 h-4" />
                 </button>
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">案例名称 *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('case.name')} *</label>
                   <input
                     type="text"
                     value={caseFormData.name}
                     onChange={(e) => setCaseFormData({ ...caseFormData, name: e.target.value })}
-                    placeholder="例如：上海新天地改造项目"
+                    placeholder={t('case.name')}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">位置</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('case.location')}</label>
                     <input
                       type="text"
                       value={caseFormData.location}
                       onChange={(e) => setCaseFormData({ ...caseFormData, location: e.target.value })}
-                      placeholder="上海市黄浦区"
+                      placeholder={t('case.location')}
                       className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">年份</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('case.year')}</label>
                     <input
                       type="text"
                       value={caseFormData.year}
@@ -487,12 +489,12 @@ const CaseDetail = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">描述文本</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('case.description')}</label>
                   <textarea
                     value={caseFormData.description}
                     onChange={(e) => setCaseFormData({ ...caseFormData, description: e.target.value })}
                     rows={4}
-                    placeholder="粘贴案例描述文本，可在拆解时使用..."
+                    placeholder={t('case.description')}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                   />
                 </div>
@@ -502,7 +504,7 @@ const CaseDetail = () => {
                   className="w-full py-2.5 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <CheckCircle className="w-4 h-4" />
-                  创建案例
+                  {t('case.create')}
                 </button>
               </div>
             </motion.div>

@@ -1,8 +1,10 @@
 import React, { memo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X, ChevronDown, ChevronUp, FileText } from 'lucide-react';
+import { useI18n } from '../../../../../i18n';
 
 const EntityCard = memo(({ card, entityType, color, onApprove, onSkip }) => {
+  const { t } = useI18n();
   const [expanded, setExpanded] = useState(false);
 
   if (!card || !card.name) return null;
@@ -14,8 +16,8 @@ const EntityCard = memo(({ card, entityType, color, onApprove, onSkip }) => {
   };
 
   const statusBadge = {
-    approved: <span className="text-xs text-green-600 font-medium flex items-center gap-1"><Check size={12} />已确认</span>,
-    skipped: <span className="text-xs text-gray-400 flex items-center gap-1"><X size={12} />已跳过</span>,
+    approved: <span className="text-xs text-green-600 font-medium flex items-center gap-1"><Check size={12} />{t('pipeline.approved')}</span>,
+    skipped: <span className="text-xs text-gray-400 flex items-center gap-1"><X size={12} />{t('pipeline.skipped')}</span>,
     pending: null,
   };
 
@@ -49,14 +51,14 @@ const EntityCard = memo(({ card, entityType, color, onApprove, onSkip }) => {
               <button
                 onClick={() => onSkip(card.id)}
                 className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-gray-400 hover:text-red-500"
-                title="跳过"
+                title={t('pipeline.skip')}
               >
                 <X size={16} />
               </button>
               <button
                 onClick={() => onApprove(card.id)}
                 className="p-1.5 hover:bg-green-50 rounded-lg transition-colors text-gray-400 hover:text-green-500"
-                title="确认"
+                title={t('pipeline.confirm')}
               >
                 <Check size={16} />
               </button>
@@ -86,7 +88,7 @@ const EntityCard = memo(({ card, entityType, color, onApprove, onSkip }) => {
             className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
           >
             <FileText size={12} />
-            查看原文依据
+            {t('pipeline.viewEvidence')}
             {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
           </button>
           <AnimatePresence>
