@@ -200,8 +200,49 @@ router.post('/:caseId/save-relation', authMiddleware, async (req, res) => {
 router.post('/:caseId/finalize', authMiddleware, async (req, res) => {
   try {
     const { caseId } = req.params;
-    const result = await pipeline.finalizeCase(caseId);
+    const { relations = [], autoEmbed = true } = req.body;
+    const result = await pipeline.finalizeCase(caseId, { relations, autoEmbed });
     res.json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 批量保存关系（供前端在 finalize 前保存审核通过的关系）
+router.post('/:caseId/batch-save-relations', authMiddleware, async (req, res) => {
+  try {
+    const { caseId } = req.params;
+    const { relations } = req.body;
+    if (!relations || !Array.isArray(relations)) {
+      return res.status(400).json({ error: 'relations 数组是必需的' });
+    }
+
+    const saved = [];
+    const skipped = [];
+    for (const rel of relations) {
+      // 通过实体名称查找 ID
+      const sourceResult = await pool.query(
+        'SELECT id FROM case_entities WHERE case_id = $1 AND name = $2',
+        [caseId, rel.sourceName]
+      );
+      const targetResult = await pool.query(
+        'SELECT id FROM case_entities WHERE case_id = $1 AND name = $2',
+        [caseId, rel.targetName]
+      );
+      const sourceId = sourceResult.rows[0]?.id;
+      const targetId = targetResult.rows[0]?.id;
+
+      if (sourceId && targetId) {
+        const result = await pool.query(
+          'INSERT INTO case_relations (case_id, source_entity_id, target_entity_id, relation_type) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING RETURNING *',
+          [caseId, sourceId, targetId, rel.name]
+        );
+        if (result.rows.length > 0) saved.push(result.rows[0]);
+      } else {
+        skipped.push({ sourceName: rel.sourceName, targetName: rel.targetName, reason: '实体未找到' });
+      }
+    }
+    res.json({ success: true, saved: saved.length, skipped, relations: saved });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

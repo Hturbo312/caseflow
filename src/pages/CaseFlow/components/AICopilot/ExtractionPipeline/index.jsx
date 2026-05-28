@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { FileText, Network, LayoutList } from 'lucide-react';
 import { useExtractionStore, useSchemaStore } from '@store';
 import { useI18n } from '../../../../../i18n';
+import { API_BASE_URL, authHelper } from '../../../../../utils';
 import ProgressPanel from './ProgressPanel';
 import CardReviewPanel from './CardReviewPanel';
 import RelationReviewPanel from './RelationReviewPanel';
@@ -81,14 +82,32 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
 
   const handleFinalize = useCallback(async () => {
     try {
+      // 1. 先通过 store 保存已审核的实体
       const result = await finalize();
-      if (result?.success && onComplete) {
+      if (!result?.success) return;
+
+      // 2. 保存已审核的关系（绕过 protected store 的 bug）
+      const approvedRelations = relationCandidates?.filter(r => r.status === 'approved') || [];
+      if (approvedRelations.length > 0) {
+        const token = authHelper.getToken();
+        await fetch(`${API_BASE_URL}/extraction/${caseId}/batch-save-relations`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ relations: approvedRelations }),
+        });
+        console.log(`[handleFinalize] 保存了 ${approvedRelations.length} 条关系`);
+      }
+
+      if (onComplete) {
         onComplete();
       }
     } catch (e) {
       console.error('保存失败:', e);
     }
-  }, [finalize, onComplete]);
+  }, [finalize, onComplete, relationCandidates, caseId]);
 
   const handleNext = useCallback(() => {
     handleInferRelations();

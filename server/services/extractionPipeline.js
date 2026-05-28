@@ -577,7 +577,9 @@ export async function inferRelations(caseId, schemaId, candidates) {
 // ============================================================
 // Step 6: 保存入库
 // ============================================================
-export async function finalizeCase(caseId) {
+export async function finalizeCase(caseId, options = {}) {
+  const { relations = [], autoEmbed = false } = options;
+
   // 获取 case_memory
   const memResult = await pool.query('SELECT extraction_progress FROM case_memory WHERE case_id = $1', [caseId]);
   const progress = memResult.rows[0]?.extraction_progress || {};
@@ -585,6 +587,35 @@ export async function finalizeCase(caseId) {
   // 获取 schema_id
   const caseResult = await pool.query('SELECT schema_id FROM cases WHERE id = $1', [caseId]);
   const schemaId = caseResult.rows[0]?.schema_id;
+
+  // 保存审核通过的关系候选
+  let savedRelations = 0;
+  if (relations.length > 0) {
+    const approvedRelations = relations.filter(r => r.status === 'approved');
+    for (const rel of approvedRelations) {
+      // 通过实体名称查找 ID
+      const sourceResult = await pool.query(
+        'SELECT id FROM case_entities WHERE case_id = $1 AND name = $2',
+        [caseId, rel.sourceName]
+      );
+      const targetResult = await pool.query(
+        'SELECT id FROM case_entities WHERE case_id = $1 AND name = $2',
+        [caseId, rel.targetName]
+      );
+      const sourceId = sourceResult.rows[0]?.id;
+      const targetId = targetResult.rows[0]?.id;
+
+      if (sourceId && targetId) {
+        await pool.query(
+          'INSERT INTO case_relations (case_id, source_entity_id, target_entity_id, relation_type) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING',
+          [caseId, sourceId, targetId, rel.name]
+        );
+        savedRelations++;
+      } else {
+        console.warn(`[finalizeCase] 关系实体未找到: ${rel.sourceName} -> ${rel.targetName}`);
+      }
+    }
+  }
 
   // 更新 case_memory
   await pool.query(
@@ -596,7 +627,29 @@ export async function finalizeCase(caseId) {
     ]
   );
 
-  return { success: true, schema_id: schemaId };
+  // 自动为本案实体生成嵌入（异步，不阻塞响应）
+  if (autoEmbed) {
+    triggerAutoEmbed(caseId).catch(e => console.error('[finalizeCase] 自动嵌入失败:', e));
+  }
+
+  return { success: true, schema_id: schemaId, saved_relations: savedRelations };
+}
+
+// 异步触发嵌入生成
+async function triggerAutoEmbed(caseId) {
+  // 通过内部 HTTP 调用 RAG 嵌入端点
+  const PORT = process.env.PORT || 3000;
+  const response = await fetch(`http://localhost:${PORT}/api/rag/embed-entities`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ caseId, force: false }),
+  });
+  if (response.ok) {
+    const data = await response.json();
+    console.log(`[finalizeCase] 自动嵌入完成: ${data.message || data.count || 0} 个实体`);
+  } else {
+    console.warn(`[finalizeCase] 自动嵌入请求失败: HTTP ${response.status}`);
+  }
 }
 
 // ============================================================
