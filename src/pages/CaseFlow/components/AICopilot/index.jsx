@@ -482,6 +482,14 @@ const AICopilot = ({ onShowLogin }) => {
                 );
               })}
             </div>
+            {/* 历史记录按钮：未登录也可见（展示 demo 数据） */}
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className={`p-2 rounded-lg transition-colors ${showHistory ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
+              title={t('ai.history')}
+            >
+              <History className="w-5 h-5 text-gray-500" />
+            </button>
             {isAuthenticated ? (
               <>
                 <button
@@ -490,13 +498,6 @@ const AICopilot = ({ onShowLogin }) => {
                   title={t('ai.newSession')}
                 >
                   <MessageCirclePlus className="w-5 h-5 text-gray-500" />
-                </button>
-                <button
-                  onClick={() => setShowHistory(!showHistory)}
-                  className={`p-2 rounded-lg transition-colors ${showHistory ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                  title={t('ai.history')}
-                >
-                  <History className="w-5 h-5 text-gray-500" />
                 </button>
                 <button
                   onClick={handleOpenSettings}

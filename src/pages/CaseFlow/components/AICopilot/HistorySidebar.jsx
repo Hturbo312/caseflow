@@ -18,7 +18,7 @@ const HistorySidebar = memo(({
   onClose
 }) => {
   const { t } = useI18n();
-  if (!showHistory || !isAuthenticated) return null;
+  if (!showHistory) return null;
 
   return (
     <motion.div
@@ -60,29 +60,33 @@ const HistorySidebar = memo(({
                     {formatDate(session.updated_at || session.created_at, t)}
                   </div>
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteSession(session.session_id);
-                  }}
-                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 rounded transition-opacity"
-                >
-                  <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                </button>
+                {isAuthenticated && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteSession(session.session_id);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 rounded transition-opacity"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                  </button>
+                )}
               </div>
             </div>
           ))
         )}
       </div>
-      <div className="p-3 border-t border-gray-200">
-        <button
-          onClick={onNewSession}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-white rounded-lg hover:bg-gray-100 transition-colors text-sm text-gray-600"
-        >
-          <MessageCirclePlus className="w-4 h-4" />
-          {t('ai.newSessionBtn')}
-        </button>
-      </div>
+      {isAuthenticated && (
+        <div className="p-3 border-t border-gray-200">
+          <button
+            onClick={onNewSession}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-white rounded-lg hover:bg-gray-100 transition-colors text-sm text-gray-600"
+          >
+            <MessageCirclePlus className="w-4 h-4" />
+            {t('ai.newSessionBtn')}
+          </button>
+        </div>
+      )}
     </motion.div>
   );
 });
