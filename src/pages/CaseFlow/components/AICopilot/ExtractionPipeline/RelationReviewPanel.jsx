@@ -54,10 +54,12 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
 
   const handleConfirmAll = () => {
     relations.filter(r => r.status === 'pending').forEach(r => onUpdateStatus(r.id, 'approved'));
+    setSelectedIds(new Set()); // 清空选中状态，避免残留指示器
   };
 
   const handleSkipAll = () => {
     relations.filter(r => r.status === 'pending').forEach(r => onUpdateStatus(r.id, 'skipped'));
+    setSelectedIds(new Set()); // 清空选中状态，避免残留指示器
   };
 
   const handleBatchApprove = () => {
