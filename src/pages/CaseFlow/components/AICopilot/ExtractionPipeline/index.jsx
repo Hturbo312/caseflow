@@ -30,7 +30,7 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
   const { t } = useI18n();
   const {
     phase, phaseLabel, isProcessing, plan, candidates, relationCandidates,
-    segments, currentSchemaId, setContext, parseText, generatePlan,
+    segments, currentSchemaId, setContext, setPhase, parseText, generatePlan,
     extractType, extractAllParallel, updateCardStatus, batchUpdateCardStatus, updateRelationStatus,
     inferRelations, finalize, loadSegments, loadProgress,
   } = useExtractionStore();
@@ -108,14 +108,29 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
         if (!confirmed) return;
       }
 
-      // 提前获取 token，所有请求复用（避免重复调用 authHelper.getToken()）
+      setPhase('finalizing', t('ai.saving'));
       const token = authHelper.getToken();
 
-      // 1. 先通过 store 保存已审核的实体
-      const result = await finalize();
-      if (!result?.success) return;
+      // 1. 保存已审核的实体（直接调用 API，不经过 store 的 finalize）
+      const approvedEntities = Object.values(candidates).flat().filter(c => c.status === 'approved');
+      if (approvedEntities.length > 0) {
+        const entRes = await fetch(`${API_BASE_URL}/extraction/${caseId}/batch-save-entities`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ entities: approvedEntities, autoEmbed: false }),
+        });
+        if (!entRes.ok) {
+          console.error(`[handleFinalize] 实体保存失败: ${entRes.status}`);
+          setPhase('error', t('common.saveFailed'));
+          return;
+        }
+        console.log(`[handleFinalize] 保存了 ${approvedEntities.length} 个实体`);
+      }
 
-      // 2. 保存已审核的关系（autoEmbed=false，因为后续 finalize 会统一触发）
+      // 2. 保存已审核的关系（在标记完成之前保存，确保数据完整性）
       const approvedRelations = relationCandidates?.filter(r => r.status === 'approved') || [];
       if (approvedRelations.length > 0) {
         const relRes = await fetch(`${API_BASE_URL}/extraction/${caseId}/batch-save-relations`, {
@@ -136,24 +151,25 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
           if (relData.saved < approvedRelations.length) {
             console.error(`[handleFinalize] 关系保存不完整: 已审核 ${approvedRelations.length}, 实际保存 ${relData.saved}`);
             alert(t('ai.relationSaveIncomplete', { approved: approvedRelations.length, saved: relData.saved }));
-            return; // 不继续标记为完成
+            setPhase('error', t('common.saveFailed'));
+            return;
           }
         } else {
           console.error(`[handleFinalize] 关系保存失败: ${relRes.status}`);
           alert(t('ai.relationSaveFailed'));
-          return; // 不继续标记为完成
+          setPhase('error', t('common.saveFailed'));
+          return;
         }
       }
 
-      // 3. 调用后端 finalize 接口：标记 case_memory 为 completed + 触发 autoEmbed
-      // 复用上方已获取的 token
+      // 3. 调用后端 finalize：标记 case_memory 为 completed + 触发 autoEmbed
       const finalizeRes = await fetch(`${API_BASE_URL}/extraction/${caseId}/finalize`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ relations: [], autoEmbed: true }),
+        body: JSON.stringify({ autoEmbed: true }),
       });
       if (finalizeRes.ok) {
         const finalizeData = await finalizeRes.json();
@@ -162,13 +178,15 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
         console.warn(`[handleFinalize] 后端 finalize 失败: ${finalizeRes.status}`);
       }
 
+      setPhase('completed', t('ai.caseBreakdownComplete'));
       if (onComplete) {
         onComplete();
       }
     } catch (e) {
       console.error('保存失败:', e);
+      setPhase('error', `保存失败: ${e.message}`);
     }
-  }, [finalize, onComplete, relationCandidates, caseId]);
+  }, [candidates, finalize, onComplete, relationCandidates, caseId, setPhase, t]);
 
   const handleNext = useCallback(() => {
     handleInferRelations();

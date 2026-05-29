@@ -21,6 +21,9 @@ export const useAIConfig = (onShowLogin) => {
     useTemperature: true,
     useMaxTokens: true,
     apiKeyMasked: '',
+    embeddingConfigured: false,
+    embeddingEndpoint: '',
+    embeddingModel: '',
   });
 
   // Loading states
@@ -36,6 +39,8 @@ export const useAIConfig = (onShowLogin) => {
     maxTokens: 4096,
     useTemperature: true,
     useMaxTokens: true,
+    embeddingEndpoint: '',
+    embeddingModel: 'text-embedding-v3',
   });
 
   // UI state
@@ -70,6 +75,8 @@ export const useAIConfig = (onShowLogin) => {
       maxTokens: configStatus.maxTokens || 4096,
       useTemperature: configStatus.useTemperature !== false,
       useMaxTokens: configStatus.useMaxTokens !== false,
+      embeddingEndpoint: configStatus.embeddingEndpoint || '',
+      embeddingModel: configStatus.embeddingModel || 'text-embedding-v3',
     });
     setShowApiKey(false);
     setShowSettings(true);
@@ -92,6 +99,8 @@ export const useAIConfig = (onShowLogin) => {
         maxTokens: localConfig.maxTokens,
         useTemperature: localConfig.useTemperature,
         useMaxTokens: localConfig.useMaxTokens,
+        embeddingEndpoint: localConfig.embeddingEndpoint,
+        embeddingModel: localConfig.embeddingModel,
       };
 
       if (localConfig.apiKey.trim()) {
@@ -107,6 +116,9 @@ export const useAIConfig = (onShowLogin) => {
           endpoint: localConfig.endpoint,
           model: localConfig.model,
           apiKeyMasked: result.apiKeyMasked || prev.apiKeyMasked,
+          embeddingConfigured: result.embeddingConfigured || !!localConfig.embeddingEndpoint,
+          embeddingEndpoint: localConfig.embeddingEndpoint,
+          embeddingModel: localConfig.embeddingModel,
         }));
         setShowSettings(false);
       }

@@ -66,6 +66,9 @@ const SettingsModal = memo(({
               <p>Endpoint: {configStatus.endpoint}</p>
               <p>API Key: {configStatus.apiKeyMasked}</p>
               {configStatus.model && <p>Model: {configStatus.model}</p>}
+              {configStatus.embeddingConfigured && configStatus.embeddingEndpoint && (
+                <p>Embedding: {configStatus.embeddingEndpoint} ({configStatus.embeddingModel})</p>
+              )}
             </div>
           </div>
         )}
@@ -122,6 +125,38 @@ const SettingsModal = memo(({
               onChange={(e) => onSetLocalConfig({ ...localConfig, model: e.target.value })}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
             />
+          </div>
+
+          {/* Embedding 配置（可选） */}
+          <div className="pt-2 border-t border-gray-100">
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Embedding 配置</h4>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('ai.embeddingEndpoint')}
+                </label>
+                <input
+                  type="text"
+                  value={localConfig.embeddingEndpoint || ''}
+                  onChange={(e) => onSetLocalConfig({ ...localConfig, embeddingEndpoint: e.target.value })}
+                  placeholder="https://api.openai.com/v1/embeddings"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('ai.embeddingModel')}
+                </label>
+                <input
+                  type="text"
+                  value={localConfig.embeddingModel || ''}
+                  onChange={(e) => onSetLocalConfig({ ...localConfig, embeddingModel: e.target.value })}
+                  placeholder="text-embedding-v3"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+                />
+              </div>
+              <p className="text-xs text-gray-400">{t('ai.embeddingHint')}</p>
+            </div>
           </div>
 
           <div className="flex gap-2 pt-2">

@@ -439,6 +439,9 @@ export const zh = {
   'ai.apiEndpoint': 'API Endpoint',
   'ai.apiKey': 'API Key',
   'ai.model': 'Model',
+  'ai.embeddingEndpoint': 'Embedding Endpoint',
+  'ai.embeddingModel': 'Embedding Model',
+  'ai.embeddingHint': '留空则使用默认 Embedding 服务',
   'ai.saveConfig': '保存配置',
   'ai.delete': '删除',
   // Pipeline phases & progress
@@ -938,6 +941,9 @@ export const en = {
   'ai.apiEndpoint': 'API Endpoint',
   'ai.apiKey': 'API Key',
   'ai.model': 'Model',
+  'ai.embeddingEndpoint': 'Embedding Endpoint',
+  'ai.embeddingModel': 'Embedding Model',
+  'ai.embeddingHint': 'Leave blank to use default embedding service',
   'ai.saveConfig': 'Save Config',
   'ai.delete': 'Delete',
   // Pipeline phases & progress
