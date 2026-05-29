@@ -118,7 +118,7 @@ const SettingsModal = memo(({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('ai.model')}</label>
             <input
               type="text"
               value={localConfig.model}
@@ -129,7 +129,7 @@ const SettingsModal = memo(({
 
           {/* Embedding 配置（可选） */}
           <div className="pt-2 border-t border-gray-100">
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Embedding 配置</h4>
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{t('ai.embeddingSection')}</h4>
             <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
