@@ -61,6 +61,8 @@ export const zh = {
   'toolbar.filters': '过滤器',
   'toolbar.entityType': '实体类型',
   'toolbar.close': '关闭',
+  'toolbar.export': '导出',
+  'toolbar.exportGraph': '导出图谱数据',
   // Toast messages
   'toast.fillNameType': '请填写实体名称和类型',
   'toast.selectCaseFirst': '请先选择一个案例',
@@ -72,6 +74,9 @@ export const zh = {
   'toast.entityDeleteFailed': '删除实体失败: ',
   'toast.relationDeleted': '关系删除成功',
   'toast.relationDeleteFailed': '删除关系失败: ',
+  // Export toast
+  'toast.exportSuccess': '图谱导出成功',
+  'toast.exportFailed': '导出失败: ',
   // Node/Link detail
   'detail.node.title': '节点详情',
   'detail.node.close': '关闭节点详情',
@@ -568,6 +573,8 @@ export const en = {
   'toolbar.filters': 'Filters',
   'toolbar.entityType': 'Entity Type',
   'toolbar.close': 'Close',
+  'toolbar.export': 'Export',
+  'toolbar.exportGraph': 'Export graph data',
   // Toast messages
   'toast.fillNameType': 'Please fill in entity name and type',
   'toast.selectCaseFirst': 'Please select a case first',
@@ -579,6 +586,9 @@ export const en = {
   'toast.entityDeleteFailed': 'Failed to delete entity: ',
   'toast.relationDeleted': 'Relation deleted successfully',
   'toast.relationDeleteFailed': 'Failed to delete relation: ',
+  // Export toast
+  'toast.exportSuccess': 'Graph exported successfully',
+  'toast.exportFailed': 'Export failed: ',
   // Node/Link detail
   'detail.node.title': 'Node Details',
   'detail.node.close': 'Close node details',

@@ -437,7 +437,18 @@ export async function callAI(systemPrompt, messages, agent, userConfig) {
       res.on('data', chunk => { data += chunk; });
       res.on('end', () => {
         if (res.statusCode !== 200) {
-          reject(new Error(`AI API 错误: HTTP ${res.statusCode} - ${data}`));
+          // 尝试从错误响应中提取有意义的错误信息
+          let errorMsg = `AI API 错误: HTTP ${res.statusCode}`;
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.error?.message) errorMsg += ` - ${parsed.error.message}`;
+            else if (parsed.message) errorMsg += ` - ${parsed.message}`;
+            else if (parsed.choices?.[0]?.message?.content) errorMsg += ` - ${parsed.choices[0].message.content.slice(0, 200)}`;
+            else if (data && data.length < 500) errorMsg += ` - ${data}`;
+          } catch {
+            if (data && data.length < 500) errorMsg += ` - ${data}`;
+          }
+          reject(new Error(errorMsg));
           return;
         }
         try {
@@ -484,8 +495,18 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
   clearTimeout(timeoutId);
 
   if (!response.ok) {
+    // 尝试从错误响应中提取有意义的错误信息
     const errorText = await response.text();
-    throw new Error(`AI API 错误: ${errorText}`);
+    let errorMsg = `AI 流式 API 错误: HTTP ${response.status}`;
+    try {
+      const parsed = JSON.parse(errorText);
+      if (parsed.error?.message) errorMsg += ` - ${parsed.error.message}`;
+      else if (parsed.message) errorMsg += ` - ${parsed.message}`;
+      else if (errorText && errorText.length < 500) errorMsg += ` - ${errorText}`;
+    } catch {
+      if (errorText && errorText.length < 500) errorMsg += ` - ${errorText}`;
+    }
+    throw new Error(errorMsg);
   }
 
   const reader = response.body.getReader();

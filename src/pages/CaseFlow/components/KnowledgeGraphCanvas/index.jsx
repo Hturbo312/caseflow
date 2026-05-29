@@ -108,6 +108,60 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
   // 无案例提示状态
   const [showNoCaseAlert, setShowNoCaseAlert] = useState(false);
 
+  // 图谱导出
+  const handleExportGraph = useCallback(async (format) => {
+    if (!currentCaseId) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/cases/${currentCaseId}/export?format=${format}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error(`导出失败: HTTP ${res.status}`);
+      const data = await res.json();
+
+      if (format === 'graphml') {
+        // 下载 .graphml 文件
+        const blob = new Blob([data.graphml], { type: 'application/xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${data.case_name || 'graph'}.graphml`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } else if (format === 'csv') {
+        // 下载两个 CSV 文件
+        const entitiesBlob = new Blob([data.entities_csv], { type: 'text/csv' });
+        const eUrl = URL.createObjectURL(entitiesBlob);
+        const eA = document.createElement('a');
+        eA.href = eUrl;
+        eA.download = `${data.case_name || 'graph'}_entities.csv`;
+        eA.click();
+        URL.revokeObjectURL(eUrl);
+
+        const relationsBlob = new Blob([data.relations_csv], { type: 'text/csv' });
+        const rUrl = URL.createObjectURL(relationsBlob);
+        const rA = document.createElement('a');
+        rA.href = rUrl;
+        rA.download = `${data.case_name || 'graph'}_relations.csv`;
+        rA.click();
+        URL.revokeObjectURL(rUrl);
+      } else {
+        // JSON 下载
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${data.case?.name || 'graph'}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+      showSuccess(t('toast.exportSuccess'));
+    } catch (e) {
+      console.error('导出失败:', e);
+      showError(t('toast.exportFailed') + e.message);
+    }
+  }, [currentCaseId]);
+
   // Hover & focus state for dynamic highlighting
   const [hoveredNode, setHoveredNode] = useState(null);
   const [showLegend, setShowLegend] = useState(true);
@@ -801,6 +855,7 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
         currentCaseId={currentCaseId}
         showNoCaseAlert={showNoCaseAlert}
         onDismissNoCaseAlert={() => setShowNoCaseAlert(false)}
+        onExport={handleExportGraph}
       />
 
       {/* 路径分析面板 */}

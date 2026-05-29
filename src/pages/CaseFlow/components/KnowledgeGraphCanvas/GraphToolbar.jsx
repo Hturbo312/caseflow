@@ -13,7 +13,8 @@ import {
   Link2,
   AlertTriangle,
   ChevronDown,
-  Layers
+  Layers,
+  Download
 } from 'lucide-react';
 import { useI18n } from '../../../../i18n';
 
@@ -55,11 +56,14 @@ const GraphToolbar = ({
   // No case alert
   showNoCaseAlert,
   onDismissNoCaseAlert,
+  // Export
+  onExport,
 }) => {
   const { t } = useI18n();
   const prefersReducedMotion = useReducedMotion();
   const searchInputRef = useRef(null);
   const [showDepthDropdown, setShowDepthDropdown] = useState(false);
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
 
   const DEPTH_OPTIONS = [
     { value: 0, label: t('toolbar.neighbors0') },
@@ -72,17 +76,18 @@ const GraphToolbar = ({
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (showSearchResults || showDepthDropdown) {
+      if (showSearchResults || showDepthDropdown || showExportDropdown) {
         const target = e.target;
-        if (!target.closest('.search-results-dropdown') && !target.closest('.depth-dropdown')) {
+        if (!target.closest('.search-results-dropdown') && !target.closest('.depth-dropdown') && !target.closest('.export-dropdown')) {
           onToggleSearchResults?.(false);
           setShowDepthDropdown(false);
+          setShowExportDropdown(false);
         }
       }
     };
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
-  }, [showSearchResults, showDepthDropdown, onToggleSearchResults]);
+  }, [showSearchResults, showDepthDropdown, showExportDropdown, onToggleSearchResults]);
 
   // Handle search button click
   const handleSearchClick = () => {
@@ -313,6 +318,47 @@ const GraphToolbar = ({
 
           {/* 分隔线 - 移动端隐藏 */}
           <div className="w-px h-6 bg-gray-200 mx-1 hidden sm:block" />
+
+          {/* 导出按钮（仅当有案例时显示） */}
+          {currentCaseId && (
+            <div className="relative export-dropdown">
+              <button
+                type="button"
+                onClick={() => setShowExportDropdown(!showExportDropdown)}
+                className="h-8 w-8 sm:w-auto sm:px-2.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors flex items-center justify-center sm:gap-1.5"
+                title={t('toolbar.exportGraph')}
+                aria-label={t('toolbar.exportGraph')}
+              >
+                <Download className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                <span className="hidden md:inline">{t('toolbar.export')}</span>
+              </button>
+              {showExportDropdown && (
+                <div className="absolute top-full right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-20 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => { onExport?.('json'); setShowExportDropdown(false); }}
+                    className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 text-gray-700"
+                  >
+                    JSON
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { onExport?.('csv'); setShowExportDropdown(false); }}
+                    className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 text-gray-700"
+                  >
+                    CSV
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { onExport?.('graphml'); setShowExportDropdown(false); }}
+                    className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 text-gray-700"
+                  >
+                    GraphML
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* 缩放控制 */}
           <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
