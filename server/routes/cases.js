@@ -417,8 +417,10 @@ router.get('/:id/export', authMiddleware, async (req, res) => {
       graphml += '<graphml xmlns="http://graphml.graphdrawing.org/xmlns">\n';
       graphml += '  <key id="name" for="node" attr.name="name" attr.type="string"/>\n';
       graphml += '  <key id="entityType" for="node" attr.name="entityType" attr.type="string"/>\n';
+      graphml += '  <key id="caseName" for="node" attr.name="caseName" attr.type="string"/>\n';
       graphml += '  <key id="properties" for="node" attr.name="properties" attr.type="string"/>\n';
       graphml += '  <key id="relationType" for="edge" attr.name="relationType" attr.type="string"/>\n';
+      graphml += '  <key id="caseNameEdge" for="edge" attr.name="caseName" attr.type="string"/>\n';
       graphml += '  <graph id="caseflow-case" edgedefault="directed">\n';
 
       const nodeElements = entitiesResult.rows.map(e => {
@@ -426,6 +428,7 @@ router.get('/:id/export', authMiddleware, async (req, res) => {
         return `    <node id="${e.id}">\n` +
           `      <data key="name">${escapeXml(e.name)}</data>\n` +
           `      <data key="entityType">${escapeXml(e.entity_type)}</data>\n` +
+          `      <data key="caseName">${escapeXml(caseData.name)}</data>\n` +
           `      <data key="properties">${escapeXml(props)}</data>\n` +
           `    </node>`;
       });
@@ -433,6 +436,7 @@ router.get('/:id/export', authMiddleware, async (req, res) => {
       const edgeElements = relationsResult.rows.filter(r => r.source_name && r.target_name).map(r =>
         `    <edge source="${r.source_entity_id || ''}" target="${r.target_entity_id || ''}">\n` +
         `      <data key="relationType">${escapeXml(r.relation_type)}</data>\n` +
+        `      <data key="caseNameEdge">${escapeXml(caseData.name)}</data>\n` +
         `    </edge>`
       );
 

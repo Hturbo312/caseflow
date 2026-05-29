@@ -518,7 +518,7 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
 
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
-      buffer = '';
+      buffer = lines.pop() || ''; // 保留最后一行（可能跨 chunk 不完整）
 
       for (const line of lines) {
         if (line.startsWith('data: ')) {
