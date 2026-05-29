@@ -74,44 +74,56 @@ router.post('/', authMiddleware, async (req, res) => {
 router.get('/export-all', authMiddleware, async (req, res) => {
   try {
     const { format } = req.query;
-    const casesResult = await pool.query('SELECT id, name, schema_id FROM cases ORDER BY id');
 
-    const allExports = [];
-    for (const c of casesResult.rows) {
-      const entitiesResult = await pool.query(
-        'SELECT id, name, entity_type, properties FROM case_entities WHERE case_id = $1',
-        [c.id]
-      );
-      const relationsResult = await pool.query(
-        `SELECT cr.id, cr.relation_type,
-                source.name AS source_name, target.name AS target_name
-         FROM case_relations cr
-         JOIN case_entities source ON cr.source_entity_id = source.id
-         JOIN case_entities target ON cr.target_entity_id = target.id
-         WHERE cr.case_id = $1`,
-        [c.id]
-      );
+    // 优化：3 个并行查询代替 N+1（原来每个 case 2 次查询）
+    const [casesResult, entitiesResult, relationsResult] = await Promise.all([
+      pool.query('SELECT id, name, schema_id FROM cases ORDER BY id'),
+      pool.query('SELECT case_id, name, entity_type, properties FROM case_entities ORDER BY case_id'),
+      pool.query(`SELECT cr.case_id, cr.relation_type,
+                         source.name AS source_name, target.name AS target_name
+                  FROM case_relations cr
+                  JOIN case_entities source ON cr.source_entity_id = source.id
+                  JOIN case_entities target ON cr.target_entity_id = target.id
+                  ORDER BY cr.case_id`),
+    ]);
 
-      allExports.push({
+    // 按 case_id 分组实体
+    const entitiesByCase = new Map();
+    for (const e of entitiesResult.rows) {
+      if (!entitiesByCase.has(e.case_id)) entitiesByCase.set(e.case_id, []);
+      entitiesByCase.get(e.case_id).push(e);
+    }
+
+    // 按 case_id 分组关系
+    const relationsByCase = new Map();
+    for (const r of relationsResult.rows) {
+      if (!relationsByCase.has(r.case_id)) relationsByCase.set(r.case_id, []);
+      relationsByCase.get(r.case_id).push(r);
+    }
+
+    const allExports = casesResult.rows.map(c => {
+      const ents = entitiesByCase.get(c.id) || [];
+      const rels = relationsByCase.get(c.id) || [];
+      return {
         case_id: c.id,
         case_name: c.name,
         schema_id: c.schema_id,
-        entities: entitiesResult.rows.map(e => ({
+        entities: ents.map(e => ({
           name: e.name,
           entityType: e.entity_type,
           properties: typeof e.properties === 'string' ? JSON.parse(e.properties) : e.properties,
         })),
-        relations: relationsResult.rows.map(r => ({
+        relations: rels.map(r => ({
           type: r.relation_type,
           source: r.source_name,
           target: r.target_name,
         })),
         summary: {
-          entity_count: entitiesResult.rows.length,
-          relation_count: relationsResult.rows.length,
+          entity_count: ents.length,
+          relation_count: rels.length,
         },
-      });
-    }
+      };
+    });
 
     if (format === 'csv') {
       // CSV 安全转义：处理引号和逗号
@@ -160,6 +172,11 @@ router.get('/export-all', authMiddleware, async (req, res) => {
       const edgeElements = [];
 
       for (const exp of allExports) {
+        // 构建 entityName -> entityType 映射，用于关系查找
+        const entityNameToType = new Map();
+        for (const e of exp.entities) {
+          entityNameToType.set(e.name, e.entityType);
+        }
         for (const e of exp.entities) {
           const id = `n${nodeId++}`;
           const key = `${e.name}::${e.entityType}::${exp.case_id}`;
@@ -175,8 +192,11 @@ router.get('/export-all', authMiddleware, async (req, res) => {
           );
         }
         for (const r of exp.relations) {
-          const sourceKey = `${r.source}::${exp.case_name}::${exp.case_id}`;
-          const targetKey = `${r.target}::${exp.case_name}::${exp.case_id}`;
+          // 修复：使用 entityType（与 node key 一致）代替 case_name
+          const sourceType = entityNameToType.get(r.source);
+          const targetType = entityNameToType.get(r.target);
+          const sourceKey = `${r.source}::${sourceType}::${exp.case_id}`;
+          const targetKey = `${r.target}::${targetType}::${exp.case_id}`;
           const srcId = nameToNodeId.get(sourceKey);
           const tgtId = nameToNodeId.get(targetKey);
           if (srcId && tgtId) {
