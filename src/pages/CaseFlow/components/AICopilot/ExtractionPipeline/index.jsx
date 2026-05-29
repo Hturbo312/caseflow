@@ -99,6 +99,15 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
 
   const handleFinalize = useCallback(async () => {
     try {
+      // 检查是否有待审核的关系，提醒用户
+      const pendingRels = relationCandidates?.filter(r => r.status === 'pending') || [];
+      if (pendingRels.length > 0) {
+        const confirmed = window.confirm(
+          `还有 ${pendingRels.length} 条关系未审核，未审核的关系不会被保存。\n\n确定要继续完成提取吗？`
+        );
+        if (!confirmed) return;
+      }
+
       // 提前获取 token，所有请求复用（避免重复调用 authHelper.getToken()）
       const token = authHelper.getToken();
 

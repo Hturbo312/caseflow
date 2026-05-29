@@ -230,8 +230,8 @@ router.post('/:caseId/batch-save-relations', authMiddleware, async (req, res) =>
       return res.status(400).json({ error: 'relations 数组是必需的' });
     }
 
-    // 防御性校验：只保存审核通过的关系（与 finalizeCase 保持一致）
-    const approvedRelations = relations.filter(r => r.status === 'approved' || !r.status);
+    // 防御性校验：只保存审核通过的关系（严格匹配 approved 状态）
+    const approvedRelations = relations.filter(r => r.status === 'approved');
     if (approvedRelations.length === 0) {
       return res.json({ success: true, saved: 0, skipped: relations.map(r => ({ sourceName: r.sourceName, targetName: r.targetName, reason: '状态不是 approved' })), relations: [] });
     }
