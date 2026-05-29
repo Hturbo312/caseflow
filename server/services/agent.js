@@ -98,6 +98,26 @@ export async function getAgentMeta(name) {
   return null;
 }
 
+/**
+ * 加载 Schema 上下文（schema + entityTypes + relations），带缓存
+ */
+async function loadSchemaContext(schemaId) {
+  if (!schemaId) return null;
+  const [schemaResult, entityTypesResult, relationsResult] = await Promise.all([
+    pool.query('SELECT * FROM schemas WHERE id = $1', [schemaId]),
+    pool.query('SELECT * FROM entity_types WHERE schema_id = $1', [schemaId]),
+    pool.query('SELECT * FROM relations WHERE schema_id = $1', [schemaId])
+  ]);
+  if (schemaResult.rows.length === 0) return null;
+  return {
+    schema: {
+      ...schemaResult.rows[0],
+      entityTypes: entityTypesResult.rows,
+      relations: relationsResult.rows
+    }
+  };
+}
+
 // 构建 Agent 上下文（并行查询）
 export async function buildAgentContext(agentName, context, userInput) {
   const result = {};
@@ -108,20 +128,8 @@ export async function buildAgentContext(agentName, context, userInput) {
       break;
 
     case 'case_extractor':
-      if (context?.schema_id) {
-        // 并行查询 schema 相关数据
-        const [schemaResult, entityTypesResult, relationsResult] = await Promise.all([
-          pool.query('SELECT * FROM schemas WHERE id = $1', [context.schema_id]),
-          pool.query('SELECT * FROM entity_types WHERE schema_id = $1', [context.schema_id]),
-          pool.query('SELECT * FROM relations WHERE schema_id = $1', [context.schema_id])
-        ]);
-
-        result.schema = {
-          ...schemaResult.rows[0],
-          entityTypes: entityTypesResult.rows,
-          relations: relationsResult.rows
-        };
-      }
+      const ceSchema = await loadSchemaContext(context?.schema_id);
+      if (ceSchema) result.schema = ceSchema.schema;
       if (context?.case_id) {
         const caseResult = await pool.query('SELECT name, description FROM cases WHERE id = $1', [context.case_id]);
         result.case = caseResult.rows[0] || null;
@@ -201,18 +209,8 @@ export async function buildAgentContext(agentName, context, userInput) {
       break;
 
     case 'schema_analyzer':
-      if (context?.schema_id) {
-        const [schemaResult, entityTypesResult, relationsResult] = await Promise.all([
-          pool.query('SELECT * FROM schemas WHERE id = $1', [context.schema_id]),
-          pool.query('SELECT * FROM entity_types WHERE schema_id = $1', [context.schema_id]),
-          pool.query('SELECT * FROM relations WHERE schema_id = $1', [context.schema_id])
-        ]);
-        result.schema = {
-          ...schemaResult.rows[0],
-          entityTypes: entityTypesResult.rows,
-          relations: relationsResult.rows
-        };
-      }
+      const saSchema = await loadSchemaContext(context?.schema_id);
+      if (saSchema) result.schema = saSchema.schema;
       break;
 
     case 'text_parser':
@@ -224,18 +222,8 @@ export async function buildAgentContext(agentName, context, userInput) {
       break;
 
     case 'extraction_planner':
-      if (context?.schema_id) {
-        const [schemaResult, entityTypesResult, relationsResult] = await Promise.all([
-          pool.query('SELECT * FROM schemas WHERE id = $1', [context.schema_id]),
-          pool.query('SELECT * FROM entity_types WHERE schema_id = $1', [context.schema_id]),
-          pool.query('SELECT * FROM relations WHERE schema_id = $1', [context.schema_id])
-        ]);
-        result.schema = {
-          ...schemaResult.rows[0],
-          entityTypes: entityTypesResult.rows,
-          relations: relationsResult.rows
-        };
-      }
+      const epSchema = await loadSchemaContext(context?.schema_id);
+      if (epSchema) result.schema = epSchema.schema;
       if (context?.case_id) {
         const segResult = await pool.query('SELECT * FROM text_segments WHERE case_id = $1 ORDER BY segment_index', [context.case_id]);
         result.text_segments = segResult.rows;
@@ -533,7 +521,8 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
             }
           } catch (e) {
             // 解析失败可能是 JSON 不完整，保留当前行到 buffer 供下次合并
-            buffer = (buffer ? buffer + '\n' : '') + line;
+            // 注意：需要保留 "data: " 前缀，否则下次迭代无法识别
+            buffer = (buffer ? buffer + '\n' : '') + 'data: ' + line;
           }
         }
       }
