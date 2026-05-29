@@ -360,6 +360,7 @@ export const zh = {
   'pipeline.skip': '跳过',
   'pipeline.confirm': '确认',
   'pipeline.viewEvidence': '查看原文依据',
+  'pipeline.hideEvidence': '收起依据',
   'pipeline.noRelationsHint': '关系推断由 AI 基于实体上下文自动生成',
   // AICopilot
   'ai.schemaBuilder': 'Schema构建',
@@ -488,6 +489,9 @@ export const zh = {
   'ai.caseTextPlaceholder': '在此粘贴案例全文...',
   'ai.adjustPlaceholder': '描述您想要的调整...',
   'ai.loginToConfigure': '登录后配置 AI',
+  'ai.pendingRelationsWarning': '还有 {count} 条关系未审核，未审核的关系不会被保存。\n\n确定要继续完成提取吗？',
+  'ai.relationSaveIncomplete': '关系保存不完整：已审核 {approved} 条，仅保存 {saved} 条。\n请检查后重试。',
+  'ai.relationSaveFailed': '关系保存失败，请重试。',
   // Default schema
   'schema.defaultName': '默认 Schema',
   'schema.defaultDesc': '基础城市更新案例拆解框架',
@@ -855,6 +859,7 @@ export const en = {
   'pipeline.skip': 'Skip',
   'pipeline.confirm': 'Confirm',
   'pipeline.viewEvidence': 'View source evidence',
+  'pipeline.hideEvidence': 'Hide evidence',
   'pipeline.noRelationsHint': 'Relations are inferred by AI based on entity context',
   // AICopilot
   'ai.schemaBuilder': 'Schema Builder',
@@ -983,6 +988,9 @@ export const en = {
   'ai.caseTextPlaceholder': 'Paste the full case text here...',
   'ai.adjustPlaceholder': 'Describe the adjustment you want...',
   'ai.loginToConfigure': 'Login to configure AI',
+  'ai.pendingRelationsWarning': 'There are {count} unreviewed relations that will not be saved.\n\nContinue finalizing?',
+  'ai.relationSaveIncomplete': 'Relations saved incompletely: {approved} approved but only {saved} saved.\nPlease check and try again.',
+  'ai.relationSaveFailed': 'Failed to save relations, please try again.',
   // Default schema
   'schema.defaultName': 'Default Schema',
   'schema.defaultDesc': 'Basic urban renewal case breakdown framework',

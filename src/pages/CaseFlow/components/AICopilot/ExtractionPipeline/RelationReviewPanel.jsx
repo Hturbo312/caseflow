@@ -1,11 +1,12 @@
 import React, { memo, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Check, X, CheckCheck, XCircle } from 'lucide-react';
+import { ArrowRight, Check, X, CheckCheck, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useI18n } from '../../../../../i18n';
 
 const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
   const { t } = useI18n();
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [expandedEvidence, setExpandedEvidence] = useState(new Set());
 
   const stats = {
     total: relations.length,
@@ -72,6 +73,15 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
     if (selectedIds.size === 0) return;
     Array.from(selectedIds).forEach(id => onUpdateStatus(id, 'skipped'));
     setSelectedIds(new Set());
+  };
+
+  const toggleEvidence = (relId) => {
+    setExpandedEvidence(prev => {
+      const next = new Set(prev);
+      if (next.has(relId)) next.delete(relId);
+      else next.add(relId);
+      return next;
+    });
   };
 
   return (
@@ -212,9 +222,34 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
                 )}
               </div>
 
-              {/* 证据 */}
+              {/* 证据（可折叠） */}
               {rel.evidence && (
-                <p className="text-xs text-gray-400 mt-1.5 leading-relaxed">{rel.evidence}</p>
+                <div className="mt-1.5">
+                  <button
+                    onClick={() => toggleEvidence(rel.id)}
+                    className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    {expandedEvidence.has(rel.id) ? (
+                      <ChevronUp size={12} />
+                    ) : (
+                      <ChevronDown size={12} />
+                    )}
+                    {expandedEvidence.has(rel.id) ? t('pipeline.hideEvidence') : t('pipeline.viewEvidence')}
+                  </button>
+                  <AnimatePresence>
+                    {expandedEvidence.has(rel.id) && (
+                      <motion.p
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="text-xs text-gray-400 leading-relaxed overflow-hidden"
+                      >
+                        {rel.evidence}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
+                </div>
               )}
             </motion.div>
           ))}

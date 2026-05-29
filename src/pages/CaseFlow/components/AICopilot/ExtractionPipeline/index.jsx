@@ -103,7 +103,7 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
       const pendingRels = relationCandidates?.filter(r => r.status === 'pending') || [];
       if (pendingRels.length > 0) {
         const confirmed = window.confirm(
-          `还有 ${pendingRels.length} 条关系未审核，未审核的关系不会被保存。\n\n确定要继续完成提取吗？`
+          t('ai.pendingRelationsWarning', { count: pendingRels.length })
         );
         if (!confirmed) return;
       }
@@ -135,12 +135,12 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
           // 如果实际保存数量少于已审核数量，说明有部分关系保存失败，应阻断 finalize
           if (relData.saved < approvedRelations.length) {
             console.error(`[handleFinalize] 关系保存不完整: 已审核 ${approvedRelations.length}, 实际保存 ${relData.saved}`);
-            alert(`关系保存不完整：已审核 ${approvedRelations.length} 条，仅保存 ${relData.saved} 条。\n请检查后重试。`);
+            alert(t('ai.relationSaveIncomplete', { approved: approvedRelations.length, saved: relData.saved }));
             return; // 不继续标记为完成
           }
         } else {
           console.error(`[handleFinalize] 关系保存失败: ${relRes.status}`);
-          alert('关系保存失败，请重试。');
+          alert(t('ai.relationSaveFailed'));
           return; // 不继续标记为完成
         }
       }
