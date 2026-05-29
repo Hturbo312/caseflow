@@ -99,6 +99,9 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
 
   const handleFinalize = useCallback(async () => {
     try {
+      // 提前获取 token，所有请求复用（避免重复调用 authHelper.getToken()）
+      const token = authHelper.getToken();
+
       // 1. 先通过 store 保存已审核的实体
       const result = await finalize();
       if (!result?.success) return;
@@ -106,7 +109,6 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
       // 2. 保存已审核的关系（autoEmbed=false，因为后续 finalize 会统一触发）
       const approvedRelations = relationCandidates?.filter(r => r.status === 'approved') || [];
       if (approvedRelations.length > 0) {
-        const token = authHelper.getToken();
         const relRes = await fetch(`${API_BASE_URL}/extraction/${caseId}/batch-save-relations`, {
           method: 'POST',
           headers: {
@@ -127,7 +129,7 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
       }
 
       // 3. 调用后端 finalize 接口：标记 case_memory 为 completed + 触发 autoEmbed
-      const token = authHelper.getToken();
+      // 复用上方已获取的 token
       const finalizeRes = await fetch(`${API_BASE_URL}/extraction/${caseId}/finalize`, {
         method: 'POST',
         headers: {

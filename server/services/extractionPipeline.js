@@ -88,12 +88,22 @@ export async function parseCaseText(caseId, caseText, schemaId) {
     entity_hints: []
   }));
 
-  await Promise.all(segments.map(s =>
-    pool.query(
-      'INSERT INTO text_segments (case_id, segment_index, content, entity_hints) VALUES ($1, $2, $3, $4)',
-      [caseId, s.index, s.content, JSON.stringify(s.entity_hints)]
-    )
-  ));
+  // 优化：批量 INSERT 代替 N 次独立查询
+  if (segments.length > 0) {
+    const values = segments.map((s, i) => {
+      const base = i * 3;
+      return `($1, $${base + 2}, $${base + 3}, $${base + 4})`;
+    }).join(', ');
+    const params = [caseId];
+    segments.forEach(s => {
+      params.push(s.index, s.content, JSON.stringify(s.entity_hints));
+    });
+
+    await pool.query(
+      `INSERT INTO text_segments (case_id, segment_index, content, entity_hints) VALUES ${values}`,
+      params
+    );
+  }
 
   const summary = { global_summary: caseText.slice(0, 200), segment_count: segments.length, hash };
   await ensureCaseMemory(caseId, summary);
