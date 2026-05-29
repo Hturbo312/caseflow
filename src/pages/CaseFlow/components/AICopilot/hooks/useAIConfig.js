@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useAuthStore } from '@store';
 import { useToastStore } from '@components/Toast/ToastStore';
 import { aiApi } from '@services/api';
+import { useI18n } from '../../../../../i18n';
 
 /**
  * Custom hook for AI configuration management
@@ -9,7 +10,8 @@ import { aiApi } from '@services/api';
  */
 export const useAIConfig = (onShowLogin) => {
   const { isAuthenticated } = useAuthStore();
-  const { error: showError } = useToastStore();
+  const { error: showError, success: showSuccess } = useToastStore();
+  const { t } = useI18n();
 
   // Config status from server
   const [configStatus, setConfigStatus] = useState({
@@ -120,6 +122,7 @@ export const useAIConfig = (onShowLogin) => {
           embeddingEndpoint: localConfig.embeddingEndpoint,
           embeddingModel: localConfig.embeddingModel,
         }));
+        showSuccess(t('ai.configSaved'));
         setShowSettings(false);
       }
     } catch (error) {
@@ -129,14 +132,14 @@ export const useAIConfig = (onShowLogin) => {
         onShowLogin?.();
         return;
       }
-      showError('Save config failed: ' + error.message);
+      showError(t('ai.saveConfigFailed') + error.message);
     }
     setIsSavingConfig(false);
-  }, [isAuthenticated, localConfig, onShowLogin, showError]);
+  }, [isAuthenticated, localConfig, onShowLogin, showError, t]);
 
   // Delete config
   const handleDeleteConfig = useCallback(async () => {
-    if (!confirm('确定要删除 AI 配置吗？')) return;
+    if (!confirm(t('ai.confirmDeleteConfig'))) return;
     try {
       await aiApi.deleteConfig();
       setConfigStatus({
@@ -153,7 +156,7 @@ export const useAIConfig = (onShowLogin) => {
     } catch (error) {
       console.error('Delete config failed:', error);
     }
-  }, []);
+  }, [t]);
 
   // Update local config field
   const updateLocalConfig = useCallback((field, value) => {

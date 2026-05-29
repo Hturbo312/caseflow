@@ -496,6 +496,10 @@ export const zh = {
   'ai.pendingRelationsWarning': '还有 {count} 条关系未审核，未审核的关系不会被保存。\n\n确定要继续完成提取吗？',
   'ai.relationSaveIncomplete': '关系保存不完整：已审核 {approved} 条，仅保存 {saved} 条。\n请检查后重试。',
   'ai.relationSaveFailed': '关系保存失败，请重试。',
+  // AI Config
+  'ai.configSaved': 'AI 配置已保存',
+  'ai.confirmDeleteConfig': '确定要删除 AI 配置吗？',
+  'ai.saveConfigFailed': '保存配置失败：',
   // Default schema
   'schema.defaultName': '默认 Schema',
   'schema.defaultDesc': '基础城市更新案例拆解框架',
@@ -999,6 +1003,10 @@ export const en = {
   'ai.pendingRelationsWarning': 'There are {count} unreviewed relations that will not be saved.\n\nContinue finalizing?',
   'ai.relationSaveIncomplete': 'Relations saved incompletely: {approved} approved but only {saved} saved.\nPlease check and try again.',
   'ai.relationSaveFailed': 'Failed to save relations, please try again.',
+  // AI Config
+  'ai.configSaved': 'AI configuration saved',
+  'ai.confirmDeleteConfig': 'Are you sure you want to delete the AI configuration?',
+  'ai.saveConfigFailed': 'Failed to save configuration: ',
   // Default schema
   'schema.defaultName': 'Default Schema',
   'schema.defaultDesc': 'Basic urban renewal case breakdown framework',
