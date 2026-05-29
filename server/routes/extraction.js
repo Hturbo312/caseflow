@@ -230,8 +230,14 @@ router.post('/:caseId/batch-save-relations', authMiddleware, async (req, res) =>
       return res.status(400).json({ error: 'relations 数组是必需的' });
     }
 
+    // 防御性校验：只保存审核通过的关系（与 finalizeCase 保持一致）
+    const approvedRelations = relations.filter(r => r.status === 'approved' || !r.status);
+    if (approvedRelations.length === 0) {
+      return res.json({ success: true, saved: 0, skipped: relations.map(r => ({ sourceName: r.sourceName, targetName: r.targetName, reason: '状态不是 approved' })), relations: [] });
+    }
+
     // 优化：一次性查询所有涉及的实体名称，避免 N+1 查询
-    const entityNames = [...new Set(relations.flatMap(r => [r.sourceName, r.targetName]).filter(Boolean))];
+    const entityNames = [...new Set(approvedRelations.flatMap(r => [r.sourceName, r.targetName]).filter(Boolean))];
     if (entityNames.length === 0) {
       return res.json({ success: true, saved: 0, skipped: [], relations: [] });
     }
@@ -244,7 +250,7 @@ router.post('/:caseId/batch-save-relations', authMiddleware, async (req, res) =>
 
     const saved = [];
     const skipped = [];
-    for (const rel of relations) {
+    for (const rel of approvedRelations) {
       // 跳过缺少必要字段的关系
       if (!rel.sourceName || !rel.targetName || !rel.name) {
         skipped.push({ sourceName: rel.sourceName, targetName: rel.targetName, reason: '缺少必要字段 (sourceName/targetName/name)' });

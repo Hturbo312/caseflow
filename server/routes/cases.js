@@ -114,14 +114,23 @@ router.get('/export-all', authMiddleware, async (req, res) => {
     }
 
     if (format === 'csv') {
+      // CSV 安全转义：处理引号和逗号
+      const csvEscape = (val) => {
+        const str = String(val ?? '');
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+
       const entityRows = [];
       const relationRows = [];
       for (const exp of allExports) {
         for (const e of exp.entities) {
-          entityRows.push([exp.case_id, exp.case_name, e.name, e.entityType, JSON.stringify(e.properties || {})].join(','));
+          entityRows.push([exp.case_id, exp.case_name, e.name, e.entityType, csvEscape(JSON.stringify(e.properties || {}))].map(csvEscape).join(','));
         }
         for (const r of exp.relations) {
-          relationRows.push([exp.case_id, exp.case_name, r.type, r.source, r.target].join(','));
+          relationRows.push([exp.case_id, exp.case_name, r.type, r.source, r.target].map(csvEscape).join(','));
         }
       }
       return res.json({
