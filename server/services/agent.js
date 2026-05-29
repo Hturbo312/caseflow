@@ -532,7 +532,8 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
               onChunk(content);
             }
           } catch (e) {
-            buffer = line;
+            // 解析失败可能是 JSON 不完整，保留当前行到 buffer 供下次合并
+            buffer = (buffer ? buffer + '\n' : '') + line;
           }
         }
       }

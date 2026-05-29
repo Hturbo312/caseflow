@@ -340,7 +340,7 @@ router.get('/:id/export', authMiddleware, async (req, res) => {
       [id]
     );
     const relationsResult = await pool.query(
-      `SELECT cr.id, cr.relation_type,
+      `SELECT cr.id, cr.relation_type, cr.source_entity_id, cr.target_entity_id,
               source.name AS source_name, source.entity_type AS source_type,
               target.name AS target_name, target.entity_type AS target_type,
               cr.created_at
