@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 
 import { PORT } from './config.js';
 import { initializeDatabase } from './init.js';
+import { startSessionCleanup } from './services/agent.js';
 
 // 路由模块
 import authRoutes from './routes/auth.js';
@@ -40,6 +41,7 @@ app.use('/api/extraction', extractionRoutes);
 // 启动服务器 - 设置较长超时（LLM 调用较慢）
 const server = app.listen(PORT, '0.0.0.0', async () => {
   await initializeDatabase();
+  startSessionCleanup(); // 启动会话清理定时器（只需一次）
   console.log(`Server running on http://0.0.0.0:${PORT}`);
   console.log(`Database: ${process.env.DB_NAME}`);
 });

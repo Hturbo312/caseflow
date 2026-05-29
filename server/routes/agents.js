@@ -8,7 +8,6 @@ import {
   callAI,
   callAIStream,
   parseAgentOutput,
-  startSessionCleanup,
   touchSession
 } from '../services/agent.js';
 import pool from '../db.js';
@@ -129,8 +128,7 @@ router.post('/:name/invoke', authMiddleware, async (req, res) => {
       agentSessions.set(newSessionId, session);
     }
 
-    // 启动会话清理定时器
-    startSessionCleanup();
+    // 会话清理定时器已在 server/index.js 启动时初始化，无需重复调用
 
     let messages = [];
     if (agent.supports_multi_turn && session) {
@@ -214,8 +212,7 @@ router.post('/:name/invoke/stream', authMiddleware, async (req, res) => {
 
     res.write(`data: ${JSON.stringify({ type: 'session_id', session_id: newSessionId })}\n\n`);
 
-    // 启动会话清理定时器
-    startSessionCleanup();
+    // 会话清理定时器已在 server/index.js 启动时初始化
 
     let messages = [];
     if (agent.supports_multi_turn && session) {

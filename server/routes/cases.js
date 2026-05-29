@@ -7,31 +7,43 @@ const router = express.Router();
 // 获取所有案例
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const casesResult = await pool.query('SELECT * FROM cases ORDER BY created_at DESC');
-    const cases = casesResult.rows;
+    // 并行查询：案例 + 所有实体 + 所有关系（避免 N+1）
+    const [casesResult, entitiesResult, relationsResult] = await Promise.all([
+      pool.query('SELECT * FROM cases ORDER BY created_at DESC'),
+      pool.query('SELECT * FROM case_entities'),
+      pool.query('SELECT * FROM case_relations')
+    ]);
 
-    const casesWithDetails = await Promise.all(cases.map(async (c) => {
-      const entitiesResult = await pool.query('SELECT * FROM case_entities WHERE case_id = $1', [c.id]);
-      const relationsResult = await pool.query('SELECT * FROM case_relations WHERE case_id = $1', [c.id]);
+    // 按 case_id 分组
+    const entitiesByCase = new Map();
+    for (const e of entitiesResult.rows) {
+      if (!entitiesByCase.has(e.case_id)) entitiesByCase.set(e.case_id, []);
+      entitiesByCase.get(e.case_id).push(e);
+    }
 
-      return {
-        ...c,
-        schemaId: c.schema_id?.toString(),
-        entities: entitiesResult.rows.map(e => ({
-          ...e,
-          id: e.id?.toString(),
-          caseId: e.case_id?.toString(),
-          entityType: e.entity_type
-        })),
-        relations: relationsResult.rows.map(r => ({
-          ...r,
-          id: r.id?.toString(),
-          caseId: r.case_id?.toString(),
-          sourceId: r.source_entity_id?.toString(),
-          targetId: r.target_entity_id?.toString(),
-          name: r.relation_type
-        }))
-      };
+    const relationsByCase = new Map();
+    for (const r of relationsResult.rows) {
+      if (!relationsByCase.has(r.case_id)) relationsByCase.set(r.case_id, []);
+      relationsByCase.get(r.case_id).push(r);
+    }
+
+    const casesWithDetails = casesResult.rows.map(c => ({
+      ...c,
+      schemaId: c.schema_id?.toString(),
+      entities: (entitiesByCase.get(c.id) || []).map(e => ({
+        ...e,
+        id: e.id?.toString(),
+        caseId: e.case_id?.toString(),
+        entityType: e.entity_type
+      })),
+      relations: (relationsByCase.get(c.id) || []).map(r => ({
+        ...r,
+        id: r.id?.toString(),
+        caseId: r.case_id?.toString(),
+        sourceId: r.source_entity_id?.toString(),
+        targetId: r.target_entity_id?.toString(),
+        name: r.relation_type
+      }))
     }));
 
     res.json({ cases: casesWithDetails });
