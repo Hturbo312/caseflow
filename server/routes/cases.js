@@ -141,6 +141,69 @@ router.get('/export-all', authMiddleware, async (req, res) => {
       });
     }
 
+    if (format === 'graphml') {
+      // GraphML 格式（Gephi / Cytoscape 兼容）
+      const escapeXml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      let graphml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+      graphml += '<graphml xmlns="http://graphml.graphdrawing.org/xmlns">\n';
+      graphml += '  <key id="name" for="node" attr.name="name" attr.type="string"/>\n';
+      graphml += '  <key id="entityType" for="node" attr.name="entityType" attr.type="string"/>\n';
+      graphml += '  <key id="caseName" for="node" attr.name="caseName" attr.type="string"/>\n';
+      graphml += '  <key id="properties" for="node" attr.name="properties" attr.type="string"/>\n';
+      graphml += '  <key id="relationType" for="edge" attr.name="relationType" attr.type="string"/>\n';
+      graphml += '  <key id="caseNameEdge" for="edge" attr.name="caseName" attr.type="string"/>\n';
+      graphml += '  <graph id="caseflow-export" edgedefault="directed">\n';
+
+      let nodeId = 0;
+      const nameToNodeId = new Map();
+      const nodeElements = [];
+      const edgeElements = [];
+
+      for (const exp of allExports) {
+        for (const e of exp.entities) {
+          const id = `n${nodeId++}`;
+          const key = `${e.name}::${e.entityType}::${exp.case_id}`;
+          nameToNodeId.set(key, id);
+          const props = JSON.stringify(e.properties || {});
+          nodeElements.push(
+            `    <node id="${id}">\n` +
+            `      <data key="name">${escapeXml(e.name)}</data>\n` +
+            `      <data key="entityType">${escapeXml(e.entityType)}</data>\n` +
+            `      <data key="caseName">${escapeXml(exp.case_name)}</data>\n` +
+            `      <data key="properties">${escapeXml(props)}</data>\n` +
+            `    </node>`
+          );
+        }
+        for (const r of exp.relations) {
+          const sourceKey = `${r.source}::${exp.case_name}::${exp.case_id}`;
+          const targetKey = `${r.target}::${exp.case_name}::${exp.case_id}`;
+          const srcId = nameToNodeId.get(sourceKey);
+          const tgtId = nameToNodeId.get(targetKey);
+          if (srcId && tgtId) {
+            edgeElements.push(
+              `    <edge source="${srcId}" target="${tgtId}">\n` +
+              `      <data key="relationType">${escapeXml(r.type)}</data>\n` +
+              `      <data key="caseNameEdge">${escapeXml(exp.case_name)}</data>\n` +
+              `    </edge>`
+            );
+          }
+        }
+      }
+
+      graphml += nodeElements.join('\n') + '\n';
+      graphml += edgeElements.join('\n') + '\n';
+      graphml += '  </graph>\n';
+      graphml += '</graphml>';
+
+      return res.json({
+        format: 'graphml',
+        graphml,
+        total_nodes: nodeId,
+        total_edges: edgeElements.length,
+        total_cases: allExports.length,
+      });
+    }
+
     res.json({
       format: 'json',
       total_cases: allExports.length,
@@ -323,6 +386,47 @@ router.get('/:id/export', authMiddleware, async (req, res) => {
         case_name: caseData.name,
         entities_csv: entityCsv,
         relations_csv: relationCsv,
+        summary: exportData.summary,
+      });
+    }
+
+    if (format === 'graphml') {
+      // GraphML 格式（Gephi / Cytoscape 兼容）
+      const escapeXml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      let graphml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+      graphml += '<graphml xmlns="http://graphml.graphdrawing.org/xmlns">\n';
+      graphml += '  <key id="name" for="node" attr.name="name" attr.type="string"/>\n';
+      graphml += '  <key id="entityType" for="node" attr.name="entityType" attr.type="string"/>\n';
+      graphml += '  <key id="properties" for="node" attr.name="properties" attr.type="string"/>\n';
+      graphml += '  <key id="relationType" for="edge" attr.name="relationType" attr.type="string"/>\n';
+      graphml += '  <graph id="caseflow-case" edgedefault="directed">\n';
+
+      const nodeElements = entitiesResult.rows.map(e => {
+        const props = typeof e.properties === 'string' ? e.properties : JSON.stringify(e.properties || {});
+        return `    <node id="${e.id}">\n` +
+          `      <data key="name">${escapeXml(e.name)}</data>\n` +
+          `      <data key="entityType">${escapeXml(e.entity_type)}</data>\n` +
+          `      <data key="properties">${escapeXml(props)}</data>\n` +
+          `    </node>`;
+      });
+
+      const edgeElements = relationsResult.rows.filter(r => r.source_name && r.target_name).map(r =>
+        `    <edge source="${r.source_entity_id || ''}" target="${r.target_entity_id || ''}">\n` +
+        `      <data key="relationType">${escapeXml(r.relation_type)}</data>\n` +
+        `    </edge>`
+      );
+
+      graphml += nodeElements.join('\n') + '\n';
+      graphml += edgeElements.join('\n') + '\n';
+      graphml += '  </graph>\n';
+      graphml += '</graphml>';
+
+      return res.json({
+        format: 'graphml',
+        graphml,
+        case_name: caseData.name,
+        total_nodes: entitiesResult.rows.length,
+        total_edges: edgeElements.length,
         summary: exportData.summary,
       });
     }

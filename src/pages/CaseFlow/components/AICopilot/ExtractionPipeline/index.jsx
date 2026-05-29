@@ -123,8 +123,16 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
           if (relData.skipped?.length > 0) {
             console.warn(`[handleFinalize] 跳过了 ${relData.skipped.length} 条关系:`, relData.skipped);
           }
+          // 如果实际保存数量少于已审核数量，说明有部分关系保存失败，应阻断 finalize
+          if (relData.saved < approvedRelations.length) {
+            console.error(`[handleFinalize] 关系保存不完整: 已审核 ${approvedRelations.length}, 实际保存 ${relData.saved}`);
+            alert(`关系保存不完整：已审核 ${approvedRelations.length} 条，仅保存 ${relData.saved} 条。\n请检查后重试。`);
+            return; // 不继续标记为完成
+          }
         } else {
           console.error(`[handleFinalize] 关系保存失败: ${relRes.status}`);
+          alert('关系保存失败，请重试。');
+          return; // 不继续标记为完成
         }
       }
 
