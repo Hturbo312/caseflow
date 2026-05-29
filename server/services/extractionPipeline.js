@@ -587,6 +587,97 @@ export async function inferRelations(caseId, schemaId, candidates) {
 // ============================================================
 // Step 6: 保存入库
 // ============================================================
+
+// 共享函数：批量保存关系（避免 extraction.js 和 finalizeCase 代码重复）
+// 返回: { savedCount, skipped, savedRelations }
+export async function saveRelationsBulk(caseId, relations) {
+  const approvedRelations = relations.filter(r => r.status === 'approved');
+  const skipped = [];
+  const savedRelations = [];
+
+  if (approvedRelations.length === 0) {
+    return { savedCount: 0, skipped: relations.length > 0 ? relations.map(r => ({ sourceName: r.sourceName, targetName: r.targetName, reason: '状态不是 approved' })) : [], savedRelations };
+  }
+
+  // 优化：一次性查询所有涉及的实体名称，避免 N+1 查询
+  const entityNames = [...new Set(approvedRelations.flatMap(r => [r.sourceName, r.targetName]).filter(Boolean))];
+  if (entityNames.length === 0) {
+    return { savedCount: 0, skipped, savedRelations };
+  }
+
+  const entitiesResult = await pool.query(
+    'SELECT id, name FROM case_entities WHERE case_id = $1 AND name = ANY($2)',
+    [caseId, entityNames]
+  );
+  const nameToId = new Map(entitiesResult.rows.map(r => [r.name, r.id]));
+
+  // 构建关系元组
+  const relTuples = approvedRelations
+    .filter(r => r.sourceName && r.targetName && r.name)
+    .map(r => {
+      const sourceId = nameToId.get(r.sourceName);
+      const targetId = nameToId.get(r.targetName);
+      return sourceId && targetId ? { sourceId, targetId, relationType: r.name, rel: r } : null;
+    })
+    .filter(Boolean);
+
+  // 查询已存在的关系，避免重复插入
+  if (relTuples.length > 0) {
+    const existingQuery = `
+      SELECT source_entity_id, target_entity_id, relation_type
+      FROM case_relations
+      WHERE case_id = $1
+        AND (source_entity_id, target_entity_id, relation_type) IN (${
+          relTuples.map((_, i) => `($${i * 3 + 2}, $${i * 3 + 3}, $${i * 3 + 4})`).join(', ')
+        })
+    `;
+    const existingParams = [caseId, ...relTuples.flatMap(r => [r.sourceId, r.targetId, r.relationType])];
+    const existingResult = await pool.query(existingQuery, existingParams);
+    const existingSet = new Set(
+      existingResult.rows.map(r => `${r.source_entity_id}-${r.target_entity_id}-${r.relation_type}`)
+    );
+
+    // 分离待插入和已存在的关系
+    const toInsert = [];
+    for (const item of relTuples) {
+      const key = `${item.sourceId}-${item.targetId}-${item.relationType}`;
+      if (existingSet.has(key)) {
+        skipped.push({ sourceName: item.rel.sourceName, targetName: item.rel.targetName, reason: '关系已存在' });
+      } else {
+        toInsert.push(item);
+      }
+    }
+
+    // 批量 INSERT：单条查询代替 N 条
+    if (toInsert.length > 0) {
+      const values = toInsert.map((item, i) => {
+        const base = i * 4;
+        return `($1, $${base + 2}, $${base + 3}, $${base + 4})`;
+      }).join(', ');
+      const insertParams = [caseId, ...toInsert.flatMap(item => [item.sourceId, item.targetId, item.relationType])];
+      const insertResult = await pool.query(
+        `INSERT INTO case_relations (case_id, source_entity_id, target_entity_id, relation_type)
+         VALUES ${values} RETURNING *`,
+        insertParams
+      );
+      savedRelations.push(...insertResult.rows);
+    }
+  }
+
+  // 补充因实体未找到或字段缺失而跳过的关系
+  for (const rel of approvedRelations) {
+    if (!rel.sourceName || !rel.targetName || !rel.name) {
+      skipped.push({ sourceName: rel.sourceName, targetName: rel.targetName, reason: '缺少必要字段 (sourceName/targetName/name)' });
+    } else if (!nameToId.has(rel.sourceName) || !nameToId.has(rel.targetName)) {
+      const missing = [];
+      if (!nameToId.has(rel.sourceName)) missing.push(rel.sourceName);
+      if (!nameToId.has(rel.targetName)) missing.push(rel.targetName);
+      skipped.push({ sourceName: rel.sourceName, targetName: rel.targetName, reason: `实体未找到: ${missing.join(', ')}` });
+    }
+  }
+
+  return { savedCount: savedRelations.length, skipped, savedRelations };
+}
 export async function finalizeCase(caseId, options = {}) {
   const { relations = [], autoEmbed = false } = options;
 
@@ -598,61 +689,11 @@ export async function finalizeCase(caseId, options = {}) {
   const caseResult = await pool.query('SELECT schema_id FROM cases WHERE id = $1', [caseId]);
   const schemaId = caseResult.rows[0]?.schema_id;
 
-  // 保存审核通过的关系候选
+  // 保存审核通过的关系候选（复用共享函数）
   let savedRelations = 0;
   if (relations.length > 0) {
-    const approvedRelations = relations.filter(r => r.status === 'approved');
-    if (approvedRelations.length > 0) {
-      // 优化：一次性查询所有涉及的实体名称，避免 N+1 查询
-      const entityNames = [...new Set(approvedRelations.flatMap(r => [r.sourceName, r.targetName]))];
-      const entitiesResult = await pool.query(
-        'SELECT id, name FROM case_entities WHERE case_id = $1 AND name = ANY($2)',
-        [caseId, entityNames]
-      );
-      const nameToId = new Map(entitiesResult.rows.map(r => [r.name, r.id]));
-
-      // 预查询已存在的关系，避免重复插入
-      const relTuples = approvedRelations
-        .map(r => {
-          const sourceId = nameToId.get(r.sourceName);
-          const targetId = nameToId.get(r.targetName);
-          return sourceId && targetId ? { sourceId, targetId, relationType: r.name } : null;
-        })
-        .filter(Boolean);
-
-      if (relTuples.length > 0) {
-        const existingQuery = `
-          SELECT source_entity_id, target_entity_id, relation_type
-          FROM case_relations
-          WHERE case_id = $1
-            AND (source_entity_id, target_entity_id, relation_type) IN (${
-              relTuples.map((_, i) => `($${i * 3 + 2}, $${i * 3 + 3}, $${i * 3 + 4})`).join(', ')
-            })
-        `;
-        const existingParams = [caseId, ...relTuples.flatMap(r => [r.sourceId, r.targetId, r.relationType])];
-        const existingResult = await pool.query(existingQuery, existingParams);
-        const existingSet = new Set(
-          existingResult.rows.map(r => `${r.source_entity_id}-${r.target_entity_id}-${r.relation_type}`)
-        );
-
-        const toInsert = relTuples.filter(r => !existingSet.has(`${r.sourceId}-${r.targetId}-${r.relationType}`));
-
-        // 批量 INSERT：单条查询代替 N 条
-        if (toInsert.length > 0) {
-          const values = toInsert.map((item, i) => {
-            const base = i * 4;
-            return `($1, $${base + 2}, $${base + 3}, $${base + 4})`;
-          }).join(', ');
-          const insertParams = [caseId, ...toInsert.flatMap(item => [item.sourceId, item.targetId, item.relationType])];
-          const insertResult = await pool.query(
-            `INSERT INTO case_relations (case_id, source_entity_id, target_entity_id, relation_type)
-             VALUES ${values}`,
-            insertParams
-          );
-          savedRelations = insertResult.rowCount;
-        }
-      }
-    }
+    const result = await saveRelationsBulk(caseId, relations);
+    savedRelations = result.savedCount;
   }
 
   // 更新 case_memory

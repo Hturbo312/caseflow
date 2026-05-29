@@ -73,17 +73,26 @@ router.post('/embed-entities', async (req, res) => {
     }
 
     const embeddings = embedData.data?.map(d => d.embedding) || [];
+    // 批量 UPDATE：单条查询更新所有实体（避免 N+1 UPDATE）
+    const validEmbeds = [];
     for (let i = 0; i < entities.length; i++) {
-      const embedding = embeddings[i];
-      if (embedding) {
-        await pool.query(
-          `UPDATE case_entities SET embedding = $1 WHERE id = $2`,
-          [`[${embedding.join(',')}]`, entities[i].id]
-        );
+      if (embeddings[i]) {
+        validEmbeds.push({ id: entities[i].id, embedding: `[${embeddings[i].join(',')}]` });
       }
     }
+    if (validEmbeds.length > 0) {
+      // 使用 jsonb_to_recordset 批量更新，避免参数数量限制
+      const jsonInput = JSON.stringify(validEmbeds);
+      await pool.query(
+        `UPDATE case_entities
+         SET embedding = t.embedding::vector
+         FROM jsonb_to_recordset($1::jsonb) AS t(id bigint, embedding text)
+         WHERE case_entities.id = t.id`,
+        [jsonInput]
+      );
+    }
 
-    res.json({ message: `成功为 ${entities.length} 个实体生成嵌入`, count: entities.length });
+    res.json({ message: `成功为 ${validEmbeds.length} 个实体生成嵌入`, count: validEmbeds.length });
   } catch (error) {
     console.error('Embed entities error:', error);
     res.status(500).json({ error: error.message });
