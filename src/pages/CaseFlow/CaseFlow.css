@@ -1573,3 +1573,244 @@
   color: var(--color-error);
 }
 
+/* ========== 移动端适配 (≤768px) ========== */
+
+/* 移动端顶部导航栏 */
+.caseflow-mobile-header {
+  display: none;
+}
+
+/* 移动端主内容调整 */
+.caseflow-mobile .caseflow-main {
+  padding-top: 0;
+}
+
+.caseflow-mobile .caseflow-main-content {
+  padding: 0;
+}
+
+@media (max-width: 768px) {
+  /* 显示移动端顶部导航栏 */
+  .caseflow-mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 52px;
+    padding: 0 12px;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-default);
+    flex-shrink: 0;
+    z-index: 100;
+  }
+
+  .caseflow-mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--text-primary);
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s;
+  }
+
+  .caseflow-mobile-menu-btn:active {
+    background: var(--bg-tertiary);
+  }
+
+  .caseflow-mobile-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    background: var(--color-primary);
+    border-radius: 50%;
+    border: 1.5px solid var(--bg-primary);
+  }
+
+  .caseflow-mobile-view-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--bg-secondary);
+    padding: 4px;
+    border-radius: 10px;
+  }
+
+  .caseflow-mobile-tab {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .caseflow-mobile-tab.active {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .caseflow-mobile-tab svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* 桌面端顶栏隐藏 */
+  .caseflow-top-bar {
+    display: none !important;
+  }
+
+  /* 左右侧栏默认隐藏 */
+  .caseflow-left,
+  .caseflow-right {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 85vw;
+    max-width: 360px;
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: none;
+  }
+
+  .caseflow-right {
+    left: auto;
+    right: 0;
+    transform: translateX(100%);
+  }
+
+  /* 抽屉打开状态 */
+  .caseflow-drawer-open {
+    transform: translateX(0) !important;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .caseflow-right.caseflow-drawer-open {
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+  }
+
+  /* 遮罩层 */
+  .caseflow-mobile-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 150;
+    animation: fadeIn 0.2s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* 抽屉关闭按钮 */
+  .caseflow-drawer-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-tertiary);
+    border: none;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s;
+  }
+
+  .caseflow-drawer-close:active {
+    background: var(--neutral-300);
+  }
+
+  .caseflow-right .caseflow-drawer-close {
+    right: auto;
+    left: 12px;
+  }
+
+  /* 主窗口全屏 */
+  .caseflow-main {
+    width: 100% !important;
+    flex: 1;
+  }
+
+  /* 隐藏桌面端的 footer */
+  .caseflow-left-footer {
+    display: none;
+  }
+
+  /* Logo 紧凑 */
+  .caseflow-left-header {
+    padding-top: 56px; /* 为关闭按钮留空间 */
+  }
+
+  .caseflow-right .caseflow-left-header,
+  .caseflow-right .caseflow-right-header {
+    padding-top: 56px;
+  }
+
+  /* 移动端优化滚动 */
+  .caseflow-left-content,
+  .caseflow-right-list {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 增大触摸目标 */
+  .caseflow-nav-item {
+    min-height: 48px;
+  }
+
+  .caseflow-card-enhanced {
+    min-height: 48px;
+  }
+
+  .caseflow-create-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* ========== 超小屏优化 (≤480px) ========== */
+@media (max-width: 480px) {
+  .caseflow-mobile-header {
+    height: 48px;
+    padding: 0 8px;
+  }
+
+  .caseflow-mobile-tab {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .caseflow-mobile-tab span {
+    display: none;
+  }
+
+  .caseflow-mobile-tab svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .caseflow-left,
+  .caseflow-right {
+    width: 100vw;
+    max-width: 100vw;
+  }
+}
+

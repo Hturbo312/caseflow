@@ -97,20 +97,44 @@ const GraphToolbar = ({
   };
 
   return (
-    <div className="border-b border-gray-200 px-3 py-2 flex-shrink-0">
-      <div className="flex items-center gap-2 flex-wrap">
-        {/* 左侧：标题 */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: primaryColor }}>
-            <Share2 className="w-4 h-4 text-white" />
+    <div className="border-b border-gray-200 px-2 py-1.5 flex-shrink-0">
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {/* 左侧：标题 - 移动端隐藏 */}
+        <div className="flex items-center gap-2 flex-shrink-0 hidden sm:flex">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: primaryColor }}>
+            <Share2 className="w-3.5 h-3.5 text-white" />
           </div>
-          <span className="text-sm font-semibold text-gray-900 hidden sm:inline">{t('toolbar.title')}</span>
+          <span className="text-sm font-semibold text-gray-900">{t('toolbar.title')}</span>
         </div>
 
-        <div className="flex-1" />
+        {/* 移动端：搜索框全宽 */}
+        <div className="relative order-last sm:order-none w-full sm:w-auto flex items-center gap-1 sm:hidden">
+          <div className="relative flex-1">
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder={t('toolbar.searchPlaceholder')}
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              aria-label={t('toolbar.search')}
+              className="w-full pl-7 pr-8 py-2 bg-gray-100 border border-transparent rounded-lg text-xs focus:bg-white focus:border-gray-300 focus:outline-none transition-all min-h-[36px]"
+            />
+            <button
+              type="button"
+              onClick={handleSearchClick}
+              disabled={!searchQuery.trim()}
+              className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 rounded bg-purple-500 text-white hover:bg-purple-600 disabled:opacity-50 disabled:bg-gray-300 disabled:text-gray-500 min-w-[32px] min-h-[32px] flex items-center justify-center"
+              title={t('toolbar.search')}
+            >
+              <Search className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
 
-        {/* 中间：搜索框 */}
-        <div className="relative order-last sm:order-none w-full sm:w-auto flex items-center gap-1">
+        {/* 桌面端：搜索框 */}
+        <div className="relative order-last sm:order-none hidden sm:flex items-center gap-1">
           <div className="relative flex-1 sm:flex-none">
             <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
@@ -230,15 +254,15 @@ const GraphToolbar = ({
         </div>
 
         {/* 右侧：操作按钮 */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1 flex-shrink-0">
           {/* 添加实体按钮 */}
           <button
             type="button"
             onClick={onEntityButtonClick}
-            className="h-8 px-2.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 bg-blue-500 text-white hover:bg-blue-600"
+            className="h-8 w-8 sm:w-auto sm:px-2.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-center sm:gap-1.5 bg-blue-500 text-white hover:bg-blue-600"
             title={currentCaseId ? t('toolbar.addEntity') : t('toolbar.selectCaseFirst')}
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
             <span className="hidden md:inline">{t('toolbar.entity')}</span>
           </button>
 
@@ -246,7 +270,7 @@ const GraphToolbar = ({
           <button
             type="button"
             onClick={onRelationButtonClick}
-            className={`h-8 px-2.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
+            className={`h-8 w-8 sm:w-auto sm:px-2.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-center sm:gap-1.5 ${
               relationMode
                 ? 'text-white'
                 : 'bg-green-500 text-white hover:bg-green-600'
@@ -254,7 +278,7 @@ const GraphToolbar = ({
             style={relationMode ? { backgroundColor: 'var(--color-success, #22c55e)' } : {}}
             title={currentCaseId ? t('toolbar.relationHint') : t('toolbar.selectCaseFirst')}
           >
-            <Link2 className="w-3.5 h-3.5" />
+            <Link2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
             <span className="hidden md:inline">{relationMode ? t('common.cancel') : t('toolbar.relation')}</span>
           </button>
 
@@ -262,7 +286,7 @@ const GraphToolbar = ({
           <button
             type="button"
             onClick={onTogglePathAnalysis}
-            className={`h-8 px-2.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
+            className={`h-8 w-8 sm:w-auto sm:px-2.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-center sm:gap-1.5 ${
               showPathAnalysis
                 ? 'text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -270,7 +294,7 @@ const GraphToolbar = ({
             style={showPathAnalysis ? { backgroundColor: 'var(--color-success, #22c55e)' } : {}}
             title={t('toolbar.pathAnalysis')}
           >
-            <Route className="w-3.5 h-3.5" />
+            <Route className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
             <span className="hidden lg:inline">{t('toolbar.path')}</span>
           </button>
 
@@ -280,16 +304,15 @@ const GraphToolbar = ({
             onClick={onToggleFilters}
             aria-label={showFilters ? t('toolbar.closeFilter') : t('toolbar.openFilter')}
             aria-expanded={showFilters}
-            className={`h-8 w-8 rounded-lg transition-colors flex items-center justify-center ${
-              showFilters ? 'bg-purple-100 text-purple-600' : 'hover:bg-gray-100 text-gray-600'
-            }`}
+            className="h-8 w-8 rounded-lg transition-colors flex items-center justify-center"
+            style={showFilters ? { backgroundColor: 'var(--color-primary, #a855f7)', color: 'white' } : {}}
             title={t('toolbar.filter')}
           >
-            <Filter className="w-3.5 h-3.5" />
+            <Filter className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
           </button>
 
-          {/* 分隔线 */}
-          <div className="w-px h-6 bg-gray-200 mx-1" />
+          {/* 分隔线 - 移动端隐藏 */}
+          <div className="w-px h-6 bg-gray-200 mx-1 hidden sm:block" />
 
           {/* 缩放控制 */}
           <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
@@ -300,7 +323,7 @@ const GraphToolbar = ({
               aria-label={t('toolbar.zoomOut')}
               title={t('toolbar.zoomOut')}
             >
-              <ZoomOut className="w-3.5 h-3.5" />
+              <ZoomOut className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
             </button>
             <button
               type="button"
@@ -309,8 +332,8 @@ const GraphToolbar = ({
               aria-label={t('toolbar.fitCanvas')}
               title={t('toolbar.fitCanvas')}
             >
-              <Maximize className="w-3.5 h-3.5" />
-              <span className="text-[10px] text-gray-500 w-8 text-center">
+              <Maximize className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+              <span className="text-[10px] text-gray-500 w-8 text-center hidden sm:inline">
                 {zoomLevel && !isNaN(zoomLevel) ? `${Math.round(zoomLevel * 100)}%` : t('toolbar.fit')}
               </span>
             </button>
@@ -321,7 +344,7 @@ const GraphToolbar = ({
               aria-label={t('toolbar.zoomIn')}
               title={t('toolbar.zoomIn')}
             >
-              <ZoomIn className="w-3.5 h-3.5" />
+              <ZoomIn className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
             </button>
           </div>
         </div>

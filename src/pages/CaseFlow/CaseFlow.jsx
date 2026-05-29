@@ -7,11 +7,15 @@ import {
   ChevronLeft,
   LogIn,
   LogOut,
-  User
+  User,
+  Menu,
+  X,
+  List,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useGraphStore, useSchemaStore, useAuthStore } from '../../store';
 import { useAuth, useCaseData } from '../../hooks';
+import { useMobileDetect } from '../../hooks/useMobileDetect';
 import SchemaArchitect from './components/SchemaArchitect';
 import KnowledgeGraphCanvas from './components/KnowledgeGraphCanvas';
 import AICopilot from './components/AICopilot';
@@ -23,6 +27,11 @@ import './CaseFlow.css';
 const CaseFlow = () => {
   const [leftActiveModule, setLeftActiveModule] = useState('schema');
   const [mainView, setMainView] = useState('graph');
+
+  // Mobile detection
+  const isMobile = useMobileDetect(768);
+  // Mobile drawer state
+  const [mobileDrawer, setMobileDrawer] = useState(null); // null | 'left' | 'right'
 
   // Use extracted hooks
   const { isAuthenticated, user, logout, verifyAuth } = useAuth();
@@ -55,13 +64,9 @@ const CaseFlow = () => {
   // 初始化：验证登录状态并加载数据
   useEffect(() => {
     const initData = async () => {
-      // 验证登录状态
       await verifyAuth();
-      // 先加载 schemas，确保 currentSchemaId 有值
       await loadSchemas();
-      // 再加载 cases
       await loadCases();
-      // 最后初始化图谱
       initializeGraph();
     };
     initData();
@@ -72,12 +77,12 @@ const CaseFlow = () => {
     loadAllCasesToGraph();
   }, [currentSchemaId, loadAllCasesToGraph]);
 
-  // 创建新案例（使用 hook）
+  // 创建新案例
   const onCreateCase = useCallback(async () => {
     await handleCreateCase(isAuthenticated, () => setShowLoginModal(true));
   }, [handleCreateCase, isAuthenticated]);
 
-  // 删除案例回调（使用 useCallback 优化）
+  // 删除案例回调
   const onDeleteCase = useCallback(async (caseItem, e) => {
     e?.stopPropagation();
     await handleDeleteCase(caseItem);
@@ -86,7 +91,9 @@ const CaseFlow = () => {
   // 选中案例回调
   const onCaseSelect = useCallback((caseItem) => {
     handleCaseSelect(caseItem);
-  }, [handleCaseSelect]);
+    // 移动端选中案例后关闭抽屉
+    if (isMobile) setMobileDrawer(null);
+  }, [handleCaseSelect, isMobile]);
 
   // 取消选中回调
   const onCaseDeselect = useCallback(() => {
@@ -100,14 +107,70 @@ const CaseFlow = () => {
   const filteredCasesList = filteredCases;
   const LeftComponent = leftModules.find(m => m.id === leftActiveModule)?.component || SchemaArchitect;
 
+  // 移动端：关闭抽屉
+  const closeMobileDrawer = useCallback(() => setMobileDrawer(null), []);
+
+  // 移动端：打开左侧抽屉
+  const openLeftDrawer = useCallback(() => setMobileDrawer('left'), []);
+  // 移动端：打开右侧抽屉
+  const openRightDrawer = useCallback(() => setMobileDrawer('right'), []);
+
+  // 选中案例时自动关闭抽屉（移动端）
+  const handleCaseSelectMobile = useCallback((caseItem) => {
+    handleCaseSelect(caseItem);
+    if (isMobile) setMobileDrawer(null);
+  }, [handleCaseSelect, isMobile]);
+
   return (
-    <div className="caseflow-wrapper">
+    <div className={`caseflow-wrapper${isMobile ? ' caseflow-mobile' : ''}`}>
       <a href="#caseflow-main-content" className="caseflow-skip-link">
         {t('app.skipNav')}
       </a>
 
+      {/* 移动端顶部导航栏 */}
+      {isMobile && (
+        <header className="caseflow-mobile-header">
+          <button
+            className="caseflow-mobile-menu-btn"
+            onClick={openLeftDrawer}
+            aria-label={t('schema.overview')}
+          >
+            <Database size={20} />
+          </button>
+          <div className="caseflow-mobile-view-tabs">
+            <button
+              onClick={() => setMainView('graph')}
+              className={`caseflow-mobile-tab ${mainView === 'graph' ? 'active' : ''}`}
+            >
+              <Share2 size={18} />
+              <span>{t('tab.graph')}</span>
+            </button>
+            <button
+              onClick={() => setMainView('ai')}
+              className={`caseflow-mobile-tab ${mainView === 'ai' ? 'active' : ''}`}
+            >
+              <MessageSquare size={18} />
+              <span>{t('tab.ai')}</span>
+            </button>
+          </div>
+          <button
+            className="caseflow-mobile-menu-btn"
+            onClick={openRightDrawer}
+            aria-label={t('case.title')}
+          >
+            <List size={20} />
+            {focusCaseId && <span className="caseflow-mobile-badge" />}
+          </button>
+        </header>
+      )}
+
       {/* 左栏 - Schema 管理栏 */}
-      <aside className="caseflow-left">
+      <aside className={`caseflow-left${isMobile && mobileDrawer === 'left' ? ' caseflow-drawer-open' : ''}`}>
+        {isMobile && (
+          <button className="caseflow-drawer-close" onClick={closeMobileDrawer} aria-label="Close">
+            <X size={20} />
+          </button>
+        )}
         <div className="caseflow-left-header">
           <div className="caseflow-logo">
             <div className="caseflow-logo-icon">
@@ -180,40 +243,43 @@ const CaseFlow = () => {
 
       {/* 中间主窗口 */}
       <main className="caseflow-main" id="caseflow-main-content">
-        <div className="caseflow-top-bar">
-          <div className="caseflow-view-tabs" role="tablist">
+        {/* 桌面端顶栏 */}
+        {!isMobile && (
+          <div className="caseflow-top-bar">
+            <div className="caseflow-view-tabs" role="tablist">
+              <button
+                onClick={() => setMainView('graph')}
+                className={`caseflow-view-tab ${mainView === 'graph' ? 'active' : ''}`}
+                role="tab"
+                aria-selected={mainView === 'graph'}
+                aria-label={t('tab.graph')}
+              >
+                <Share2 size={16} aria-hidden="true" />
+                <span className="caseflow-view-tab-text">{t('tab.graph')}</span>
+              </button>
+              <button
+                onClick={() => setMainView('ai')}
+                className={`caseflow-view-tab ${mainView === 'ai' ? 'active' : ''}`}
+                role="tab"
+                aria-selected={mainView === 'ai'}
+                aria-label={t('tab.ai')}
+              >
+                <MessageSquare size={16} aria-hidden="true" />
+                <span className="caseflow-view-tab-text">{t('tab.ai')}</span>
+              </button>
+            </div>
+            <span className="caseflow-date">
+              {new Date().toLocaleDateString(locale === 'zh' ? 'zh-CN' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+            </span>
             <button
-              onClick={() => setMainView('graph')}
-              className={`caseflow-view-tab ${mainView === 'graph' ? 'active' : ''}`}
-              role="tab"
-              aria-selected={mainView === 'graph'}
-              aria-label={t('tab.graph')}
+              onClick={() => setLocale(locale === 'zh' ? 'en' : 'zh')}
+              className="caseflow-lang-switch"
+              title={locale === 'zh' ? 'Switch to English' : '切换到中文'}
             >
-              <Share2 size={16} aria-hidden="true" />
-              <span className="caseflow-view-tab-text">{t('tab.graph')}</span>
-            </button>
-            <button
-              onClick={() => setMainView('ai')}
-              className={`caseflow-view-tab ${mainView === 'ai' ? 'active' : ''}`}
-              role="tab"
-              aria-selected={mainView === 'ai'}
-              aria-label={t('tab.ai')}
-            >
-              <MessageSquare size={16} aria-hidden="true" />
-              <span className="caseflow-view-tab-text">{t('tab.ai')}</span>
+              {locale === 'zh' ? 'EN' : '中'}
             </button>
           </div>
-          <span className="caseflow-date">
-            {new Date().toLocaleDateString(locale === 'zh' ? 'zh-CN' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-          </span>
-          <button
-            onClick={() => setLocale(locale === 'zh' ? 'en' : 'zh')}
-            className="caseflow-lang-switch"
-            title={locale === 'zh' ? 'Switch to English' : '切换到中文'}
-          >
-            {locale === 'zh' ? 'EN' : '中'}
-          </button>
-        </div>
+        )}
 
         <div className="caseflow-main-content">
           <AnimatePresence mode="wait">
@@ -248,22 +314,34 @@ const CaseFlow = () => {
       </main>
 
       {/* 右栏 - 案例卡片栏 */}
-      <CaseListPanel
-        cases={cases}
-        filteredCasesList={filteredCasesList}
-        focusCaseId={focusCaseId}
-        focusMode={focusMode}
-        showCreateCase={showCreateCase}
-        setShowCreateCase={setShowCreateCase}
-        handleCaseSelect={onCaseSelect}
-        handleCaseDeselect={onCaseDeselect}
-        onDeleteCase={onDeleteCase}
-        getCaseSchemaName={getCaseSchemaName}
-        setMainView={setMainView}
-        isAuthenticated={isAuthenticated}
-        onShowLogin={() => setShowLoginModal(true)}
-        currentSchema={currentSchema}
-      />
+      <aside className={`caseflow-right${isMobile && mobileDrawer === 'right' ? ' caseflow-drawer-open' : ''}`}>
+        {isMobile && (
+          <button className="caseflow-drawer-close" onClick={closeMobileDrawer} aria-label="Close">
+            <X size={20} />
+          </button>
+        )}
+        <CaseListPanel
+          cases={cases}
+          filteredCasesList={filteredCasesList}
+          focusCaseId={focusCaseId}
+          focusMode={focusMode}
+          showCreateCase={showCreateCase}
+          setShowCreateCase={setShowCreateCase}
+          handleCaseSelect={handleCaseSelectMobile}
+          handleCaseDeselect={onCaseDeselect}
+          onDeleteCase={onDeleteCase}
+          getCaseSchemaName={getCaseSchemaName}
+          setMainView={(view) => { setMainView(view); if (isMobile) setMobileDrawer(null); }}
+          isAuthenticated={isAuthenticated}
+          onShowLogin={() => setShowLoginModal(true)}
+          currentSchema={currentSchema}
+        />
+      </aside>
+
+      {/* 移动端遮罩层 */}
+      {isMobile && mobileDrawer && (
+        <div className="caseflow-mobile-overlay" onClick={closeMobileDrawer} />
+      )}
 
       {/* 创建案例弹窗 */}
       <AnimatePresence>

@@ -238,7 +238,7 @@ const CaseCard = memo(({
         {/* 逻辑摘要 */}
         {config.showSummary && (
           <div className="caseflow-card-summary">
-            <FileText size={12} className="caseflow-card-summary-icon" />
+            <FileText size={12} className="caseflow-card-summary-icon flex-shrink-0" />
             <p className="caseflow-card-summary-text">{summary}</p>
           </div>
         )}
@@ -271,23 +271,27 @@ const CaseCard = memo(({
               <div className="caseflow-card-metric-item">
                 <Building size={12} />
                 <span className="caseflow-card-metric-value">{entityCount}</span>
-                <span className="caseflow-card-metric-label">{t('case.entityCount')}</span>
+                <span className="caseflow-card-metric-label hidden sm:inline">{t('case.entityCount')}</span>
+                <span className="caseflow-card-metric-label sm:hidden">实体</span>
               </div>
               <div className="caseflow-card-metric-item">
                 <Link2 size={12} />
                 <span className="caseflow-card-metric-value">{relationCount}</span>
-                <span className="caseflow-card-metric-label">{t('case.linkCount')}</span>
+                <span className="caseflow-card-metric-label hidden sm:inline">{t('case.linkCount')}</span>
+                <span className="caseflow-card-metric-label sm:hidden">关系</span>
               </div>
               <div className="caseflow-card-metric-item">
                 <Activity size={12} />
                 <span className="caseflow-card-metric-value">{topologyMetrics.avgDegree}</span>
-                <span className="caseflow-card-metric-label">{t('case.avgDegree')}</span>
+                <span className="caseflow-card-metric-label hidden sm:inline">{t('case.avgDegree')}</span>
+                <span className="caseflow-card-metric-label sm:hidden">度</span>
               </div>
               <div className="caseflow-card-metric-item">
                 <div className="caseflow-card-metric-density" style={{ '--density': topologyMetrics.completeness + '%' }}>
                   <div className="caseflow-card-metric-density-fill" />
                 </div>
-                <span className="caseflow-card-metric-label">{t('case.completeness')}</span>
+                <span className="caseflow-card-metric-label hidden sm:inline">{t('case.completeness')}</span>
+                <span className="caseflow-card-metric-label sm:hidden">完整</span>
               </div>
             </div>
           </div>
