@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Check, X, CheckCheck, XCircle } from 'lucide-react';
 import { useI18n } from '../../../../../i18n';
@@ -20,9 +20,19 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
     return 'text-gray-400';
   };
 
+  // 优化：将 entities 转为 Map，O(1) 查找替代 O(n) .find()
+  const entityColorMap = useMemo(() => {
+    const map = new Map();
+    if (entities) {
+      for (const e of entities) {
+        map.set(e.name, e.color || '#9ca3af');
+      }
+    }
+    return map;
+  }, [entities]);
+
   const getEntityColor = (entityName) => {
-    const entity = entities?.find(e => e.name === entityName);
-    return entity?.color || '#9ca3af';
+    return entityColorMap.get(entityName) || '#9ca3af';
   };
 
   // 批量操作

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   MessageSquare,
   Send,
@@ -734,6 +735,7 @@ const AICopilot = ({ onShowLogin }) => {
                       {message.role === 'assistant' ? (
                         <div className="markdown-content prose prose-sm max-w-none">
                           <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
                             disallowedElements={['script', 'iframe', 'object', 'embed', 'form', 'input']}
                             unwrapDisallowed={true}
                           >

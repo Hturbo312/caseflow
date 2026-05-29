@@ -96,10 +96,13 @@ router.post('/:name/invoke', authMiddleware, async (req, res) => {
   }
 
   try {
-    // 获取用户 AI 配置
+    // 获取用户 AI 配置（仅查询所需字段，减少数据传输）
     let userConfig = null;
     try {
-      const cfgResult = await pool.query('SELECT * FROM user_ai_configs WHERE user_id = $1', [userId]);
+      const cfgResult = await pool.query(
+        'SELECT api_key, endpoint, model, temperature, max_tokens, use_temperature, use_max_tokens FROM user_ai_configs WHERE user_id = $1',
+        [userId]
+      );
       if (cfgResult.rows.length > 0) {
         userConfig = cfgResult.rows[0];
       }
@@ -180,10 +183,13 @@ router.post('/:name/invoke/stream', authMiddleware, async (req, res) => {
     return res.status(400).json({ error: 'user_input 是必需的' });
   }
 
-  // 获取用户 AI 配置
+  // 获取用户 AI 配置（仅查询所需字段，减少数据传输）
   let userConfig = null;
   try {
-    const cfgResult = await pool.query('SELECT * FROM user_ai_configs WHERE user_id = $1', [userId]);
+    const cfgResult = await pool.query(
+      'SELECT api_key, endpoint, model, temperature, max_tokens, use_temperature, use_max_tokens FROM user_ai_configs WHERE user_id = $1',
+      [userId]
+    );
     if (cfgResult.rows.length > 0) {
       userConfig = cfgResult.rows[0];
     }
