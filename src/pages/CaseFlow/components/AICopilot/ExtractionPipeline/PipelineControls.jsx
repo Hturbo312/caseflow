@@ -82,7 +82,7 @@ const PipelineControls = memo(({ phase, isProcessing, onParseText, onGeneratePla
             className="w-full py-2.5 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
           >
             <RotateCcw size={16} />
-            {t('confirm.ok')}
+            {t('ai.retry')}
           </button>
         );
 

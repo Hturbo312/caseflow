@@ -160,21 +160,31 @@ router.post('/:caseId/batch-save-entities', authMiddleware, async (req, res) => 
     const { entities, autoEmbed = true } = req.body;
     if (!entities || !Array.isArray(entities)) return res.status(400).json({ error: 'entities 数组是必需的' });
 
-    const saved = [];
-    for (const e of entities) {
-      const result = await pool.query(
-        'INSERT INTO case_entities (case_id, name, entity_type, properties) VALUES ($1, $2, $3, $4) RETURNING *',
-        [caseId, e.name, e.entityType, JSON.stringify(e.properties || {})]
-      );
-      saved.push(result.rows[0]);
+    if (entities.length === 0) {
+      return res.json({ success: true, entities: [] });
     }
 
+    // 优化：使用单条批量 INSERT 代替 N 次独立查询
+    const values = entities.map((e, i) => {
+      const base = i * 4;
+      return `($1, $${base + 2}, $${base + 3}, $${base + 4})`;
+    }).join(', ');
+    const params = [caseId];
+    entities.forEach(e => {
+      params.push(e.name, e.entityType, JSON.stringify(e.properties || {}));
+    });
+
+    const result = await pool.query(
+      `INSERT INTO case_entities (case_id, name, entity_type, properties) VALUES ${values} RETURNING *`,
+      params
+    );
+
     // 实体保存完成后，自动触发嵌入生成（异步，不阻塞响应）
-    if (autoEmbed && saved.length > 0) {
+    if (autoEmbed && result.rows.length > 0) {
       triggerAutoEmbed(caseId, 'batch-save-entities').catch(e => console.error('[batch-save-entities] 自动嵌入失败:', e));
     }
 
-    res.json({ success: true, entities: saved });
+    res.json({ success: true, entities: result.rows });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

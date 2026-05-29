@@ -152,7 +152,7 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
                           ? 'bg-blue-500 border-blue-500 text-white'
                           : 'border-gray-300 hover:border-blue-400'
                       }`}
-                      title={selectedIds.has(rel.id) ? '取消选择' : '选择'}
+                      title={selectedIds.has(rel.id) ? t('toolbar.cancel') : t('toolbar.select')}
                     >
                       {selectedIds.has(rel.id) && <Check size={12} />}
                     </button>
