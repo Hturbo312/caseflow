@@ -30,12 +30,12 @@ export const useSessionHistory = (agentName) => {
     }
   }, [agentName]);
 
-  // Load session history when agent changes or auth status changes
+  // Load session history when agent changes (regardless of auth — demo data is public)
   useEffect(() => {
-    if (isAuthenticated && agentName) {
+    if (agentName) {
       loadHistory();
     }
-  }, [agentName, isAuthenticated, loadHistory]);
+  }, [agentName, loadHistory]);
 
   // Load specific session messages
   const handleLoadSession = useCallback(async (sessionId) => {
