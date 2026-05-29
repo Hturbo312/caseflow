@@ -14,6 +14,20 @@ import pool from '../db.js';
 
 const router = express.Router();
 
+// 获取用户 AI 配置（仅查询所需字段，减少数据传输）
+async function getUserAiConfig(userId) {
+  try {
+    const cfgResult = await pool.query(
+      'SELECT api_key, endpoint, model, temperature, max_tokens, use_temperature, use_max_tokens FROM user_ai_configs WHERE user_id = $1',
+      [userId]
+    );
+    return cfgResult.rows.length > 0 ? cfgResult.rows[0] : null;
+  } catch (e) {
+    console.error('获取用户 AI 配置失败:', e);
+    return null;
+  }
+}
+
 // 异步保存聊天记录（不阻塞响应）
 async function saveChatHistory(userId, agentName, sessionId, userInput, response) {
   try {
@@ -96,19 +110,8 @@ router.post('/:name/invoke', authMiddleware, async (req, res) => {
   }
 
   try {
-    // 获取用户 AI 配置（仅查询所需字段，减少数据传输）
-    let userConfig = null;
-    try {
-      const cfgResult = await pool.query(
-        'SELECT api_key, endpoint, model, temperature, max_tokens, use_temperature, use_max_tokens FROM user_ai_configs WHERE user_id = $1',
-        [userId]
-      );
-      if (cfgResult.rows.length > 0) {
-        userConfig = cfgResult.rows[0];
-      }
-    } catch (e) {
-      console.error('获取用户 AI 配置失败:', e);
-    }
+    // 获取用户 AI 配置
+    const userConfig = await getUserAiConfig(userId);
 
     // 使用缓存的 Agent 元数据
     const agent = await getAgentMeta(name);
@@ -183,19 +186,8 @@ router.post('/:name/invoke/stream', authMiddleware, async (req, res) => {
     return res.status(400).json({ error: 'user_input 是必需的' });
   }
 
-  // 获取用户 AI 配置（仅查询所需字段，减少数据传输）
-  let userConfig = null;
-  try {
-    const cfgResult = await pool.query(
-      'SELECT api_key, endpoint, model, temperature, max_tokens, use_temperature, use_max_tokens FROM user_ai_configs WHERE user_id = $1',
-      [userId]
-    );
-    if (cfgResult.rows.length > 0) {
-      userConfig = cfgResult.rows[0];
-    }
-  } catch (e) {
-    console.error('获取用户 AI 配置失败:', e);
-  }
+  // 获取用户 AI 配置
+  const userConfig = await getUserAiConfig(userId);
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');

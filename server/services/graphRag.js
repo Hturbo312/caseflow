@@ -365,6 +365,22 @@ export async function getRelatedCases(caseId, options = {}) {
   const otherCases = otherCasesResult.rows;
   const targetEmb = targetCase.embedding ? parseVector(targetCase.embedding) : null;
 
+  // 优化：批量查询所有其他案例的实体类型分布，避免 N+1 查询
+  const otherCaseIds = otherCases.map(c => c.id);
+  let otherTypeDistResult = { rows: [] };
+  if (otherCaseIds.length > 0) {
+    otherTypeDistResult = await pool.query(
+      'SELECT case_id, entity_type, COUNT(*) AS cnt FROM case_entities WHERE case_id = ANY($1) GROUP BY case_id, entity_type',
+      [otherCaseIds]
+    );
+  }
+  // 按 case_id 分组
+  const typeDistByCase = new Map();
+  for (const row of otherTypeDistResult.rows) {
+    if (!typeDistByCase.has(row.case_id)) typeDistByCase.set(row.case_id, new Map());
+    typeDistByCase.get(row.case_id).set(row.entity_type, parseInt(row.cnt));
+  }
+
   const recommendations = [];
   for (const oc of otherCases) {
     // 1. 图遍历分: 共享案例0概念邻居的 Jaccard 相似度
@@ -395,15 +411,8 @@ export async function getRelatedCases(caseId, options = {}) {
       caseSimScore = cosineSimilarity(targetEmb, otherEmb);
     }
 
-    // 3. 实体类型分布相似度
-    const otherTypeDistResult = await pool.query(
-      'SELECT entity_type, COUNT(*) AS cnt FROM case_entities WHERE case_id = $1 GROUP BY entity_type',
-      [oc.id]
-    );
-    const otherTypeDist = new Map();
-    for (const row of otherTypeDistResult.rows) {
-      otherTypeDist.set(row.entity_type, parseInt(row.cnt));
-    }
+    // 3. 实体类型分布相似度（使用预查询结果，避免 N+1）
+    const otherTypeDist = typeDistByCase.get(oc.id) || new Map();
 
     let typeSimScore = 0;
     const allTypes = new Set([...targetTypeDist.keys(), ...otherTypeDist.keys()]);
