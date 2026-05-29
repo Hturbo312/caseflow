@@ -4,6 +4,56 @@ import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// ============================================================
+// 共享：GraphML XML 构建器（export-all 和单案例 export 共用）
+// ============================================================
+const escapeXml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+const GRAPHML_KEYS = [
+  '  <key id="name" for="node" attr.name="name" attr.type="string"/>',
+  '  <key id="entityType" for="node" attr.name="entityType" attr.type="string"/>',
+  '  <key id="caseName" for="node" attr.name="caseName" attr.type="string"/>',
+  '  <key id="properties" for="node" attr.name="properties" attr.type="string"/>',
+  '  <key id="relationType" for="edge" attr.name="relationType" attr.type="string"/>',
+  '  <key id="caseNameEdge" for="edge" attr.name="caseName" attr.type="string"/>',
+].join('\n') + '\n';
+
+/**
+ * 构建 GraphML XML
+ * @param {string} graphId - graph 元素 id
+ * @param {Array} nodes - [{ id, name, entityType, caseName, properties }]
+ * @param {Array} edges - [{ source, target, relationType, caseName }]
+ * @returns {string} GraphML XML 字符串
+ */
+function buildGraphML(graphId, nodes, edges) {
+  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+  xml += '<graphml xmlns="http://graphml.graphdrawing.org/xmlns">\n';
+  xml += GRAPHML_KEYS;
+  xml += `  <graph id="${graphId}" edgedefault="directed">\n`;
+
+  const nodeElements = nodes.map(n =>
+    `    <node id="${n.id}">\n` +
+    `      <data key="name">${escapeXml(n.name)}</data>\n` +
+    `      <data key="entityType">${escapeXml(n.entityType)}</data>\n` +
+    `      <data key="caseName">${escapeXml(n.caseName)}</data>\n` +
+    `      <data key="properties">${escapeXml(n.properties)}</data>\n` +
+    `    </node>`
+  );
+
+  const edgeElements = edges.map(e =>
+    `    <edge source="${e.source}" target="${e.target}">\n` +
+    `      <data key="relationType">${escapeXml(e.relationType)}</data>\n` +
+    `      <data key="caseNameEdge">${escapeXml(e.caseName)}</data>\n` +
+    `    </edge>`
+  );
+
+  xml += nodeElements.join('\n') + '\n';
+  xml += edgeElements.join('\n') + '\n';
+  xml += '  </graph>\n';
+  xml += '</graphml>';
+  return xml;
+}
+
 // 获取所有案例
 router.get('/', authMiddleware, async (req, res) => {
   try {
@@ -154,25 +204,13 @@ router.get('/export-all', authMiddleware, async (req, res) => {
     }
 
     if (format === 'graphml') {
-      // GraphML 格式（Gephi / Cytoscape 兼容）
-      const escapeXml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-      let graphml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-      graphml += '<graphml xmlns="http://graphml.graphdrawing.org/xmlns">\n';
-      graphml += '  <key id="name" for="node" attr.name="name" attr.type="string"/>\n';
-      graphml += '  <key id="entityType" for="node" attr.name="entityType" attr.type="string"/>\n';
-      graphml += '  <key id="caseName" for="node" attr.name="caseName" attr.type="string"/>\n';
-      graphml += '  <key id="properties" for="node" attr.name="properties" attr.type="string"/>\n';
-      graphml += '  <key id="relationType" for="edge" attr.name="relationType" attr.type="string"/>\n';
-      graphml += '  <key id="caseNameEdge" for="edge" attr.name="caseName" attr.type="string"/>\n';
-      graphml += '  <graph id="caseflow-export" edgedefault="directed">\n';
-
+      // 构建 GraphML 数据（export-all 多案例模式：需要映射 entity name → node id）
       let nodeId = 0;
       const nameToNodeId = new Map();
-      const nodeElements = [];
-      const edgeElements = [];
+      const nodes = [];
+      const edges = [];
 
       for (const exp of allExports) {
-        // 构建 entityName -> entityType 映射，用于关系查找
         const entityNameToType = new Map();
         for (const e of exp.entities) {
           entityNameToType.set(e.name, e.entityType);
@@ -181,18 +219,15 @@ router.get('/export-all', authMiddleware, async (req, res) => {
           const id = `n${nodeId++}`;
           const key = `${e.name}::${e.entityType}::${exp.case_id}`;
           nameToNodeId.set(key, id);
-          const props = JSON.stringify(e.properties || {});
-          nodeElements.push(
-            `    <node id="${id}">\n` +
-            `      <data key="name">${escapeXml(e.name)}</data>\n` +
-            `      <data key="entityType">${escapeXml(e.entityType)}</data>\n` +
-            `      <data key="caseName">${escapeXml(exp.case_name)}</data>\n` +
-            `      <data key="properties">${escapeXml(props)}</data>\n` +
-            `    </node>`
-          );
+          nodes.push({
+            id,
+            name: e.name,
+            entityType: e.entityType,
+            caseName: exp.case_name,
+            properties: JSON.stringify(e.properties || {}),
+          });
         }
         for (const r of exp.relations) {
-          // 修复：使用 entityType（与 node key 一致）代替 case_name
           const sourceType = entityNameToType.get(r.source);
           const targetType = entityNameToType.get(r.target);
           const sourceKey = `${r.source}::${sourceType}::${exp.case_id}`;
@@ -200,26 +235,23 @@ router.get('/export-all', authMiddleware, async (req, res) => {
           const srcId = nameToNodeId.get(sourceKey);
           const tgtId = nameToNodeId.get(targetKey);
           if (srcId && tgtId) {
-            edgeElements.push(
-              `    <edge source="${srcId}" target="${tgtId}">\n` +
-              `      <data key="relationType">${escapeXml(r.type)}</data>\n` +
-              `      <data key="caseNameEdge">${escapeXml(exp.case_name)}</data>\n` +
-              `    </edge>`
-            );
+            edges.push({
+              source: srcId,
+              target: tgtId,
+              relationType: r.type,
+              caseName: exp.case_name,
+            });
           }
         }
       }
 
-      graphml += nodeElements.join('\n') + '\n';
-      graphml += edgeElements.join('\n') + '\n';
-      graphml += '  </graph>\n';
-      graphml += '</graphml>';
+      const graphml = buildGraphML('caseflow-export', nodes, edges);
 
       return res.json({
         format: 'graphml',
         graphml,
         total_nodes: nodeId,
-        total_edges: edgeElements.length,
+        total_edges: edges.length,
         total_cases: allExports.length,
       });
     }
@@ -411,46 +443,32 @@ router.get('/:id/export', authMiddleware, async (req, res) => {
     }
 
     if (format === 'graphml') {
-      // GraphML 格式（Gephi / Cytoscape 兼容）
-      const escapeXml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-      let graphml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-      graphml += '<graphml xmlns="http://graphml.graphdrawing.org/xmlns">\n';
-      graphml += '  <key id="name" for="node" attr.name="name" attr.type="string"/>\n';
-      graphml += '  <key id="entityType" for="node" attr.name="entityType" attr.type="string"/>\n';
-      graphml += '  <key id="caseName" for="node" attr.name="caseName" attr.type="string"/>\n';
-      graphml += '  <key id="properties" for="node" attr.name="properties" attr.type="string"/>\n';
-      graphml += '  <key id="relationType" for="edge" attr.name="relationType" attr.type="string"/>\n';
-      graphml += '  <key id="caseNameEdge" for="edge" attr.name="caseName" attr.type="string"/>\n';
-      graphml += '  <graph id="caseflow-case" edgedefault="directed">\n';
+      // 构建 GraphML 数据（单案例模式：直接使用 DB entity ID 作为 node id）
+      const nodes = entitiesResult.rows.map(e => ({
+        id: String(e.id),
+        name: e.name,
+        entityType: e.entity_type,
+        caseName: caseData.name,
+        properties: typeof e.properties === 'string' ? e.properties : JSON.stringify(e.properties || {}),
+      }));
 
-      const nodeElements = entitiesResult.rows.map(e => {
-        const props = typeof e.properties === 'string' ? e.properties : JSON.stringify(e.properties || {});
-        return `    <node id="${e.id}">\n` +
-          `      <data key="name">${escapeXml(e.name)}</data>\n` +
-          `      <data key="entityType">${escapeXml(e.entity_type)}</data>\n` +
-          `      <data key="caseName">${escapeXml(caseData.name)}</data>\n` +
-          `      <data key="properties">${escapeXml(props)}</data>\n` +
-          `    </node>`;
-      });
+      const edges = relationsResult.rows
+        .filter(r => r.source_entity_id && r.target_entity_id)
+        .map(r => ({
+          source: String(r.source_entity_id),
+          target: String(r.target_entity_id),
+          relationType: r.relation_type,
+          caseName: caseData.name,
+        }));
 
-      const edgeElements = relationsResult.rows.filter(r => r.source_name && r.target_name).map(r =>
-        `    <edge source="${r.source_entity_id || ''}" target="${r.target_entity_id || ''}">\n` +
-        `      <data key="relationType">${escapeXml(r.relation_type)}</data>\n` +
-        `      <data key="caseNameEdge">${escapeXml(caseData.name)}</data>\n` +
-        `    </edge>`
-      );
-
-      graphml += nodeElements.join('\n') + '\n';
-      graphml += edgeElements.join('\n') + '\n';
-      graphml += '  </graph>\n';
-      graphml += '</graphml>';
+      const graphml = buildGraphML('caseflow-case', nodes, edges);
 
       return res.json({
         format: 'graphml',
         graphml,
         case_name: caseData.name,
-        total_nodes: entitiesResult.rows.length,
-        total_edges: edgeElements.length,
+        total_nodes: nodes.length,
+        total_edges: edges.length,
         summary: exportData.summary,
       });
     }

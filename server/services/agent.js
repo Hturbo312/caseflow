@@ -382,19 +382,17 @@ export function buildSystemPrompt(agent, context) {
   return prompt;
 }
 
-// 调用 AI - 使用 node:https 而非 fetch（fetch 有 300s bodyTimeout 限制）
-export async function callAI(systemPrompt, messages, agent, userConfig) {
-  const cfg = resolveAiConfig(userConfig);
-  if (!cfg.apiKey || !cfg.endpoint) {
-    throw new Error('请先配置 AI API');
-  }
-
+/**
+ * 构建 AI 请求体（callAI 和 callAIStream 共享）
+ */
+function buildAiRequestBody(systemPrompt, messages, agent, cfg, extra = {}) {
   const requestBody = {
     model: cfg.model || 'glm-4-flash',
     messages: [
       { role: 'system', content: systemPrompt },
       ...messages
-    ]
+    ],
+    ...extra,
   };
 
   if (cfg.useTemperature) {
@@ -404,9 +402,22 @@ export async function callAI(systemPrompt, messages, agent, userConfig) {
     requestBody.max_tokens = cfg.maxTokens || 4096;
   }
 
+  // case_extractor 使用低温度以保证提取一致性
   if (agent.name === 'case_extractor') {
     requestBody.temperature = 0.3;
   }
+
+  return requestBody;
+}
+
+// 调用 AI - 使用 node:https 而非 fetch（fetch 有 300s bodyTimeout 限制）
+export async function callAI(systemPrompt, messages, agent, userConfig) {
+  const cfg = resolveAiConfig(userConfig);
+  if (!cfg.apiKey || !cfg.endpoint) {
+    throw new Error('请先配置 AI API');
+  }
+
+  const requestBody = buildAiRequestBody(systemPrompt, messages, agent, cfg);
 
   const body = JSON.stringify(requestBody);
   const url = new URL(cfg.endpoint);
@@ -455,25 +466,7 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
     throw new Error('请先配置 AI API');
   }
 
-  const requestBody = {
-    model: cfg.model || 'glm-4-flash',
-    messages: [
-      { role: 'system', content: systemPrompt },
-      ...messages
-    ],
-    stream: true
-  };
-
-  if (cfg.useTemperature) {
-    requestBody.temperature = cfg.temperature || 0.7;
-  }
-  if (cfg.useMaxTokens) {
-    requestBody.max_tokens = cfg.maxTokens || 4096;
-  }
-
-  if (agent.name === 'case_extractor') {
-    requestBody.temperature = 0.3;
-  }
+  const requestBody = buildAiRequestBody(systemPrompt, messages, agent, cfg, { stream: true });
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 600000); // 10分钟超时
