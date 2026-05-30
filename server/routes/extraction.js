@@ -153,7 +153,7 @@ router.post('/:caseId/save-entity', authMiddleware, async (req, res) => {
   }
 });
 
-// 批量保存实体
+// 批量保存实体（带去重：跳过已存在的同名同类型实体）
 router.post('/:caseId/batch-save-entities', authMiddleware, async (req, res) => {
   try {
     const { caseId } = req.params;
@@ -161,30 +161,72 @@ router.post('/:caseId/batch-save-entities', authMiddleware, async (req, res) => 
     if (!entities || !Array.isArray(entities)) return res.status(400).json({ error: 'entities 数组是必需的' });
 
     if (entities.length === 0) {
-      return res.json({ success: true, entities: [] });
+      return res.json({ success: true, entities: [], saved: 0, skipped: 0 });
     }
 
-    // 优化：使用单条批量 INSERT 代替 N 次独立查询
-    const values = entities.map((e, i) => {
-      const base = i * 4;
-      return `($1, $${base + 2}, $${base + 3}, $${base + 4})`;
-    }).join(', ');
-    const params = [caseId];
-    entities.forEach(e => {
-      params.push(e.name, e.entityType, JSON.stringify(e.properties || {}));
-    });
+    // 先去重：按 (name, entityType) 去重，保留第一条
+    const dedupedMap = new Map();
+    for (const e of entities) {
+      const key = `${e.name}::${e.entityType}`;
+      if (!dedupedMap.has(key)) {
+        dedupedMap.set(key, e);
+      }
+    }
+    const dedupedEntities = Array.from(dedupedMap.values());
 
-    const result = await pool.query(
-      `INSERT INTO case_entities (case_id, name, entity_type, properties) VALUES ${values} RETURNING *`,
-      params
+    // 查询已存在的实体（同名 + 同类型），避免重复插入
+    const existingNames = dedupedEntities.map(e => e.name);
+    const existingResult = await pool.query(
+      'SELECT id, name, entity_type FROM case_entities WHERE case_id = $1 AND name = ANY($2)',
+      [caseId, existingNames]
+    );
+    const existingSet = new Set(
+      existingResult.rows.map(r => `${r.name}::${r.entity_type}`)
     );
 
+    // 分离新实体和已存在的实体
+    const toInsert = [];
+    const skipped = [];
+    for (const e of dedupedEntities) {
+      const key = `${e.name}::${e.entityType}`;
+      if (existingSet.has(key)) {
+        skipped.push({ name: e.name, entityType: e.entityType, reason: '实体已存在' });
+      } else {
+        toInsert.push(e);
+      }
+    }
+
+    let savedEntities = [];
+    if (toInsert.length > 0) {
+      // 优化：使用单条批量 INSERT 代替 N 次独立查询
+      const values = toInsert.map((e, i) => {
+        const base = i * 4;
+        return `($1, $${base + 2}, $${base + 3}, $${base + 4})`;
+      }).join(', ');
+      const params = [caseId];
+      toInsert.forEach(e => {
+        params.push(e.name, e.entityType, JSON.stringify(e.properties || {}));
+      });
+
+      const result = await pool.query(
+        `INSERT INTO case_entities (case_id, name, entity_type, properties) VALUES ${values} RETURNING *`,
+        params
+      );
+      savedEntities = result.rows;
+    }
+
     // 实体保存完成后，自动触发嵌入生成（异步，不阻塞响应）
-    if (autoEmbed && result.rows.length > 0) {
+    if (autoEmbed && savedEntities.length > 0) {
       triggerAutoEmbed(caseId, 'batch-save-entities').catch(e => console.error('[batch-save-entities] 自动嵌入失败:', e));
     }
 
-    res.json({ success: true, entities: result.rows });
+    res.json({
+      success: true,
+      entities: savedEntities,
+      saved: savedEntities.length,
+      skipped,
+      total_requested: entities.length,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

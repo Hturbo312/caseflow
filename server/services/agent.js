@@ -98,24 +98,44 @@ export async function getAgentMeta(name) {
   return null;
 }
 
+// Schema 上下文缓存（带 TTL，避免重复 DB 查询）
+let schemaContextCache = new Map();
+let schemaContextCacheTime = 0;
+const SCHEMA_CONTEXT_CACHE_TTL = 60000; // 60秒缓存
+
 /**
  * 加载 Schema 上下文（schema + entityTypes + relations），带缓存
  */
 async function loadSchemaContext(schemaId) {
   if (!schemaId) return null;
+
+  const now = Date.now();
+  if (now - schemaContextCacheTime > SCHEMA_CONTEXT_CACHE_TTL) {
+    schemaContextCache.clear();
+    schemaContextCacheTime = now;
+  }
+
+  const cacheKey = `schema:${schemaId}`;
+  if (schemaContextCache.has(cacheKey)) {
+    return schemaContextCache.get(cacheKey);
+  }
+
   const [schemaResult, entityTypesResult, relationsResult] = await Promise.all([
     pool.query('SELECT * FROM schemas WHERE id = $1', [schemaId]),
     pool.query('SELECT * FROM entity_types WHERE schema_id = $1', [schemaId]),
     pool.query('SELECT * FROM relations WHERE schema_id = $1', [schemaId])
   ]);
   if (schemaResult.rows.length === 0) return null;
-  return {
+
+  const context = {
     schema: {
       ...schemaResult.rows[0],
       entityTypes: entityTypesResult.rows,
       relations: relationsResult.rows
     }
   };
+  schemaContextCache.set(cacheKey, context);
+  return context;
 }
 
 // 构建 Agent 上下文（并行查询）

@@ -129,7 +129,11 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
           setPhase('error', t('common.saveFailed'));
           return;
         }
-        console.log(`[handleFinalize] 保存了 ${approvedEntities.length} 个实体`);
+        const entData = await entRes.json();
+        console.log(`[handleFinalize] 保存了 ${entData.saved ?? approvedEntities.length} 个实体`);
+        if (entData.skipped?.length > 0) {
+          console.warn(`[handleFinalize] 跳过了 ${entData.skipped.length} 个重复实体:`, entData.skipped);
+        }
       }
 
       // 2. 保存已审核的关系（在标记完成之前保存，确保数据完整性）
