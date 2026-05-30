@@ -252,6 +252,24 @@ export async function buildAgentContext(agentName, context, userInput) {
   return result;
 }
 
+/**
+ * 格式化 Schema 上下文为可读文本（DRY helper）
+ * @param {Object} schema - { entityTypes, relations }
+ * @param {Object} options - { relationLabel } 关系部分标题
+ * @returns {string} 格式化后的文本
+ */
+function formatSchemaContext(schema, options = {}) {
+  const { relationLabel = '关系类型' } = options;
+  const entityTypes = schema.entityTypes?.map(e => {
+    const props = e.properties?.map(p => `${p.name}(${p.type})`).join(', ') || '无属性';
+    return `- ${e.name}: [${props}]`;
+  }).join('\n') || '';
+  const relations = schema.relations?.map(r =>
+    `- ${r.name}: ${r.from_entity_type} → ${r.to_entity_type}`
+  ).join('\n') || '';
+  return { entityTypes, relations, relationLabel };
+}
+
 // 构建系统提示
 export function buildSystemPrompt(agent, context) {
   let prompt = agent.system_prompt || '';
@@ -262,14 +280,7 @@ export function buildSystemPrompt(agent, context) {
 
     case 'case_extractor':
       if (context.schema) {
-        const entityTypes = context.schema.entityTypes?.map(e => {
-          const props = e.properties?.map(p => `${p.name}(${p.type})`).join(', ') || '无属性';
-          return `- ${e.name}: [${props}]`;
-        }).join('\n') || '';
-        const relations = context.schema.relations?.map(r =>
-          `- ${r.name}: ${r.from_entity_type} → ${r.to_entity_type}`
-        ).join('\n') || '';
-
+        const { entityTypes, relations } = formatSchemaContext(context.schema);
         prompt += `\n\n## 当前 Schema 结构\n\n### 实体类型\n${entityTypes}\n\n### 关系类型（实体之间的连接方式）\n${relations}`;
       }
       if (context.case) {
@@ -282,13 +293,7 @@ export function buildSystemPrompt(agent, context) {
 
     case 'schema_analyzer':
       if (context.schema) {
-        const entityTypes = context.schema.entityTypes?.map(e => {
-          const props = e.properties?.map(p => `${p.name}(${p.type})`).join(', ') || '无属性';
-          return `- ${e.name}: [${props}]`;
-        }).join('\n') || '';
-        const relations = context.schema.relations?.map(r =>
-          `- ${r.name}: ${r.from_entity_type} → ${r.to_entity_type}`
-        ).join('\n') || '';
+        const { entityTypes, relations } = formatSchemaContext(context.schema);
         prompt += `\n\n## Schema 定义\n\n实体类型：\n${entityTypes}\n\n关系类型：\n${relations}`;
       }
       break;
@@ -480,7 +485,14 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
   const requestBody = buildAiRequestBody(systemPrompt, messages, agent, cfg, { stream: true });
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 600000); // 10分钟超时
+  const overallTimeout = setTimeout(() => controller.abort(), 600000); // 10分钟总超时
+  const IDLE_TIMEOUT_MS = 120000; // 2分钟空闲超时（无数据到达时）
+  let idleTimeout = setTimeout(() => controller.abort(), IDLE_TIMEOUT_MS);
+
+  function resetIdleTimeout() {
+    clearTimeout(idleTimeout);
+    idleTimeout = setTimeout(() => controller.abort(), IDLE_TIMEOUT_MS);
+  }
 
   const response = await fetch(cfg.endpoint, {
     method: 'POST',
@@ -492,7 +504,7 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
     signal: controller.signal
   });
 
-  clearTimeout(timeoutId);
+  clearTimeout(overallTimeout);
 
   if (!response.ok) {
     // 尝试从错误响应中提取有意义的错误信息
@@ -512,11 +524,15 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  let totalChunks = 0;
 
   try {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
+
+      resetIdleTimeout(); // 收到数据则重置空闲超时
+      totalChunks++;
 
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
@@ -529,11 +545,18 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
 
           try {
             const parsed = JSON.parse(data);
+            // 检测 API 错误响应（流中可能返回 error 字段）
+            if (parsed.error) {
+              const errMsg = parsed.error.message || JSON.stringify(parsed.error);
+              throw new Error(`AI 流式响应错误: ${errMsg}`);
+            }
             const content = parsed.choices?.[0]?.delta?.content;
             if (content) {
               onChunk(content);
             }
           } catch (e) {
+            // 如果是上述 throw 的 API 错误，重新抛出
+            if (e.message && e.message.startsWith('AI 流式响应错误')) throw e;
             // 解析失败可能是 JSON 不完整，保留当前行到 buffer 供下次合并
             // 注意：需要保留 "data: " 前缀，否则下次迭代无法识别
             buffer = (buffer ? buffer + '\n' : '') + 'data: ' + line;
@@ -542,11 +565,13 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
       }
     }
   } catch (err) {
+    clearTimeout(idleTimeout); // 清理空闲超时
     if (err.name === 'AbortError') {
-      throw new Error('AI 流式调用超时，请稍后重试');
+      throw new Error(`AI 流式调用超时（已接收 ${totalChunks} 个 chunk），请稍后重试`);
     }
     throw err;
   }
+  clearTimeout(idleTimeout); // 流完成，清理空闲超时
 }
 
 // 解析 Agent 输出
