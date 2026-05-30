@@ -140,13 +140,19 @@ router.post('/:caseId/infer-relations', authMiddleware, async (req, res) => {
 router.post('/:caseId/save-entity', authMiddleware, async (req, res) => {
   try {
     const { caseId } = req.params;
-    const { name, entityType, properties } = req.body;
+    const { name, entityType, properties, autoEmbed = true } = req.body;
     if (!name || !entityType) return res.status(400).json({ error: 'name 和 entityType 是必需的' });
 
     const result = await pool.query(
       'INSERT INTO case_entities (case_id, name, entity_type, properties) VALUES ($1, $2, $3, $4) RETURNING *',
       [caseId, name, entityType, JSON.stringify(properties || {})]
     );
+
+    // 实体保存完成后，自动触发嵌入生成（异步，不阻塞响应）
+    if (autoEmbed) {
+      triggerAutoEmbed(caseId, 'save-entity').catch(e => console.error('[save-entity] 自动嵌入失败:', e));
+    }
+
     res.json({ success: true, entity: result.rows[0] });
   } catch (error) {
     res.status(500).json({ error: error.message });

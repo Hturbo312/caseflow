@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { schemaApi, caseApi, authApi, agentApi, chatApi, extractionApi } from '../services/api';
-import { authHelper } from '../utils';
+import { authHelper, API_BASE_URL } from '../utils';
 
 // ============================================
 // Auth Store
@@ -1511,21 +1511,46 @@ export const useExtractionStore = create((set, get) => ({
 
     set({ phase: 'finalizing', phaseLabel: '保存中...', isProcessing: true });
     try {
-      // 收集所有 approved 的实体
+      const token = authHelper.getToken();
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      };
+
+      // 收集所有 approved 的实体和关系
       const { candidates, relationCandidates } = get();
       const approvedEntities = Object.values(candidates).flat().filter(c => c.status === 'approved');
+      const approvedRelations = relationCandidates?.filter(r => r.status === 'approved') || [];
 
       // 批量保存实体
       if (approvedEntities.length > 0) {
-        await extractionApi.batchSaveEntities(currentCaseId, approvedEntities.map(c => ({
-          name: c.name,
-          entityType: c.entityType,
-          properties: c.properties
-        })));
+        await fetch(`${API_BASE_URL}/extraction/${currentCaseId}/batch-save-entities`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ entities: approvedEntities.map(c => ({
+            name: c.name,
+            entityType: c.entityType,
+            properties: c.properties
+          })), autoEmbed: false }),
+        });
       }
 
-      // 完成
-      await extractionApi.finalize(currentCaseId);
+      // 批量保存已审核的关系
+      if (approvedRelations.length > 0) {
+        await fetch(`${API_BASE_URL}/extraction/${currentCaseId}/batch-save-relations`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ relations: approvedRelations, autoEmbed: false }),
+        });
+      }
+
+      // 调用后端 finalize：标记 completed + 触发 autoEmbed
+      await fetch(`${API_BASE_URL}/extraction/${currentCaseId}/finalize`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ autoEmbed: true }),
+      });
+
       set({ phase: 'completed', phaseLabel: '提取完成', isProcessing: false });
       return { success: true };
     } catch (e) {
