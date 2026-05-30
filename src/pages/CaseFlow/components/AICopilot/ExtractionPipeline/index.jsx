@@ -179,21 +179,27 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
       }
 
       // 3. 调用后端 finalize：标记 case_memory 为 completed + 触发 autoEmbed
+      // 同时传递已审核的关系作为安全网（后端 saveRelationsBulk 有去重保护，不会重复插入）
       const finalizeRes = await fetch(`${API_BASE_URL}/extraction/${caseId}/finalize`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ autoEmbed: true }),
+        body: JSON.stringify({ relations: approvedRelations, autoEmbed: true }),
       });
       if (finalizeRes.ok) {
         const finalizeData = await finalizeRes.json();
         console.log(`[handleFinalize] 后端 finalize 完成:`, finalizeData.data);
         toast.success(t('ai.finalizeSuccess'));
       } else {
+        let errorMsg = t('ai.finalizeFailed');
+        try {
+          const errorData = await finalizeRes.json();
+          if (errorData.error) errorMsg = `${t('ai.finalizeFailed')} ${errorData.error}`;
+        } catch { /* ignore parse error */ }
         console.error(`[handleFinalize] 后端 finalize 失败: ${finalizeRes.status}`);
-        toast.error(t('ai.finalizeFailed'));
+        toast.error(errorMsg);
         setPhase('error', t('common.saveFailed'));
         return;
       }

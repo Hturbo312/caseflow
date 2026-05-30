@@ -691,9 +691,14 @@ export async function finalizeCase(caseId, options = {}) {
 
   // 保存审核通过的关系候选（复用共享函数）
   let savedRelations = 0;
+  let relationSkipped = [];
   if (relations.length > 0) {
     const result = await saveRelationsBulk(caseId, relations);
     savedRelations = result.savedCount;
+    relationSkipped = result.skipped || [];
+    if (relationSkipped.length > 0) {
+      console.log(`[finalizeCase] 关系保存: ${savedRelations} 条已保存, ${relationSkipped.length} 条跳过`);
+    }
   }
 
   // 更新 case_memory
@@ -711,7 +716,7 @@ export async function finalizeCase(caseId, options = {}) {
     triggerAutoEmbed(caseId, 'finalizeCase').catch(e => console.error('[finalizeCase] 自动嵌入失败:', e));
   }
 
-  return { success: true, schema_id: schemaId, saved_relations: savedRelations };
+  return { success: true, schema_id: schemaId, saved_relations: savedRelations, skipped_relations: relationSkipped };
 }
 
 // 异步触发嵌入生成（统一函数，供 extraction.js 和 finalizeCase 共用）
