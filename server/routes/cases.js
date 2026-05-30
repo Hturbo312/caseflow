@@ -267,13 +267,19 @@ router.get('/export-all', authMiddleware, async (req, res) => {
   }
 });
 
-// 获取案例详情
+// 获取案例详情（优化：3 个查询并行执行，减少等待时间）
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
-    const caseResult = await pool.query('SELECT * FROM cases WHERE id = $1', [id]);
-    const entitiesResult = await pool.query('SELECT * FROM case_entities WHERE case_id = $1', [id]);
-    const relationsResult = await pool.query('SELECT * FROM case_relations WHERE case_id = $1', [id]);
+    const [caseResult, entitiesResult, relationsResult] = await Promise.all([
+      pool.query('SELECT * FROM cases WHERE id = $1', [id]),
+      pool.query('SELECT * FROM case_entities WHERE case_id = $1', [id]),
+      pool.query('SELECT * FROM case_relations WHERE case_id = $1', [id])
+    ]);
+
+    if (caseResult.rows.length === 0) {
+      return res.status(404).json({ error: '案例不存在' });
+    }
 
     res.json({
       case: caseResult.rows[0],

@@ -73,13 +73,29 @@ const GraphToolbar = ({
     { value: 4, label: t('toolbar.neighbors4') },
   ];
 
+  // 优化：使用 ref 存储 dropdown 状态，避免 handleClickOutside 频繁重建导致事件监听器反复注册/注销
+  const showSearchResultsRef = useRef(showSearchResults);
+  const showDepthDropdownRef = useRef(showDepthDropdown);
+  const showExportDropdownRef = useRef(showExportDropdown);
+  const onToggleSearchResultsRef = useRef(onToggleSearchResults);
+
+  useEffect(() => {
+    showSearchResultsRef.current = showSearchResults;
+    showDepthDropdownRef.current = showDepthDropdown;
+    showExportDropdownRef.current = showExportDropdown;
+    onToggleSearchResultsRef.current = onToggleSearchResults;
+  });
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (showSearchResults || showDepthDropdown || showExportDropdown) {
+      const sr = showSearchResultsRef.current;
+      const sd = showDepthDropdownRef.current;
+      const ed = showExportDropdownRef.current;
+      if (sr || sd || ed) {
         const target = e.target;
         if (!target.closest('.search-results-dropdown') && !target.closest('.depth-dropdown') && !target.closest('.export-dropdown')) {
-          onToggleSearchResults?.(false);
+          onToggleSearchResultsRef.current?.(false);
           setShowDepthDropdown(false);
           setShowExportDropdown(false);
         }
@@ -87,7 +103,7 @@ const GraphToolbar = ({
     };
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
-  }, [showSearchResults, showDepthDropdown, showExportDropdown, onToggleSearchResults]);
+  }, []); // 空依赖：只注册/注销一次
 
   // Handle search button click
   const handleSearchClick = () => {
