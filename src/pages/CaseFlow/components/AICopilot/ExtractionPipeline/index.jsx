@@ -199,6 +199,8 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
       }
 
       setPhase('completed', t('ai.caseBreakdownComplete'));
+      // 重置提取状态，避免重新打开时显示旧数据
+      useExtractionStore.getState().reset();
       if (onComplete) {
         onComplete();
       }

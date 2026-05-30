@@ -99,6 +99,7 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
         <div className="flex gap-3 text-xs text-gray-500">
           <span>{t('pipeline.totalRelations', { count: stats.total })}</span>
           <span className="text-green-600">{t('pipeline.approved')} {stats.approved}</span>
+          {stats.skipped > 0 && <span className="text-gray-400">{t('pipeline.skipped')} {stats.skipped}</span>}
           {stats.pending > 0 && <span className="text-amber-600">{t('pipeline.pending')} {stats.pending}</span>}
         </div>
       </div>
