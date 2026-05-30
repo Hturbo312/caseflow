@@ -236,8 +236,8 @@ export async function buildAgentContext(agentName, context, userInput) {
     case 'text_parser':
       if (context?.case_text) result.case_text = context.case_text;
       if (context?.schema_id) {
-        const etResult = await pool.query('SELECT * FROM entity_types WHERE schema_id = $1', [context.schema_id]);
-        result.schema_entity_types = etResult.rows.map(e => e.name);
+        const tpSchema = await loadSchemaContext(context.schema_id);
+        if (tpSchema) result.schema_entity_types = tpSchema.schema.entityTypes.map(e => e.name);
       }
       break;
 
@@ -257,8 +257,8 @@ export async function buildAgentContext(agentName, context, userInput) {
 
     case 'relation_inferrer':
       if (context?.schema_id) {
-        const relResult = await pool.query('SELECT * FROM relations WHERE schema_id = $1', [context.schema_id]);
-        result.schema_relations = relResult.rows;
+        const riSchema = await loadSchemaContext(context.schema_id);
+        if (riSchema) result.schema_relations = riSchema.schema.relations;
       }
       if (context?.case_id) {
         const caseResult = await pool.query('SELECT name, description FROM cases WHERE id = $1', [context.case_id]);
