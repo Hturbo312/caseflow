@@ -339,21 +339,21 @@ const GraphToolbar = ({
                     onClick={() => { onExport?.('json'); setShowExportDropdown(false); }}
                     className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 text-gray-700"
                   >
-                    JSON
+                    {t('toolbar.exportJSON')}
                   </button>
                   <button
                     type="button"
                     onClick={() => { onExport?.('csv'); setShowExportDropdown(false); }}
                     className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 text-gray-700"
                   >
-                    CSV
+                    {t('toolbar.exportCSV')}
                   </button>
                   <button
                     type="button"
                     onClick={() => { onExport?.('graphml'); setShowExportDropdown(false); }}
                     className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 text-gray-700"
                   >
-                    GraphML
+                    {t('toolbar.exportGraphML')}
                   </button>
                 </div>
               )}

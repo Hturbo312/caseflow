@@ -22,18 +22,18 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
   };
 
   // 优化：将 entities 转为 Map，O(1) 查找替代 O(n) .find()
-  const entityColorMap = useMemo(() => {
+  const entityInfoMap = useMemo(() => {
     const map = new Map();
     if (entities) {
       for (const e of entities) {
-        map.set(e.name, e.color || '#9ca3af');
+        map.set(e.name, { color: e.color || '#9ca3af', entityType: e.entityType || '' });
       }
     }
     return map;
   }, [entities]);
 
-  const getEntityColor = (entityName) => {
-    return entityColorMap.get(entityName) || '#9ca3af';
+  const getEntityInfo = (entityName) => {
+    return entityInfoMap.get(entityName) || { color: '#9ca3af', entityType: '' };
   };
 
   // 批量操作
@@ -142,7 +142,7 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
       )}
 
       {/* 关系列表 */}
-      <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+      <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
         <AnimatePresence>
           {relations.map((rel) => (
             <motion.div
@@ -181,9 +181,12 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
                   )}
                   <span
                     className="font-medium px-2 py-0.5 rounded"
-                    style={{ backgroundColor: `${getEntityColor(rel.sourceName)}15`, color: getEntityColor(rel.sourceName) }}
+                    style={{ backgroundColor: `${getEntityInfo(rel.sourceName).color}15`, color: getEntityInfo(rel.sourceName).color }}
                   >
                     {rel.sourceName}
+                    {getEntityInfo(rel.sourceName).entityType && (
+                      <span className="ml-1 text-[10px] opacity-60">({getEntityInfo(rel.sourceName).entityType})</span>
+                    )}
                   </span>
                   <ArrowRight size={14} className="text-gray-400 flex-shrink-0" />
                   <span className="px-2 py-0.5 bg-purple-100 text-purple-600 rounded text-xs font-medium">
@@ -192,9 +195,12 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
                   <ArrowRight size={14} className="text-gray-400 flex-shrink-0" />
                   <span
                     className="font-medium px-2 py-0.5 rounded"
-                    style={{ backgroundColor: `${getEntityColor(rel.targetName)}15`, color: getEntityColor(rel.targetName) }}
+                    style={{ backgroundColor: `${getEntityInfo(rel.targetName).color}15`, color: getEntityInfo(rel.targetName).color }}
                   >
                     {rel.targetName}
+                    {getEntityInfo(rel.targetName).entityType && (
+                      <span className="ml-1 text-[10px] opacity-60">({getEntityInfo(rel.targetName).entityType})</span>
+                    )}
                   </span>
                   <span className={`text-xs ${getConfidenceColor(rel.confidence)}`}>
                     {Math.round((rel.confidence || 0) * 100)}%

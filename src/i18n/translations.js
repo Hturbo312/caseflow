@@ -63,6 +63,9 @@ export const zh = {
   'toolbar.close': '关闭',
   'toolbar.export': '导出',
   'toolbar.exportGraph': '导出图谱数据',
+  'toolbar.exportJSON': 'JSON 格式',
+  'toolbar.exportCSV': 'CSV 格式',
+  'toolbar.exportGraphML': 'GraphML 格式',
   // Toast messages
   'toast.fillNameType': '请填写实体名称和类型',
   'toast.selectCaseFirst': '请先选择一个案例',
@@ -575,6 +578,9 @@ export const en = {
   'toolbar.close': 'Close',
   'toolbar.export': 'Export',
   'toolbar.exportGraph': 'Export graph data',
+  'toolbar.exportJSON': 'JSON Format',
+  'toolbar.exportCSV': 'CSV Format',
+  'toolbar.exportGraphML': 'GraphML Format',
   // Toast messages
   'toast.fillNameType': 'Please fill in entity name and type',
   'toast.selectCaseFirst': 'Please select a case first',
