@@ -13,6 +13,7 @@ router.get('/:caseId/progress', authMiddleware, async (req, res) => {
     const progress = await pipeline.getExtractionProgress(caseId);
     res.json(progress);
   } catch (error) {
+    console.error(`[extraction/:caseId/progress] 错误:`, error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -27,6 +28,7 @@ router.post('/:caseId/schema-analyze', authMiddleware, async (req, res) => {
     const result = await pipeline.runSchemaAnalysis(schemaId);
     res.json({ success: true, data: result });
   } catch (error) {
+    console.error(`[extraction/:caseId/schema-analyze] 错误:`, error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -41,6 +43,7 @@ router.post('/:caseId/parse-text', authMiddleware, async (req, res) => {
     const result = await pipeline.parseCaseText(caseId, caseText, schemaId);
     res.json({ success: true, data: result });
   } catch (error) {
+    console.error(`[extraction/:caseId/parse-text] 错误:`, error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -55,6 +58,7 @@ router.post('/:caseId/plan', authMiddleware, async (req, res) => {
     const result = await pipeline.generateExtractionPlan(caseId, schemaId);
     res.json({ success: true, data: result });
   } catch (error) {
+    console.error(`[extraction/:caseId/plan] 错误:`, error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -67,6 +71,7 @@ router.get('/:caseId/plan', authMiddleware, async (req, res) => {
     const progress = memResult.rows[0]?.extraction_progress || {};
     res.json({ plan: progress.plan || null, progress });
   } catch (error) {
+    console.error(`[extraction/:caseId/plan GET] 错误:`, error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -84,6 +89,7 @@ router.post('/:caseId/extract-all', authMiddleware, async (req, res) => {
     const result = await pipeline.extractAllEntities(caseId, schemaId);
     res.json({ success: true, data: result });
   } catch (error) {
+    console.error(`[extraction/:caseId/extract-all] 错误:`, error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -101,6 +107,7 @@ router.post('/:caseId/extract/:entityType', authMiddleware, async (req, res) => 
     const result = await pipeline.extractEntities(caseId, entityType, schemaId);
     res.json({ success: true, data: result });
   } catch (error) {
+    console.error(`[extraction/:caseId/extract/:entityType] 错误:`, error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -115,6 +122,7 @@ router.post('/:caseId/check-consistency/:entityType', authMiddleware, async (req
     const result = await pipeline.checkConsistency(caseId, entityType, candidates);
     res.json({ success: true, data: result });
   } catch (error) {
+    console.error(`[extraction/:caseId/check-consistency/:entityType] 错误:`, error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -132,6 +140,7 @@ router.post('/:caseId/infer-relations', authMiddleware, async (req, res) => {
     const result = await pipeline.inferRelations(caseId, schemaId, candidates);
     res.json({ success: true, data: result });
   } catch (error) {
+    console.error(`[extraction/:caseId/infer-relations] 错误:`, error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -155,6 +164,7 @@ router.post('/:caseId/save-entity', authMiddleware, async (req, res) => {
 
     res.json({ success: true, entity: result.rows[0] });
   } catch (error) {
+    console.error(`[extraction/:caseId/save-entity] 错误:`, error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -234,6 +244,7 @@ router.post('/:caseId/batch-save-entities', authMiddleware, async (req, res) => 
       total_requested: entities.length,
     });
   } catch (error) {
+    console.error(`[extraction/:caseId/batch-save-entities] 错误:`, error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -253,6 +264,7 @@ router.post('/:caseId/save-relation', authMiddleware, async (req, res) => {
     );
     res.json({ success: true, relation: result.rows[0] });
   } catch (error) {
+    console.error(`[extraction/:caseId/save-relation] 错误:`, error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -265,6 +277,7 @@ router.post('/:caseId/finalize', authMiddleware, async (req, res) => {
     const result = await pipeline.finalizeCase(caseId, { relations, autoEmbed });
     res.json({ success: true, data: result });
   } catch (error) {
+    console.error(`[extraction/:caseId/finalize] 错误:`, error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -288,6 +301,7 @@ router.post('/:caseId/batch-save-relations', authMiddleware, async (req, res) =>
 
     res.json({ success: true, saved: result.savedCount, skipped: result.skipped, relations: result.savedRelations });
   } catch (error) {
+    console.error(`[extraction/:caseId/batch-save-relations] 错误:`, error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -299,6 +313,7 @@ router.get('/:caseId/entities', authMiddleware, async (req, res) => {
     const result = await pool.query('SELECT id, name, entity_type, color FROM case_entities WHERE case_id = $1', [caseId]);
     res.json({ entities: result.rows });
   } catch (error) {
+    console.error(`[extraction/:caseId/entities] 错误:`, error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -310,6 +325,7 @@ router.get('/:caseId/segments', authMiddleware, async (req, res) => {
     const result = await pool.query('SELECT * FROM text_segments WHERE case_id = $1 ORDER BY segment_index', [caseId]);
     res.json({ segments: result.rows });
   } catch (error) {
+    console.error(`[extraction/:caseId/segments] 错误:`, error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -321,6 +337,7 @@ router.get('/:caseId/memory', authMiddleware, async (req, res) => {
     const result = await pool.query('SELECT * FROM case_memory WHERE case_id = $1', [caseId]);
     res.json({ memory: result.rows[0] || null });
   } catch (error) {
+    console.error(`[extraction/:caseId/memory] 错误:`, error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -332,6 +349,7 @@ router.get('/schema/:schemaId/memory', authMiddleware, async (req, res) => {
     const result = await pool.query('SELECT * FROM schema_memory WHERE schema_id = $1 ORDER BY version DESC LIMIT 1', [schemaId]);
     res.json({ memory: result.rows[0] || null });
   } catch (error) {
+    console.error(`[extraction/schema/:schemaId/memory] 错误:`, error.message);
     res.status(500).json({ error: error.message });
   }
 });
