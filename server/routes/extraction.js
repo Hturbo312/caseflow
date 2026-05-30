@@ -140,12 +140,12 @@ router.post('/:caseId/infer-relations', authMiddleware, async (req, res) => {
 router.post('/:caseId/save-entity', authMiddleware, async (req, res) => {
   try {
     const { caseId } = req.params;
-    const { name, entityType, properties, autoEmbed = true } = req.body;
+    const { name, entityType, properties, color, autoEmbed = true } = req.body;
     if (!name || !entityType) return res.status(400).json({ error: 'name 和 entityType 是必需的' });
 
     const result = await pool.query(
-      'INSERT INTO case_entities (case_id, name, entity_type, properties) VALUES ($1, $2, $3, $4) RETURNING *',
-      [caseId, name, entityType, JSON.stringify(properties || {})]
+      'INSERT INTO case_entities (case_id, name, entity_type, properties, color) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [caseId, name, entityType, JSON.stringify(properties || {}), color || null]
     );
 
     // 实体保存完成后，自动触发嵌入生成（异步，不阻塞响应）
@@ -206,16 +206,16 @@ router.post('/:caseId/batch-save-entities', authMiddleware, async (req, res) => 
     if (toInsert.length > 0) {
       // 优化：使用单条批量 INSERT 代替 N 次独立查询
       const values = toInsert.map((e, i) => {
-        const base = i * 4;
-        return `($1, $${base + 2}, $${base + 3}, $${base + 4})`;
+        const base = i * 5;
+        return `($1, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5})`;
       }).join(', ');
       const params = [caseId];
       toInsert.forEach(e => {
-        params.push(e.name, e.entityType, JSON.stringify(e.properties || {}));
+        params.push(e.name, e.entityType, JSON.stringify(e.properties || {}), e.color || null);
       });
 
       const result = await pool.query(
-        `INSERT INTO case_entities (case_id, name, entity_type, properties) VALUES ${values} RETURNING *`,
+        `INSERT INTO case_entities (case_id, name, entity_type, properties, color) VALUES ${values} RETURNING *`,
         params
       );
       savedEntities = result.rows;
