@@ -67,14 +67,6 @@ async function updateSessionMeta(userId, agentName, sessionId, userInput) {
   }
 }
 
-// AI 对话 API (Graph-RAG) - 简单模拟
-router.post('/chat', async (req, res) => {
-  const { message, context } = req.body;
-  res.json({
-    response: `收到你的问题：${message}。\n\n这是 Graph-RAG 模拟响应。后续将接入真实的 AI API，结合知识图谱数据进行智能回答。`
-  });
-});
-
 // 获取所有 Agent
 router.get('/', async (req, res) => {
   try {

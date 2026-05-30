@@ -525,6 +525,7 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
   });
 
   clearTimeout(overallTimeout);
+  clearTimeout(idleTimeout); // 清理空闲超时（避免响应错误时泄漏）
 
   if (!response.ok) {
     // 尝试从错误响应中提取有意义的错误信息
