@@ -145,12 +145,22 @@ router.post('/:caseId/infer-relations', authMiddleware, async (req, res) => {
   }
 });
 
-// 保存实体
+// 保存实体（带去重：如果同名实体已存在，返回已有实体而非报错）
 router.post('/:caseId/save-entity', authMiddleware, async (req, res) => {
   try {
     const { caseId } = req.params;
     const { name, entityType, properties, color, autoEmbed = true } = req.body;
     if (!name || !entityType) return res.status(400).json({ error: 'name 和 entityType 是必需的' });
+
+    // 先检查是否已存在同名同类型实体
+    const existing = await pool.query(
+      'SELECT id, name, entity_type, properties, color FROM case_entities WHERE case_id = $1 AND name = $2 AND entity_type = $3',
+      [caseId, name, entityType]
+    );
+    if (existing.rows.length > 0) {
+      // 返回已有实体，标记为 duplicated
+      return res.json({ success: true, entity: existing.rows[0], duplicated: true });
+    }
 
     const result = await pool.query(
       'INSERT INTO case_entities (case_id, name, entity_type, properties, color) VALUES ($1, $2, $3, $4, $5) RETURNING *',
@@ -162,7 +172,7 @@ router.post('/:caseId/save-entity', authMiddleware, async (req, res) => {
       triggerAutoEmbed(caseId, 'save-entity').catch(e => console.error('[save-entity] 自动嵌入失败:', e));
     }
 
-    res.json({ success: true, entity: result.rows[0] });
+    res.json({ success: true, entity: result.rows[0], duplicated: false });
   } catch (error) {
     console.error(`[extraction/:caseId/save-entity] 错误:`, error.message);
     res.status(500).json({ error: error.message });

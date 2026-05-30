@@ -128,7 +128,7 @@ router.get('/export-all', authMiddleware, async (req, res) => {
     // 优化：3 个并行查询代替 N+1（原来每个 case 2 次查询）
     const [casesResult, entitiesResult, relationsResult] = await Promise.all([
       pool.query('SELECT id, name, schema_id FROM cases ORDER BY id'),
-      pool.query('SELECT case_id, name, entity_type, properties FROM case_entities ORDER BY case_id'),
+      pool.query('SELECT case_id, name, entity_type, properties, color FROM case_entities ORDER BY case_id'),
       pool.query(`SELECT cr.case_id, cr.relation_type,
                          source.name AS source_name, target.name AS target_name
                   FROM case_relations cr
@@ -162,6 +162,7 @@ router.get('/export-all', authMiddleware, async (req, res) => {
           name: e.name,
           entityType: e.entity_type,
           properties: typeof e.properties === 'string' ? JSON.parse(e.properties) : e.properties,
+          color: e.color,
         })),
         relations: rels.map(r => ({
           type: r.relation_type,
@@ -189,7 +190,7 @@ router.get('/export-all', authMiddleware, async (req, res) => {
       const relationRows = [];
       for (const exp of allExports) {
         for (const e of exp.entities) {
-          entityRows.push([exp.case_id, exp.case_name, e.name, e.entityType, csvEscape(JSON.stringify(e.properties || {}))].map(csvEscape).join(','));
+          entityRows.push([exp.case_id, exp.case_name, e.name, e.entityType, e.color || '', csvEscape(JSON.stringify(e.properties || {}))].map(csvEscape).join(','));
         }
         for (const r of exp.relations) {
           relationRows.push([exp.case_id, exp.case_name, r.type, r.source, r.target].map(csvEscape).join(','));
@@ -197,7 +198,7 @@ router.get('/export-all', authMiddleware, async (req, res) => {
       }
       return res.json({
         format: 'csv',
-        entities_csv: 'case_id,case_name,name,entityType,properties\n' + entityRows.join('\n'),
+        entities_csv: 'case_id,case_name,name,entityType,color,properties\n' + entityRows.join('\n'),
         relations_csv: 'case_id,case_name,type,source,target\n' + relationRows.join('\n'),
         total_cases: allExports.length,
       });
@@ -368,7 +369,7 @@ router.get('/:id/export', authMiddleware, async (req, res) => {
     const caseData = caseResult.rows[0];
 
     const entitiesResult = await pool.query(
-      'SELECT id, name, entity_type, properties, created_at FROM case_entities WHERE case_id = $1 ORDER BY entity_type, name',
+      'SELECT id, name, entity_type, properties, color, created_at FROM case_entities WHERE case_id = $1 ORDER BY entity_type, name',
       [id]
     );
     const relationsResult = await pool.query(
@@ -401,6 +402,7 @@ router.get('/:id/export', authMiddleware, async (req, res) => {
         name: e.name,
         entityType: e.entity_type,
         properties: typeof e.properties === 'string' ? JSON.parse(e.properties) : e.properties,
+        color: e.color,
         created_at: e.created_at,
       })),
       relations: relationsResult.rows.map(r => ({
@@ -420,10 +422,10 @@ router.get('/:id/export', authMiddleware, async (req, res) => {
 
     if (format === 'csv') {
       // 返回 CSV 格式（实体 + 关系两个文件打包在 JSON 中返回 CSV 字符串）
-      const entityCsv = 'id,name,entityType,properties,created_at\n' +
+      const entityCsv = 'id,name,entityType,color,properties,created_at\n' +
         entitiesResult.rows.map(e => {
           const props = typeof e.properties === 'string' ? e.properties : JSON.stringify(e.properties || {});
-          return [e.id, `"${(e.name || '').replace(/"/g, '""')}"`, e.entity_type, `"${props.replace(/"/g, '""')}"`, e.created_at].join(',');
+          return [e.id, `"${(e.name || '').replace(/"/g, '""')}"`, e.entity_type, e.color || '', `"${props.replace(/"/g, '""')}"`, e.created_at].join(',');
         }).join('\n');
 
       const relationCsv = 'id,type,sourceName,sourceType,targetName,targetType,created_at\n' +
