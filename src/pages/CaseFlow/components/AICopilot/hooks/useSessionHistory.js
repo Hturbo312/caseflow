@@ -1,12 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAgentStore, useAuthStore } from '@store';
 import { chatApi } from '@services/api';
+import { useI18n } from '../../../../../i18n';
 
 /**
  * Custom hook for session history management
  * Extracts session history logic from AICopilot
  */
 export const useSessionHistory = (agentName) => {
+  const { t } = useI18n();
   const { isAuthenticated } = useAuthStore();
   const {
     sessions,
@@ -52,11 +54,11 @@ export const useSessionHistory = (agentName) => {
 
   // Delete session
   const handleDeleteSession = useCallback(async (sessionId) => {
-    if (!confirm('确定要删除这个会话吗？')) return;
+    if (!confirm(t('session.confirmDelete'))) return;
     await deleteSession(sessionId);
     // Refresh history
     loadHistory();
-  }, [deleteSession, loadHistory]);
+  }, [deleteSession, loadHistory, t]);
 
   // Format date for display
   const formatDate = useCallback((dateStr) => {
@@ -66,15 +68,15 @@ export const useSessionHistory = (agentName) => {
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
     if (diffDays === 0) {
-      return '今天 ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+      return t('session.today') + ' ' + date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
     } else if (diffDays === 1) {
-      return '昨天 ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+      return t('session.yesterday') + ' ' + date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
     } else if (diffDays < 7) {
-      return `${diffDays}天前`;
+      return t('session.daysAgoShort', { count: diffDays });
     } else {
-      return date.toLocaleDateString('zh-CN');
+      return date.toLocaleDateString();
     }
-  }, []);
+  }, [t]);
 
   return {
     // State

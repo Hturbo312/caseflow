@@ -256,12 +256,17 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
     }
   }, [phase]);
 
+  // caseId 变化时清空旧实体数据，避免跨案例显示残留
+  useEffect(() => {
+    setDbEntities([]);
+  }, [caseId]);
+
   // 切换到 relations tab 时加载 DB 实体（用于颜色显示）
   useEffect(() => {
-    if (activeTab === 'relations' && dbEntities.length === 0) {
+    if (activeTab === 'relations' && caseId && dbEntities.length === 0) {
       loadDbEntities();
     }
-  }, [activeTab, dbEntities.length, loadDbEntities]);
+  }, [activeTab, caseId, dbEntities.length, loadDbEntities]);
 
   const tabs = [
     { id: 'progress', label: t('ai.progress'), icon: LayoutList },

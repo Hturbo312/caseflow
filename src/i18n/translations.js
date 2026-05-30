@@ -511,6 +511,11 @@ export const zh = {
   'ai.configSaved': 'AI 配置已保存',
   'ai.confirmDeleteConfig': '确定要删除 AI 配置吗？',
   'ai.saveConfigFailed': '保存配置失败：',
+  // Session history
+  'session.confirmDelete': '确定要删除这个会话吗？',
+  'session.today': '今天',
+  'session.yesterday': '昨天',
+  'session.daysAgoShort': '{count}天前',
   // Default schema
   'schema.defaultName': '默认 Schema',
   'schema.defaultDesc': '基础城市更新案例拆解框架',
@@ -1029,6 +1034,11 @@ export const en = {
   'ai.configSaved': 'AI configuration saved',
   'ai.confirmDeleteConfig': 'Are you sure you want to delete the AI configuration?',
   'ai.saveConfigFailed': 'Failed to save configuration: ',
+  // Session history
+  'session.confirmDelete': 'Are you sure you want to delete this session?',
+  'session.today': 'Today',
+  'session.yesterday': 'Yesterday',
+  'session.daysAgoShort': '{count}d ago',
   // Default schema
   'schema.defaultName': 'Default Schema',
   'schema.defaultDesc': 'Basic urban renewal case breakdown framework',
