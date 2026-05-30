@@ -2,6 +2,7 @@ import React, { memo, useState, useCallback, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FileText, Network, LayoutList } from 'lucide-react';
 import { useExtractionStore, useSchemaStore } from '@store';
+import { useToastStore } from '@components/Toast/ToastStore.js';
 import { useI18n } from '../../../../../i18n';
 import { API_BASE_URL, authHelper } from '../../../../../utils';
 import ProgressPanel from './ProgressPanel';
@@ -28,11 +29,12 @@ function mergeEntities(candidates, dbEntities) {
 
 const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
   const { t } = useI18n();
+  const toast = useToastStore();
   const {
     phase, phaseLabel, isProcessing, plan, candidates, relationCandidates,
     segments, currentSchemaId, setContext, setPhase, parseText, generatePlan,
     extractType, extractAllParallel, updateCardStatus, batchUpdateCardStatus, updateRelationStatus,
-    inferRelations, finalize, loadSegments, loadProgress,
+    inferRelations, loadSegments, loadProgress,
   } = useExtractionStore();
 
   const { currentSchema } = useSchemaStore();
@@ -174,8 +176,12 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
       if (finalizeRes.ok) {
         const finalizeData = await finalizeRes.json();
         console.log(`[handleFinalize] 后端 finalize 完成:`, finalizeData.data);
+        toast.success(t('ai.finalizeSuccess'));
       } else {
-        console.warn(`[handleFinalize] 后端 finalize 失败: ${finalizeRes.status}`);
+        console.error(`[handleFinalize] 后端 finalize 失败: ${finalizeRes.status}`);
+        toast.error(t('ai.finalizeFailed'));
+        setPhase('error', t('common.saveFailed'));
+        return;
       }
 
       setPhase('completed', t('ai.caseBreakdownComplete'));
@@ -186,7 +192,7 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
       console.error('保存失败:', e);
       setPhase('error', `保存失败: ${e.message}`);
     }
-  }, [candidates, finalize, onComplete, relationCandidates, caseId, setPhase, t]);
+  }, [candidates, onComplete, relationCandidates, caseId, setPhase, t, toast]);
 
   const handleNext = useCallback(() => {
     handleInferRelations();
