@@ -29,20 +29,15 @@ async function getUserAiConfig(userId) {
 }
 
 // 异步保存聊天记录（不阻塞响应）
+// 优化：单条多值 INSERT 代替 2 次独立查询，减少往返开销
 async function saveChatHistory(userId, agentName, sessionId, userInput, response) {
   try {
-    await Promise.all([
-      pool.query(
-        'INSERT INTO chat_history (user_id, agent_name, session_id, role, content) VALUES ($1, $2, $3, $4, $5)',
-        [userId, agentName, sessionId, 'user', userInput]
-      ),
-      pool.query(
-        'INSERT INTO chat_history (user_id, agent_name, session_id, role, content) VALUES ($1, $2, $3, $4, $5)',
-        [userId, agentName, sessionId, 'assistant', response]
-      )
-    ]);
+    await pool.query(
+      'INSERT INTO chat_history (user_id, agent_name, session_id, role, content) VALUES ($1, $2, $3, $4, $5), ($6, $7, $8, $9, $10)',
+      [userId, agentName, sessionId, 'user', userInput, userId, agentName, sessionId, 'assistant', response]
+    );
   } catch (e) {
-    console.error('保存聊天记录失败:', e);
+    console.error('[saveChatHistory] 保存失败:', e.message);
   }
 }
 

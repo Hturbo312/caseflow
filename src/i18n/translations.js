@@ -452,6 +452,7 @@ export const zh = {
   'ai.embeddingHint': '留空则使用默认 Embedding 服务',
   'ai.embeddingSection': 'Embedding 配置',
   'ai.saveConfig': '保存配置',
+  'ai.confidence': '置信度',
   'ai.delete': '删除',
   // Pipeline phases & progress
   'pipeline.parseText': '解析文本',
@@ -969,6 +970,7 @@ export const en = {
   'ai.embeddingHint': 'Leave blank to use default embedding service',
   'ai.embeddingSection': 'Embedding Configuration',
   'ai.saveConfig': 'Save Config',
+  'ai.confidence': 'Confidence',
   'ai.delete': 'Delete',
   // Pipeline phases & progress
   'pipeline.parseText': 'Parse Text',

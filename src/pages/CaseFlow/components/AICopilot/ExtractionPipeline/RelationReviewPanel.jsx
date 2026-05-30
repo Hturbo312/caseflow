@@ -216,7 +216,7 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
                       <span className="ml-1 text-[10px] opacity-60">({relInfo.target.entityType})</span>
                     )}
                   </span>
-                  <span className={`text-xs ${getConfidenceColor(rel.confidence)}`}>
+                  <span className={`text-xs ${getConfidenceColor(rel.confidence)}`} title={t('ai.confidence')}>
                     {Math.round((rel.confidence || 0) * 100)}%
                   </span>
                 </div>
