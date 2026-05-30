@@ -259,20 +259,35 @@ router.post('/:caseId/batch-save-entities', authMiddleware, async (req, res) => 
   }
 });
 
-// 保存关系
+// 保存关系（带去重保护 + 自动触发嵌入）
 router.post('/:caseId/save-relation', authMiddleware, async (req, res) => {
   try {
     const { caseId } = req.params;
-    const { sourceEntityId, targetEntityId, relationType } = req.body;
+    const { sourceEntityId, targetEntityId, relationType, autoEmbed = true } = req.body;
     if (!sourceEntityId || !targetEntityId || !relationType) {
       return res.status(400).json({ error: 'sourceEntityId, targetEntityId, relationType 是必需的' });
+    }
+
+    // 先去重：检查是否已存在相同关系
+    const existing = await pool.query(
+      'SELECT id FROM case_relations WHERE case_id = $1 AND source_entity_id = $2 AND target_entity_id = $3 AND relation_type = $4',
+      [caseId, sourceEntityId, targetEntityId, relationType]
+    );
+    if (existing.rows.length > 0) {
+      return res.json({ success: true, relation: existing.rows[0], duplicated: true });
     }
 
     const result = await pool.query(
       'INSERT INTO case_relations (case_id, source_entity_id, target_entity_id, relation_type) VALUES ($1, $2, $3, $4) RETURNING *',
       [caseId, sourceEntityId, targetEntityId, relationType]
     );
-    res.json({ success: true, relation: result.rows[0] });
+
+    // 关系保存完成后，自动触发嵌入生成（异步，不阻塞响应）
+    if (autoEmbed) {
+      triggerAutoEmbed(caseId, 'save-relation').catch(e => console.error('[save-relation] 自动嵌入失败:', e));
+    }
+
+    res.json({ success: true, relation: result.rows[0], duplicated: false });
   } catch (error) {
     console.error(`[extraction/:caseId/save-relation] 错误:`, error.message);
     res.status(500).json({ error: error.message });

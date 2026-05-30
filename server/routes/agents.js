@@ -42,23 +42,18 @@ async function saveChatHistory(userId, agentName, sessionId, userInput, response
 }
 
 // 异步更新会话元数据（不阻塞响应）
+// 优化：使用 UPSERT 代替 SELECT-then-INSERT，消除并发竞态条件
 async function updateSessionMeta(userId, agentName, sessionId, userInput) {
   try {
-    const existing = await pool.query('SELECT 1 FROM chat_sessions WHERE session_id = $1', [sessionId]);
-    if (existing.rows.length === 0) {
-      const title = userInput.substring(0, 50) + (userInput.length > 50 ? '...' : '');
-      await pool.query(
-        'INSERT INTO chat_sessions (user_id, agent_name, session_id, title) VALUES ($1, $2, $3, $4)',
-        [userId, agentName, sessionId, title]
-      );
-    } else {
-      await pool.query(
-        'UPDATE chat_sessions SET updated_at = CURRENT_TIMESTAMP WHERE session_id = $1',
-        [sessionId]
-      );
-    }
+    const title = userInput.substring(0, 50) + (userInput.length > 50 ? '...' : '');
+    await pool.query(
+      `INSERT INTO chat_sessions (user_id, agent_name, session_id, title)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (session_id) DO UPDATE SET updated_at = CURRENT_TIMESTAMP`,
+      [userId, agentName, sessionId, title]
+    );
   } catch (e) {
-    console.error('更新会话元数据失败:', e);
+    console.error('更新会话元数据失败:', e.message);
   }
 }
 

@@ -295,11 +295,9 @@ export async function buildAgentContext(agentName, context, userInput) {
 /**
  * 格式化 Schema 上下文为可读文本（DRY helper）
  * @param {Object} schema - { entityTypes, relations }
- * @param {Object} options - { relationLabel } 关系部分标题
- * @returns {string} 格式化后的文本
+ * @returns {Object} { entityTypes, relations } 格式化后的字符串
  */
-function formatSchemaContext(schema, options = {}) {
-  const { relationLabel = '关系类型' } = options;
+function formatSchemaContext(schema) {
   const entityTypes = schema.entityTypes?.map(e => {
     const props = e.properties?.map(p => `${p.name}(${p.type})`).join(', ') || '无属性';
     return `- ${e.name}: [${props}]`;
@@ -307,7 +305,7 @@ function formatSchemaContext(schema, options = {}) {
   const relations = schema.relations?.map(r =>
     `- ${r.name}: ${r.from_entity_type} → ${r.to_entity_type}`
   ).join('\n') || '';
-  return { entityTypes, relations, relationLabel };
+  return { entityTypes, relations };
 }
 
 // 构建系统提示
