@@ -32,9 +32,16 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
     return map;
   }, [entities]);
 
-  const getEntityInfo = (entityName) => {
-    return entityInfoMap.get(entityName) || { color: '#9ca3af', entityType: '' };
-  };
+  // 优化：将 relation 的 source/target entity info 缓存，避免渲染时重复 Map 查找
+  const relationEntityInfoMap = useMemo(() => {
+    const map = new Map();
+    for (const rel of relations) {
+      const sourceInfo = entityInfoMap.get(rel.sourceName) || { color: '#9ca3af', entityType: '' };
+      const targetInfo = entityInfoMap.get(rel.targetName) || { color: '#9ca3af', entityType: '' };
+      map.set(rel.id, { source: sourceInfo, target: targetInfo });
+    }
+    return map;
+  }, [relations, entityInfoMap]);
 
   // 批量操作
   const handleSelectAll = () => {
@@ -144,7 +151,13 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
       {/* 关系列表 */}
       <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
         <AnimatePresence>
-          {relations.map((rel) => (
+          {relations.map((rel) => {
+            // 从预计算的 Map 中获取 entity info，只查找一次
+            const relInfo = relationEntityInfoMap.get(rel.id) || {
+              source: { color: '#9ca3af', entityType: '' },
+              target: { color: '#9ca3af', entityType: '' },
+            };
+            return (
             <motion.div
               key={rel.id}
               layout
@@ -181,11 +194,11 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
                   )}
                   <span
                     className="font-medium px-2 py-0.5 rounded"
-                    style={{ backgroundColor: `${getEntityInfo(rel.sourceName).color}15`, color: getEntityInfo(rel.sourceName).color }}
+                    style={{ backgroundColor: `${relInfo.source.color}15`, color: relInfo.source.color }}
                   >
                     {rel.sourceName}
-                    {getEntityInfo(rel.sourceName).entityType && (
-                      <span className="ml-1 text-[10px] opacity-60">({getEntityInfo(rel.sourceName).entityType})</span>
+                    {relInfo.source.entityType && (
+                      <span className="ml-1 text-[10px] opacity-60">({relInfo.source.entityType})</span>
                     )}
                   </span>
                   <ArrowRight size={14} className="text-gray-400 flex-shrink-0" />
@@ -195,11 +208,11 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
                   <ArrowRight size={14} className="text-gray-400 flex-shrink-0" />
                   <span
                     className="font-medium px-2 py-0.5 rounded"
-                    style={{ backgroundColor: `${getEntityInfo(rel.targetName).color}15`, color: getEntityInfo(rel.targetName).color }}
+                    style={{ backgroundColor: `${relInfo.target.color}15`, color: relInfo.target.color }}
                   >
                     {rel.targetName}
-                    {getEntityInfo(rel.targetName).entityType && (
-                      <span className="ml-1 text-[10px] opacity-60">({getEntityInfo(rel.targetName).entityType})</span>
+                    {relInfo.target.entityType && (
+                      <span className="ml-1 text-[10px] opacity-60">({relInfo.target.entityType})</span>
                     )}
                   </span>
                   <span className={`text-xs ${getConfidenceColor(rel.confidence)}`}>
@@ -258,7 +271,8 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
                 </div>
               )}
             </motion.div>
-          ))}
+            );
+          })}
         </AnimatePresence>
 
         {relations.length === 0 && (

@@ -27,16 +27,17 @@ function extractApiErrorMessage(data, statusCode, isStream = false) {
  * 解析 AI 配置：用户配置优先，回退到全局缓存（环境变量 / 管理员配置）
  */
 function resolveAiConfig(userConfig) {
-  // 用户有配置时使用用户配置
-  if (userConfig && userConfig.api_key) {
+  // 用户有配置时使用用户配置（兼容 api_key 和 apiKey 两种命名）
+  const userApiKey = userConfig?.api_key || userConfig?.apiKey;
+  if (userApiKey) {
     return {
-      apiKey: userConfig.api_key || userConfig.apiKey,
+      apiKey: userApiKey,
       endpoint: userConfig.endpoint,
       model: userConfig.model || 'glm-4-flash',
       temperature: parseFloat(userConfig.temperature ?? 0.7),
-      maxTokens: parseInt(userConfig.max_tokens ?? 16384),
-      useTemperature: userConfig.use_temperature !== undefined ? userConfig.use_temperature : true,
-      useMaxTokens: userConfig.use_max_tokens !== undefined ? userConfig.use_max_tokens : true,
+      maxTokens: parseInt(userConfig.max_tokens ?? userConfig.maxTokens ?? 16384),
+      useTemperature: userConfig.use_temperature !== undefined ? userConfig.use_temperature : (userConfig.useTemperature !== undefined ? userConfig.useTemperature : true),
+      useMaxTokens: userConfig.use_max_tokens !== undefined ? userConfig.use_max_tokens : (userConfig.useMaxTokens !== undefined ? userConfig.useMaxTokens : true),
     };
   }
   // 回退到全局缓存（环境变量或管理员通过 API 设置的全局配置）
