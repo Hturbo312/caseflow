@@ -193,8 +193,8 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
         onComplete();
       }
     } catch (e) {
-      console.error('保存失败:', e);
-      setPhase('error', `保存失败: ${e.message}`);
+      console.error('[handleFinalize] 保存失败:', e);
+      setPhase('error', `${t('common.saveFailed')}: ${e.message}`);
     }
   }, [candidates, onComplete, relationCandidates, caseId, setPhase, t, toast]);
 

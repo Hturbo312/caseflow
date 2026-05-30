@@ -723,12 +723,19 @@ export async function triggerAutoEmbed(caseId, source = 'auto') {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ caseId, force: false }),
     });
-    if (response.ok) {
-      const data = await response.json();
-      console.log(`[${source}] 自动嵌入完成: ${data.count || 0} 个实体`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`[${source}] 嵌入生成失败 (HTTP ${response.status}): ${errorData.error || response.statusText}`);
+      return;
+    }
+    const data = await response.json();
+    if (data.count > 0) {
+      console.log(`[${source}] 自动嵌入完成: ${data.count} 个实体`);
+    } else {
+      console.log(`[${source}] 无需嵌入（所有实体已有 embedding）`);
     }
   } catch (e) {
-    console.error(`[${source}] 嵌入触发异常:`, e.message);
+    console.error(`[${source}] 嵌入触发异常: ${e.message}`);
   }
 }
 
