@@ -68,7 +68,7 @@ const createAgentConfig = (t) => ({
 });
 
 const AICopilot = ({ onShowLogin }) => {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const {
     currentAgentName,
     sessions,
@@ -292,8 +292,9 @@ const AICopilot = ({ onShowLogin }) => {
       const selectedRelations = result.relations.filter((_, i) => selectedRels.has(i));
 
       // 1. 创建 Schema
-      const schemaName = result.schemaName || `AI Schema - ${new Date().toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
-      const schemaDesc = result.message || 'AI 辅助生成的 Schema 结构';
+      const dateLocale = locale === 'en' ? 'en-US' : 'zh-CN';
+      const schemaName = result.schemaName || `AI Schema - ${new Date().toLocaleString(dateLocale, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
+      const schemaDesc = result.message || t('ai.aiGeneratedSchemaDesc');
       const schemaResponse = await schemaApi.create({ name: schemaName, description: schemaDesc });
       const schemaId = schemaResponse.schema.id?.toString();
 
@@ -343,7 +344,7 @@ const AICopilot = ({ onShowLogin }) => {
       toast.error(t('common.saveFailed') + ': ' + error.message);
     }
     setIsCreatingSchema(false);
-  }, [currentSession.extractResult, setExtractResult, toast, t]);
+  }, [currentSession.extractResult, setExtractResult, toast, t, locale]);
   // 上传文档文件（PDF / DOCX / TXT）
   const handleFileUpload = useCallback(async (e) => {
     const file = e.target.files?.[0];
