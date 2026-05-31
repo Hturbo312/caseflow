@@ -372,6 +372,7 @@ export const zh = {
   'pipeline.noRelationsHint': '关系推断由 AI 基于实体上下文自动生成',
   'pipeline.reviewComplete': '关系审核完成！{approved} 条已确认，{skipped} 条已跳过，点击「确认保存到图谱」完成提取。',
   'pipeline.reviewAllSkipped': '所有关系已跳过，点击「确认保存到图谱」完成提取。',
+  'pipeline.sortByConfidence': '按置信度排序',
   // AICopilot
   'ai.schemaBuilder': 'Schema构建',
   'ai.caseBreakdown': '案例拆解',
@@ -903,6 +904,7 @@ export const en = {
   'pipeline.noRelationsHint': 'Relations are inferred by AI based on entity context',
   'pipeline.reviewComplete': 'Relation review complete! {approved} confirmed, {skipped} skipped. Click "Confirm Save to Graph" to finalize.',
   'pipeline.reviewAllSkipped': 'All relations skipped. Click "Confirm Save to Graph" to finalize.',
+  'pipeline.sortByConfidence': 'Sorted by confidence',
   // AICopilot
   'ai.schemaBuilder': 'Schema Builder',
   'ai.caseBreakdown': 'Case Breakdown',

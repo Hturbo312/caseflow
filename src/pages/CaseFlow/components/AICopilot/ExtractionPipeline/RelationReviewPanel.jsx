@@ -1,6 +1,6 @@
 import React, { memo, useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Check, X, CheckCheck, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowRight, Check, X, CheckCheck, XCircle, ChevronDown, ChevronUp, ArrowUpDown } from 'lucide-react';
 import { useI18n } from '../../../../../i18n';
 import { useToastStore } from '@components/Toast/ToastStore.js';
 
@@ -47,20 +47,25 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
     return map;
   }, [entities]);
 
+  // 优化：按置信度降序排列关系，高置信度的优先展示便于用户审核
+  const sortedRelations = useMemo(() => {
+    return [...relations].sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+  }, [relations]);
+
   // 优化：将 relation 的 source/target entity info 缓存，避免渲染时重复 Map 查找
   const relationEntityInfoMap = useMemo(() => {
     const map = new Map();
-    for (const rel of relations) {
+    for (const rel of sortedRelations) {
       const sourceInfo = entityInfoMap.get(rel.sourceName) || { color: '#9ca3af', entityType: '' };
       const targetInfo = entityInfoMap.get(rel.targetName) || { color: '#9ca3af', entityType: '' };
       map.set(rel.id, { source: sourceInfo, target: targetInfo });
     }
     return map;
-  }, [relations, entityInfoMap]);
+  }, [sortedRelations, entityInfoMap]);
 
   // 批量操作
   const handleSelectAll = () => {
-    const pendingIds = relations.filter(r => r.status === 'pending').map(r => r.id);
+    const pendingIds = sortedRelations.filter(r => r.status === 'pending').map(r => r.id);
     setSelectedIds(prev =>
       pendingIds.every(id => prev.has(id)) ? new Set() : new Set(pendingIds)
     );
@@ -76,12 +81,12 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
   };
 
   const handleConfirmAll = () => {
-    relations.filter(r => r.status === 'pending').forEach(r => onUpdateStatus(r.id, 'approved'));
+    sortedRelations.filter(r => r.status === 'pending').forEach(r => onUpdateStatus(r.id, 'approved'));
     setSelectedIds(new Set()); // 清空选中状态，避免残留指示器
   };
 
   const handleSkipAll = () => {
-    relations.filter(r => r.status === 'pending').forEach(r => onUpdateStatus(r.id, 'skipped'));
+    sortedRelations.filter(r => r.status === 'pending').forEach(r => onUpdateStatus(r.id, 'skipped'));
     setSelectedIds(new Set()); // 清空选中状态，避免残留指示器
   };
 
@@ -110,7 +115,13 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
     <div className="space-y-3">
       {/* 头部 */}
       <div className="flex items-center justify-between">
-        <span className="font-semibold text-gray-900 text-sm">{t('toolbar.relation')}</span>
+        <div className="flex items-center gap-1.5">
+          <span className="font-semibold text-gray-900 text-sm">{t('toolbar.relation')}</span>
+          <span className="flex items-center gap-0.5 text-[10px] text-gray-400" title={t('pipeline.sortByConfidence')}>
+            <ArrowUpDown size={10} />
+            {t('pipeline.sortByConfidence')}
+          </span>
+        </div>
         <div className="flex gap-3 text-xs text-gray-500">
           <span>{t('pipeline.totalRelations', { count: stats.total })}</span>
           <span className="text-green-600">{t('pipeline.approved')} {stats.approved}</span>
@@ -167,7 +178,7 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
       {/* 关系列表 */}
       <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
         <AnimatePresence>
-          {relations.map((rel) => {
+          {sortedRelations.map((rel) => {
             // 从预计算的 Map 中获取 entity info，只查找一次
             const relInfo = relationEntityInfoMap.get(rel.id) || {
               source: { color: '#9ca3af', entityType: '' },
