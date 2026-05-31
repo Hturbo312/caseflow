@@ -427,18 +427,24 @@ router.get('/:id/export', authMiddleware, async (req, res) => {
     };
 
     if (format === 'csv') {
-      // 返回 CSV 格式（实体 + 关系两个文件打包在 JSON 中返回 CSV 字符串）
+      // CSV 安全转义：处理引号、逗号和换行
+      const csvEscape = (val) => {
+        const str = String(val ?? '');
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+
       const entityCsv = 'id,name,entityType,color,properties,created_at\n' +
         entitiesResult.rows.map(e => {
           const props = typeof e.properties === 'string' ? e.properties : JSON.stringify(e.properties || {});
-          return [e.id, `"${(e.name || '').replace(/"/g, '""')}"`, e.entity_type, e.color || '', `"${props.replace(/"/g, '""')}"`, e.created_at].join(',');
+          return [csvEscape(e.id), csvEscape(e.name), csvEscape(e.entity_type), csvEscape(e.color || ''), csvEscape(props), csvEscape(e.created_at)].join(',');
         }).join('\n');
 
       const relationCsv = 'id,type,sourceName,sourceType,targetName,targetType,created_at\n' +
         relationsResult.rows.map(r => {
-          return [r.id, `"${(r.relation_type || '').replace(/"/g, '""')}"`,
-            `"${(r.source_name || '').replace(/"/g, '""')}"`, r.source_type,
-            `"${(r.target_name || '').replace(/"/g, '""')}"`, r.target_type, r.created_at].join(',');
+          return [csvEscape(r.id), csvEscape(r.relation_type), csvEscape(r.source_name), csvEscape(r.source_type), csvEscape(r.target_name), csvEscape(r.target_type), csvEscape(r.created_at)].join(',');
         }).join('\n');
 
       return res.json({

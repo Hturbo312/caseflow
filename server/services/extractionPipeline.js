@@ -665,7 +665,11 @@ export async function saveRelationsBulk(caseId, relations) {
   }
 
   // 补充因实体未找到或字段缺失而跳过的关系
+  // 注意：只检查未进入 relTuples 的关系（已在 dedup 中处理过的不再重复计数）
+  const processedKeys = new Set(relTuples.map(item => `${item.rel.sourceName}|||${item.rel.targetName}|||${item.rel.name}`));
   for (const rel of approvedRelations) {
+    const key = `${rel.sourceName}|||${rel.targetName}|||${rel.name}`;
+    if (processedKeys.has(key)) continue; // 已在上面的 dedup 块中处理过（已插入或已标记为重复）
     if (!rel.sourceName || !rel.targetName || !rel.name) {
       skipped.push({ sourceName: rel.sourceName, targetName: rel.targetName, reason: '缺少必要字段 (sourceName/targetName/name)' });
     } else if (!nameToId.has(rel.sourceName) || !nameToId.has(rel.targetName)) {
