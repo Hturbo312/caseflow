@@ -532,18 +532,22 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
     idleTimeout = setTimeout(() => controller.abort(), IDLE_TIMEOUT_MS);
   }
 
-  const response = await fetch(cfg.endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${cfg.apiKey}`
-    },
-    body: JSON.stringify(requestBody),
-    signal: controller.signal
-  });
-
-  clearTimeout(overallTimeout);
-  clearTimeout(idleTimeout); // 清理空闲超时（避免响应错误时泄漏）
+  let response;
+  try {
+    response = await fetch(cfg.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${cfg.apiKey}`
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal
+    });
+  } finally {
+    // 无论 fetch 成功还是抛出异常，都必须清理超时定时器
+    clearTimeout(overallTimeout);
+    clearTimeout(idleTimeout);
+  }
 
   if (!response.ok) {
     // 尝试从错误响应中提取有意义的错误信息
@@ -587,9 +591,31 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
           } catch (e) {
             // 如果是上述 throw 的 API 错误，重新抛出
             if (e.message && e.message.startsWith('AI 流式响应错误')) throw e;
-            // 解析失败可能是 JSON 不完整，保留当前行到 buffer 供下次合并
-            // 注意：需要保留 "data: " 前缀，否则下次迭代无法识别
-            buffer = (buffer ? buffer + '\n' : '') + 'data: ' + line;
+            // 解析失败：尝试恢复（保留当前行供下次合并）
+            // 注意：保留原始行（含 "data: " 前缀），避免重复前缀
+            buffer = (buffer ? buffer + '\n' : '') + line;
+          }
+        }
+      }
+    }
+
+    // 流结束后处理 buffer 中剩余数据（不以 \n 结尾的最后一行）
+    if (buffer.trim()) {
+      const remainingLine = buffer.trim();
+      if (remainingLine.startsWith('data: ')) {
+        const data = remainingLine.slice(6);
+        if (data !== '[DONE]') {
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.error) {
+              throw new Error(`AI 流式响应错误: ${parsed.error.message || JSON.stringify(parsed.error)}`);
+            }
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) onChunk(content);
+          } catch (e) {
+            if (e.message && e.message.startsWith('AI 流式响应错误')) throw e;
+            // 无法解析的残余数据，静默忽略（可能是截断的 chunk）
+            console.warn('[callAIStream] 忽略无法解析的残余 SSE 数据:', remainingLine.slice(0, 100));
           }
         }
       }
