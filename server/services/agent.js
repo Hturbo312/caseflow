@@ -519,7 +519,7 @@ export async function callAI(systemPrompt, messages, agent, userConfig) {
   });
 }
 
-// 流式调用 AI
+// 流式调用 AI（使用 node:https + 共享 keep-alive agent，与 callAI 保持一致）
 export async function callAIStream(systemPrompt, messages, agent, onChunk, userConfig) {
   const cfg = resolveAiConfig(userConfig);
   if (!cfg.apiKey || !cfg.endpoint) {
@@ -527,113 +527,126 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
   }
 
   const requestBody = buildAiRequestBody(systemPrompt, messages, agent, cfg, { stream: true });
+  const body = JSON.stringify(requestBody);
 
-  const controller = new AbortController();
-  const overallTimeout = setTimeout(() => controller.abort(), 600000); // 10分钟总超时
+  const url = new URL(cfg.endpoint);
+  const client = url.protocol === 'https:' ? https : http;
+  const httpAgentInstance = url.protocol === 'https:' ? httpsAgent : httpAgent;
+
   const IDLE_TIMEOUT_MS = 120000; // 2分钟空闲超时（无数据到达时）
-  let idleTimeout = setTimeout(() => controller.abort(), IDLE_TIMEOUT_MS);
+  let idleTimeout = setTimeout(() => req.destroy(), IDLE_TIMEOUT_MS);
 
   function resetIdleTimeout() {
     clearTimeout(idleTimeout);
-    idleTimeout = setTimeout(() => controller.abort(), IDLE_TIMEOUT_MS);
+    idleTimeout = setTimeout(() => req.destroy(), IDLE_TIMEOUT_MS);
   }
 
-  let response;
-  try {
-    response = await fetch(cfg.endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${cfg.apiKey}`
-      },
-      body: JSON.stringify(requestBody),
-      signal: controller.signal
-    });
-  } finally {
-    // 无论 fetch 成功还是抛出异常，都必须清理超时定时器
-    clearTimeout(overallTimeout);
-    clearTimeout(idleTimeout);
-  }
-
-  if (!response.ok) {
-    // 尝试从错误响应中提取有意义的错误信息
-    const errorText = await response.text();
-    throw new Error(extractApiErrorMessage(errorText, response.status, true));
-  }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
   let totalChunks = 0;
 
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+  return new Promise((resolve, reject) => {
+    const req = client.request(url, {
+      method: 'POST',
+      agent: httpAgentInstance,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${cfg.apiKey}`,
+        'Content-Length': Buffer.byteLength(body)
+      },
+      timeout: 600000 // 10分钟总超时
+    }, (res) => {
+      if (res.statusCode !== 200) {
+        let errorData = '';
+        res.on('data', chunk => { errorData += chunk; });
+        res.on('end', () => {
+          reject(new Error(extractApiErrorMessage(errorData, res.statusCode, true)));
+        });
+        return;
+      }
 
-      resetIdleTimeout(); // 收到数据则重置空闲超时
-      totalChunks++;
+      const decoder = new TextDecoder();
+      let buffer = '';
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || ''; // 保留最后一行（可能跨 chunk 不完整）
+      res.on('data', (chunk) => {
+        resetIdleTimeout(); // 收到数据则重置空闲超时
+        totalChunks++;
 
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6);
-          if (data === '[DONE]') continue;
+        buffer += decoder.decode(chunk, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // 保留最后一行（可能跨 chunk 不完整）
 
-          try {
-            const parsed = JSON.parse(data);
-            // 检测 API 错误响应（流中可能返回 error 字段）
-            if (parsed.error) {
-              const errMsg = parsed.error.message || JSON.stringify(parsed.error);
-              throw new Error(`AI 流式响应错误: ${errMsg}`);
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              // 检测 API 错误响应（流中可能返回 error 字段）
+              if (parsed.error) {
+                const errMsg = parsed.error.message || JSON.stringify(parsed.error);
+                throw new Error(`AI 流式响应错误: ${errMsg}`);
+              }
+              const content = parsed.choices?.[0]?.delta?.content;
+              if (content) {
+                onChunk(content);
+              }
+            } catch (e) {
+              // 如果是上述 throw 的 API 错误，重新抛出
+              if (e.message && e.message.startsWith('AI 流式响应错误')) throw e;
+              // 解析失败：尝试恢复（保留当前行供下次合并）
+              buffer = (buffer ? buffer + '\n' : '') + line;
             }
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              onChunk(content);
-            }
-          } catch (e) {
-            // 如果是上述 throw 的 API 错误，重新抛出
-            if (e.message && e.message.startsWith('AI 流式响应错误')) throw e;
-            // 解析失败：尝试恢复（保留当前行供下次合并）
-            // 注意：保留原始行（含 "data: " 前缀），避免重复前缀
-            buffer = (buffer ? buffer + '\n' : '') + line;
           }
         }
-      }
-    }
+      });
 
-    // 流结束后处理 buffer 中剩余数据（不以 \n 结尾的最后一行）
-    if (buffer.trim()) {
-      const remainingLine = buffer.trim();
-      if (remainingLine.startsWith('data: ')) {
-        const data = remainingLine.slice(6);
-        if (data !== '[DONE]') {
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.error) {
-              throw new Error(`AI 流式响应错误: ${parsed.error.message || JSON.stringify(parsed.error)}`);
+      res.on('end', () => {
+        clearTimeout(idleTimeout);
+        // 处理 buffer 中剩余数据（不以 \n 结尾的最后一行）
+        if (buffer.trim()) {
+          const remainingLine = buffer.trim();
+          if (remainingLine.startsWith('data: ')) {
+            const data = remainingLine.slice(6);
+            if (data !== '[DONE]') {
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.error) {
+                  reject(new Error(`AI 流式响应错误: ${parsed.error.message || JSON.stringify(parsed.error)}`));
+                  return;
+                }
+                const content = parsed.choices?.[0]?.delta?.content;
+                if (content) onChunk(content);
+              } catch (e) {
+                if (e.message && e.message.startsWith('AI 流式响应错误')) {
+                  reject(e);
+                  return;
+                }
+                console.warn('[callAIStream] 忽略无法解析的残余 SSE 数据:', remainingLine.slice(0, 100));
+              }
             }
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) onChunk(content);
-          } catch (e) {
-            if (e.message && e.message.startsWith('AI 流式响应错误')) throw e;
-            // 无法解析的残余数据，静默忽略（可能是截断的 chunk）
-            console.warn('[callAIStream] 忽略无法解析的残余 SSE 数据:', remainingLine.slice(0, 100));
           }
         }
-      }
-    }
-  } catch (err) {
-    clearTimeout(idleTimeout); // 清理空闲超时
-    if (err.name === 'AbortError') {
-      throw new Error(`AI 流式调用超时（已接收 ${totalChunks} 个 chunk），请稍后重试`);
-    }
-    throw err;
-  }
-  clearTimeout(idleTimeout); // 流完成，清理空闲超时
+        resolve();
+      });
+
+      res.on('error', (e) => {
+        clearTimeout(idleTimeout);
+        reject(e);
+      });
+    });
+
+    req.on('error', (e) => {
+      clearTimeout(idleTimeout);
+      reject(e);
+    });
+    req.on('timeout', () => {
+      clearTimeout(idleTimeout);
+      req.destroy();
+      reject(new Error(`AI 流式调用超时（已接收 ${totalChunks} 个 chunk），请稍后重试`));
+    });
+    req.write(body);
+    req.end();
+  });
 }
 
 // 解析 Agent 输出

@@ -288,10 +288,11 @@ const AICopilot = ({ onShowLogin }) => {
       }
 
       // 3. 触发一次嵌入生成（代替 N 次 autoEmbed 调用）
+      // 优化：仅当实际保存了实体时才触发，避免无意义的空嵌入 API 调用
       await fetch(`${API_BASE_URL}/extraction/${targetCaseId}/finalize`, {
         method: 'POST',
         headers: authHeaders,
-        body: JSON.stringify({ relations: [], autoEmbed: true, preSaved: true }),
+        body: JSON.stringify({ relations: [], autoEmbed: addedEntities.length > 0, preSaved: true }),
       });
 
       // 刷新图谱
