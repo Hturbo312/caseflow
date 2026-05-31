@@ -13,12 +13,23 @@ function extractApiErrorMessage(data, statusCode, isStream = false) {
     : `AI API 错误: HTTP ${statusCode}`;
   try {
     const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-    if (parsed.error?.message) errorMsg += ` - ${parsed.error.message}`;
+    // 标准错误格式：{ error: { message, code, type } }
+    if (parsed.error?.message) {
+      errorMsg += ` - ${parsed.error.message}`;
+      if (parsed.error.code) errorMsg += ` (code: ${parsed.error.code})`;
+    }
     else if (parsed.message) errorMsg += ` - ${parsed.message}`;
     else if (parsed.choices?.[0]?.message?.content) errorMsg += ` - ${parsed.choices[0].message.content.slice(0, 200)}`;
-    else if (typeof data === 'string' && data.length < 500) errorMsg += ` - ${data}`;
+    else if (typeof data === 'string') {
+      // 对于非 JSON 响应（如 HTML 错误页），提供截断预览
+      const preview = data.length > 300 ? data.slice(0, 300) + '...' : data;
+      errorMsg += ` - ${preview}`;
+    }
   } catch {
-    if (typeof data === 'string' && data.length < 500) errorMsg += ` - ${data}`;
+    if (typeof data === 'string') {
+      const preview = data.length > 300 ? data.slice(0, 300) + '...' : data;
+      errorMsg += ` - ${preview}`;
+    }
   }
   return errorMsg;
 }

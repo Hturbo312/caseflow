@@ -350,6 +350,14 @@ const AICopilot = ({ onShowLogin }) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // 文件大小限制：10MB
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error(t('common.fileTooLarge'));
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
     setIsParsingFile(true);
     try {
       const text = await parseDocument(file);

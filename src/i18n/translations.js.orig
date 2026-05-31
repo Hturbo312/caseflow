@@ -1015,8 +1015,6 @@ export const en = {
   'common.sendFailed': 'Send failed',
   'common.saveFailed': 'Save failed',
   'common.fileParseFailed': 'File parse failed',
-  'common.fileTooLarge': 'File too large, please select a file under 10MB',
-  'common.unsupportedFileType': 'Unsupported file type, please select PDF, DOCX, or TXT',
   'common.createCaseFailed': 'Create case failed',
   'common.extractionFailed': 'Extraction failed',
   'common.unknownError': 'Unknown error',
