@@ -585,7 +585,9 @@ export async function saveRelationsBulk(caseId, relations) {
   const savedRelations = [];
 
   if (approvedRelations.length === 0) {
-    return { savedCount: 0, skipped: relations.length > 0 ? relations.map(r => ({ sourceName: r.sourceName, targetName: r.targetName, reason: '状态不是 approved' })) : [], savedRelations };
+    // 没有待保存的关系（可能全部已审核完毕或本来就是空列表）
+    // 不应把 skipped/pending 状态的关系误报为"跳过"
+    return { savedCount: 0, skipped: [], savedRelations };
   }
 
   // 优化：一次性查询所有涉及的实体名称，避免 N+1 查询
@@ -672,7 +674,7 @@ export async function saveRelationsBulk(caseId, relations) {
   return { savedCount: savedRelations.length, skipped, savedRelations };
 }
 export async function finalizeCase(caseId, options = {}) {
-  const { relations = [], autoEmbed = false } = options;
+  const { relations = [], autoEmbed = false, preSaved = false } = options;
 
   // 获取 case_memory
   const memResult = await pool.query('SELECT extraction_progress FROM case_memory WHERE case_id = $1', [caseId]);
@@ -683,15 +685,20 @@ export async function finalizeCase(caseId, options = {}) {
   const schemaId = caseResult.rows[0]?.schema_id;
 
   // 保存审核通过的关系候选（复用共享函数）
+  // 如果前端已通过 batch-save-relations 预保存，跳过冗余 DB 操作
   let savedRelations = 0;
   let relationSkipped = [];
-  if (relations.length > 0) {
+  if (relations.length > 0 && !preSaved) {
     const result = await saveRelationsBulk(caseId, relations);
     savedRelations = result.savedCount;
     relationSkipped = result.skipped || [];
     if (relationSkipped.length > 0) {
       console.log(`[finalizeCase] 关系保存: ${savedRelations} 条已保存, ${relationSkipped.length} 条跳过`);
     }
+  } else if (preSaved && relations.length > 0) {
+    // 预保存模式下，统计 approved 数量用于返回
+    savedRelations = relations.filter(r => r.status === 'approved').length;
+    console.log(`[finalizeCase] 关系已预保存，跳过冗余操作 (${savedRelations} 条)`);
   }
 
   // 更新 case_memory

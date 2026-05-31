@@ -298,8 +298,8 @@ router.post('/:caseId/save-relation', authMiddleware, async (req, res) => {
 router.post('/:caseId/finalize', authMiddleware, async (req, res) => {
   try {
     const { caseId } = req.params;
-    const { relations = [], autoEmbed = true } = req.body;
-    const result = await pipeline.finalizeCase(caseId, { relations, autoEmbed });
+    const { relations = [], autoEmbed = true, preSaved = false } = req.body;
+    const result = await pipeline.finalizeCase(caseId, { relations, autoEmbed, preSaved });
     res.json({ success: true, data: result });
   } catch (error) {
     console.error(`[extraction/:caseId/finalize] 错误:`, error.message);

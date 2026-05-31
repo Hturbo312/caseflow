@@ -180,13 +180,14 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
 
       // 3. 调用后端 finalize：标记 case_memory 为 completed + 触发 autoEmbed
       // 同时传递已审核的关系作为安全网（后端 saveRelationsBulk 有去重保护，不会重复插入）
+      // 注意：由于关系已在上面通过 batch-save-relations 预保存，传递 preSaved=true 避免冗余 DB 操作
       const finalizeRes = await fetch(`${API_BASE_URL}/extraction/${caseId}/finalize`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ relations: approvedRelations, autoEmbed: true }),
+        body: JSON.stringify({ relations: approvedRelations, autoEmbed: true, preSaved: approvedRelations.length > 0 }),
       });
       if (finalizeRes.ok) {
         const finalizeData = await finalizeRes.json();
