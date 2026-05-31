@@ -1,20 +1,15 @@
 import pool from '../db.js';
 import { getAgentMeta, buildAgentContext, buildSystemPrompt, callAI, parseAgentOutput } from './agent.js';
+import crypto from 'crypto';
 
 // ============================================================
 // 多轮提取流水线服务
 // 核心原则：全文只读一次构建 Text IR，后续按类型过滤片段提取
 // ============================================================
 
-// 辅助：计算文本 hash
+// 辅助：计算文本 hash（使用 MD5 替代弱 djb2，消除碰撞风险）
 function textHash(text) {
-  let hash = 0;
-  for (let i = 0; i < text.length; i++) {
-    const char = text.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0;
-  }
-  return Math.abs(hash).toString(16);
+  return crypto.createHash('md5').update(text, 'utf8').digest('hex');
 }
 
 // 辅助：确保 case_memory 存在
@@ -193,6 +188,23 @@ export async function generateExtractionPlan(caseId, schemaId) {
   return { plan };
 }
 
+// 辅助：构建实体类型上下文（entity type 定义 + 关系类型描述，DRY）
+async function buildEntityTypeContext(schemaId, entityType) {
+  const entityTypesResult = await pool.query('SELECT * FROM entity_types WHERE schema_id = $1', [schemaId]);
+  const etDef = entityTypesResult.rows.find(e => e.name === entityType);
+  const props = etDef?.properties || [];
+
+  const relationsResult = await pool.query('SELECT * FROM relations WHERE schema_id = $1', [schemaId]);
+  const relatedRels = relationsResult.rows.filter(r =>
+    r.from_entity_type === entityType || r.to_entity_type === entityType
+  );
+  const relContext = relatedRels.length > 0
+    ? `\n\n注意：该类型在关系「${relatedRels.map(r => r.name).join('、')}」中与 ${relatedRels.map(r => r.from_entity_type === entityType ? r.to_entity_type : r.from_entity_type).join('、')} 类型相连。`
+    : '';
+
+  return { props, relContext };
+}
+
 // ============================================================
 // Step 3: 按类型提取实体（只读相关片段，不重读全文）
 // ============================================================
@@ -220,19 +232,7 @@ export async function extractEntities(caseId, entityType, schemaId) {
   const agent = await getAgentMeta('case_extractor');
   if (!agent) throw new Error('Agent case_extractor not found');
 
-  // 获取 schema 定义
-  const entityTypesResult = await pool.query('SELECT * FROM entity_types WHERE schema_id = $1', [schemaId]);
-  const etDef = entityTypesResult.rows.find(e => e.name === entityType);
-  const props = etDef?.properties || [];
-
-  // 获取该类型相关的关系类型描述
-  const relationsResult = await pool.query('SELECT * FROM relations WHERE schema_id = $1', [schemaId]);
-  const relatedRels = relationsResult.rows.filter(r =>
-    r.from_entity_type === entityType || r.to_entity_type === entityType
-  );
-  const relContext = relatedRels.length > 0
-    ? `\n\n注意：该类型在关系「${relatedRels.map(r => r.name).join('、')}」中与 ${relatedRels.map(r => r.from_entity_type === entityType ? r.to_entity_type : r.from_entity_type).join('、')} 类型相连。`
-    : '';
+  const { props, relContext } = await buildEntityTypeContext(schemaId, entityType);
 
   const relevantSegments = hints.slice(0, 10).map(h => h.segment_content).join('\n\n');
 
@@ -294,18 +294,7 @@ async function rereadForEntity(caseId, entityType, schemaId, segments) {
   const agent = await getAgentMeta('case_extractor');
   if (!agent) throw new Error('Agent case_extractor not found');
 
-  const entityTypesResult = await pool.query('SELECT * FROM entity_types WHERE schema_id = $1', [schemaId]);
-  const etDef = entityTypesResult.rows.find(e => e.name === entityType);
-  const props = etDef?.properties || [];
-
-  // 获取该类型相关的关系类型描述
-  const relationsResult = await pool.query('SELECT * FROM relations WHERE schema_id = $1', [schemaId]);
-  const relatedRels = relationsResult.rows.filter(r =>
-    r.from_entity_type === entityType || r.to_entity_type === entityType
-  );
-  const relContext = relatedRels.length > 0
-    ? `\n\n注意：该类型在关系「${relatedRels.map(r => r.name).join('、')}」中与 ${relatedRels.map(r => r.from_entity_type === entityType ? r.to_entity_type : r.from_entity_type).join('、')} 类型相连。`
-    : '';
+  const { props, relContext } = await buildEntityTypeContext(schemaId, entityType);
 
   // 长文本分块处理
   const chunks = chunkParagraphs(segments, 4000);
