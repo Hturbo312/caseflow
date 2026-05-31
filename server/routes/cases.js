@@ -345,12 +345,38 @@ router.delete('/:caseId/relations/:relationId', authMiddleware, async (req, res)
   }
 });
 
-// 删除案例
+// 删除案例（级联删除关联数据，避免孤立记录）
 router.delete('/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
   try {
-    await pool.query('DELETE FROM cases WHERE id = $1', [id]);
-    res.json({ message: 'Case deleted' });
+    // 使用事务确保级联删除的原子性
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      // 删除关系（依赖实体，先删）
+      await client.query('DELETE FROM case_relations WHERE case_id = $1', [id]);
+      // 删除实体
+      await client.query('DELETE FROM case_entities WHERE case_id = $1', [id]);
+      // 删除文本片段
+      await client.query('DELETE FROM text_segments WHERE case_id = $1', [id]);
+      // 删除案例记忆
+      await client.query('DELETE FROM case_memory WHERE case_id = $1', [id]);
+      // 删除聊天历史和会话
+      await client.query('DELETE FROM chat_history WHERE session_id LIKE $1', [`%${id}%`]);
+      await client.query('DELETE FROM chat_sessions WHERE session_id LIKE $1', [`%${id}%`]);
+      // 最后删除案例本身
+      const result = await client.query('DELETE FROM cases WHERE id = $1 RETURNING id', [id]);
+      await client.query('COMMIT');
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: '案例不存在' });
+      }
+      res.json({ message: '案例及关联数据已删除' });
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -188,14 +188,38 @@ export async function generateExtractionPlan(caseId, schemaId) {
   return { plan };
 }
 
+// 实体类型上下文缓存（带 TTL，避免重复 DB 查询）
+let entityTypeContextCache = new Map();
+let entityTypeContextCacheTime = 0;
+const ENTITY_TYPE_CONTEXT_CACHE_TTL = 60000; // 60秒缓存
+
 // 辅助：构建实体类型上下文（entity type 定义 + 关系类型描述，DRY）
 async function buildEntityTypeContext(schemaId, entityType) {
-  const entityTypesResult = await pool.query('SELECT * FROM entity_types WHERE schema_id = $1', [schemaId]);
-  const etDef = entityTypesResult.rows.find(e => e.name === entityType);
+  const now = Date.now();
+  if (now - entityTypeContextCacheTime > ENTITY_TYPE_CONTEXT_CACHE_TTL) {
+    entityTypeContextCache.clear();
+    entityTypeContextCacheTime = now;
+  }
+
+  // 缓存整个 schema 的 entity_types + relations，按 schemaId 存储
+  const cacheKey = `schema_context:${schemaId}`;
+  if (!entityTypeContextCache.has(cacheKey)) {
+    const [entityTypesResult, relationsResult] = await Promise.all([
+      pool.query('SELECT * FROM entity_types WHERE schema_id = $1', [schemaId]),
+      pool.query('SELECT * FROM relations WHERE schema_id = $1', [schemaId]),
+    ]);
+    entityTypeContextCache.set(cacheKey, {
+      entityTypes: entityTypesResult.rows,
+      relations: relationsResult.rows,
+    });
+    entityTypeContextCacheTime = now;
+  }
+
+  const cached = entityTypeContextCache.get(cacheKey);
+  const etDef = cached.entityTypes.find(e => e.name === entityType);
   const props = etDef?.properties || [];
 
-  const relationsResult = await pool.query('SELECT * FROM relations WHERE schema_id = $1', [schemaId]);
-  const relatedRels = relationsResult.rows.filter(r =>
+  const relatedRels = cached.relations.filter(r =>
     r.from_entity_type === entityType || r.to_entity_type === entityType
   );
   const relContext = relatedRels.length > 0
