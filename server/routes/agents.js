@@ -168,22 +168,27 @@ router.post('/:name/invoke/stream', authMiddleware, async (req, res) => {
     return res.status(400).json({ error: 'user_input 是必需的' });
   }
 
-  // 获取用户 AI 配置
-  const userConfig = await getUserAiConfig(userId);
-
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.flushHeaders();
-
   try {
-    // 使用缓存的 Agent 元数据
+    // 使用缓存的 Agent 元数据（在 flushHeaders 之前检查，以便正确设置 HTTP 状态码）
     const agent = await getAgentMeta(name);
     if (!agent) {
+      res.status(404);
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.flushHeaders();
       res.write(`data: ${JSON.stringify({ error: 'Agent not found' })}\n\n`);
       res.end();
       return;
     }
+
+    // 获取用户 AI 配置
+    const userConfig = await getUserAiConfig(userId);
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
 
     const fullContext = await buildAgentContext(name, context, user_input);
 

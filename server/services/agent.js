@@ -47,8 +47,8 @@ function resolveAiConfig(userConfig) {
       model: userConfig.model || 'glm-4-flash',
       temperature: parseFloat(userConfig.temperature ?? 0.7),
       maxTokens: parseInt(userConfig.max_tokens ?? userConfig.maxTokens ?? 16384),
-      useTemperature: userConfig.use_temperature !== undefined ? userConfig.use_temperature : (userConfig.useTemperature !== undefined ? userConfig.useTemperature : true),
-      useMaxTokens: userConfig.use_max_tokens !== undefined ? userConfig.use_max_tokens : (userConfig.useMaxTokens !== undefined ? userConfig.useMaxTokens : true),
+      useTemperature: userConfig.use_temperature ?? userConfig.useTemperature ?? true,
+      useMaxTokens: userConfig.use_max_tokens ?? userConfig.useMaxTokens ?? true,
     };
   }
   // 回退到全局缓存（环境变量或管理员通过 API 设置的全局配置）
