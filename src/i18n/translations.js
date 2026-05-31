@@ -511,6 +511,7 @@ export const zh = {
   'ai.pendingRelationsWarning': '还有 {count} 条关系未审核，未审核的关系不会被保存。\n\n确定要继续完成提取吗？',
   'ai.relationSaveIncomplete': '关系保存不完整：已审核 {approved} 条，仅保存 {saved} 条。\n请检查后重试。',
   'ai.relationSaveFailed': '关系保存失败，请重试。',
+  'ai.entitySaveFailed': '实体保存失败: HTTP {status}',
   'ai.finalizeFailed': '完成提取失败，请重试。',
   'ai.finalizeSuccess': '案例拆解完成，数据已保存！',
   // AI Config
@@ -1043,6 +1044,7 @@ export const en = {
   'ai.pendingRelationsWarning': 'There are {count} unreviewed relations that will not be saved.\n\nContinue finalizing?',
   'ai.relationSaveIncomplete': 'Relations saved incompletely: {approved} approved but only {saved} saved.\nPlease check and try again.',
   'ai.relationSaveFailed': 'Failed to save relations, please try again.',
+  'ai.entitySaveFailed': 'Failed to save entities: HTTP {status}',
   'ai.finalizeFailed': 'Failed to finalize extraction, please try again.',
   'ai.finalizeSuccess': 'Case breakdown complete, data saved!',
   // AI Config

@@ -239,7 +239,7 @@ const AICopilot = ({ onShowLogin }) => {
           headers: authHeaders,
           body: JSON.stringify({ entities: entitiesToSave, autoEmbed: false }),
         });
-        if (!entRes.ok) throw new Error(`实体保存失败: HTTP ${entRes.status}`);
+        if (!entRes.ok) throw new Error(t('ai.entitySaveFailed', { status: entRes.status }));
         const entData = await entRes.json();
         addedEntities = entData.entities || [];
         console.log(`[handleConfirmSave] 批量保存了 ${entData.saved} 个实体，跳过 ${entData.skipped?.length || 0} 个`);
