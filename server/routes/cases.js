@@ -4,8 +4,6 @@ import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// ============================================================
-// 共享：GraphML XML 构建器（export-all 和单案例 export 共用）
 // 共享：CSV 值转义（RFC 4180）
 const csvEscape = (val) => {
   const str = String(val ?? '');

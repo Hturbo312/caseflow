@@ -132,7 +132,7 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
             'Content-Type': 'application/json',
             ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({ entities: entitiesWithColor, autoEmbed: false }),
+          body: JSON.stringify({ entities: entitiesWithColor, autoEmbed: true }),
         });
         if (!entRes.ok) {
           console.error(`[handleFinalize] 实体保存失败: ${entRes.status}`);
