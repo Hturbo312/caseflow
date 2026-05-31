@@ -364,7 +364,7 @@ export const zh = {
   'pipeline.skipAll': '全部跳过',
   'pipeline.noEntities': '暂无实体',
   'pipeline.noFiltered': '没有{filter}的实体',
-  'pipeline.totalRelations': '共 {count} 条',
+  'pipeline.totalRelations': '共 {count} 条关系',
   'pipeline.skip': '跳过',
   'pipeline.confirm': '确认',
   'pipeline.viewEvidence': '查看原文依据',

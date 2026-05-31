@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X, CheckCheck, XCircle } from 'lucide-react';
 import { useI18n } from '../../../../../i18n';
@@ -13,15 +13,18 @@ const CardReviewPanel = memo(({ entityType, cards, currentSchema, onUpdateStatus
   const color = entityDef?.color || '#3b82f6';
 
   const filteredCards = cards.filter(c => filter === 'all' || c.status === filter);
-  const stats = {
+  // 优化：useMemo 缓存 stats，避免每次渲染重复 filter 4 次
+  const stats = useMemo(() => ({
     total: cards.length,
     pending: cards.filter(c => c.status === 'pending').length,
     approved: cards.filter(c => c.status === 'approved').length,
     skipped: cards.filter(c => c.status === 'skipped').length,
-  };
+  }), [cards]);
+
+  // 优化：useMemo 缓存 pendingIds，避免多次重复 filter
+  const pendingIds = useMemo(() => cards.filter(c => c.status === 'pending').map(c => c.id), [cards]);
 
   const handleSelectAll = () => {
-    const pendingIds = cards.filter(c => c.status === 'pending').map(c => c.id);
     setSelectedIds(prev =>
       pendingIds.every(id => prev.has(id)) ? new Set() : new Set(pendingIds)
     );
@@ -108,13 +111,13 @@ const CardReviewPanel = memo(({ entityType, cards, currentSchema, onUpdateStatus
           {selectedIds.size === 0 && (
             <>
               <button
-                onClick={() => onBatchUpdate(cards.filter(c => c.status === 'pending').map(c => c.id), 'approved')}
+                onClick={() => onBatchUpdate(pendingIds, 'approved')}
                 className="text-xs text-green-600 hover:text-green-700 flex items-center gap-1"
               >
                 <Check size={14} /> {t('pipeline.confirmAll')}
               </button>
               <button
-                onClick={() => onBatchUpdate(cards.filter(c => c.status === 'pending').map(c => c.id), 'skipped')}
+                onClick={() => onBatchUpdate(pendingIds, 'skipped')}
                 className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1"
               >
                 <XCircle size={14} /> {t('pipeline.skipAll')}

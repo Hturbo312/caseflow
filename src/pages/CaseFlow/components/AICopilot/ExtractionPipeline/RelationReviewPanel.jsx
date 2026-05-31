@@ -11,12 +11,13 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
   const [expandedEvidence, setExpandedEvidence] = useState(new Set());
   const prevPendingRef = useRef(-1);
 
-  const stats = {
+  // 优化：useMemo 缓存 stats，避免每次渲染重复 filter 4 次
+  const stats = useMemo(() => ({
     total: relations.length,
     approved: relations.filter(r => r.status === 'approved').length,
     skipped: relations.filter(r => r.status === 'skipped').length,
     pending: relations.filter(r => r.status === 'pending').length,
-  };
+  }), [relations]);
 
   // 优化：当所有关系审核完成时（pending 从 >0 变为 0），toast 提示用户
   useEffect(() => {
