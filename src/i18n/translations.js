@@ -516,6 +516,9 @@ export const zh = {
   'ai.configSaved': 'AI 配置已保存',
   'ai.confirmDeleteConfig': '确定要删除 AI 配置吗？',
   'ai.saveConfigFailed': '保存配置失败：',
+  // 文件解析与保存
+  'ai.saveSuccess': '保存成功：{entities} 个实体，{relations} 条关系',
+  'ai.fileParsed': '文件解析成功：{name}，{count} 字符',
   // Session history
   'session.confirmDelete': '确定要删除这个会话吗？',
   'session.today': '今天',
@@ -1044,6 +1047,9 @@ export const en = {
   'ai.configSaved': 'AI configuration saved',
   'ai.confirmDeleteConfig': 'Are you sure you want to delete the AI configuration?',
   'ai.saveConfigFailed': 'Failed to save configuration: ',
+  // File parsing & save
+  'ai.saveSuccess': 'Saved successfully: {entities} entities, {relations} relations',
+  'ai.fileParsed': 'File parsed successfully: {name}, {count} characters',
   // Session history
   'session.confirmDelete': 'Are you sure you want to delete this session?',
   'session.today': 'Today',

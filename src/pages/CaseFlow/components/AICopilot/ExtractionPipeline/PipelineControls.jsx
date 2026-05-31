@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { Loader2, Play, SkipForward, ChevronRight, Save, RotateCcw } from 'lucide-react';
+import { Loader2, Play, SkipForward, Save, RotateCcw } from 'lucide-react';
 import { useI18n } from '../../../../../i18n';
 
 const PipelineControls = memo(({ phase, isProcessing, onParseText, onGeneratePlan, onNext, onFinalize, onReset, plan, extractedTypes }) => {
