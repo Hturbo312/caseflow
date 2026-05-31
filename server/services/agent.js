@@ -640,8 +640,6 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
 export function parseAgentOutput(rawResponse, outputFormat) {
   if (outputFormat === 'json') {
     // 尝试多种方式提取 JSON
-    let jsonStr = null;
-
     // 1. 从 markdown 代码块中提取
     const codeBlockMatch = rawResponse.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
     if (codeBlockMatch) {

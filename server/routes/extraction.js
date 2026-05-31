@@ -1,7 +1,6 @@
 import express from 'express';
 import { authMiddleware } from '../middleware/auth.js';
 import * as pipeline from '../services/extractionPipeline.js';
-import { triggerAutoEmbed } from '../services/extractionPipeline.js';
 import pool from '../db.js';
 
 const router = express.Router();
@@ -169,7 +168,7 @@ router.post('/:caseId/save-entity', authMiddleware, async (req, res) => {
 
     // 实体保存完成后，自动触发嵌入生成（异步，不阻塞响应）
     if (autoEmbed) {
-      triggerAutoEmbed(caseId, 'save-entity').catch(e => console.error('[save-entity] 自动嵌入失败:', e));
+      pipeline.triggerAutoEmbed(caseId, 'save-entity').catch(e => console.error('[save-entity] 自动嵌入失败:', e));
     }
 
     res.json({ success: true, entity: result.rows[0], duplicated: false });
@@ -243,7 +242,7 @@ router.post('/:caseId/batch-save-entities', authMiddleware, async (req, res) => 
 
     // 实体保存完成后，自动触发嵌入生成（异步，不阻塞响应）
     if (autoEmbed && savedEntities.length > 0) {
-      triggerAutoEmbed(caseId, 'batch-save-entities').catch(e => console.error('[batch-save-entities] 自动嵌入失败:', e));
+      pipeline.triggerAutoEmbed(caseId, 'batch-save-entities').catch(e => console.error('[batch-save-entities] 自动嵌入失败:', e));
     }
 
     res.json({
@@ -284,7 +283,7 @@ router.post('/:caseId/save-relation', authMiddleware, async (req, res) => {
 
     // 关系保存完成后，自动触发嵌入生成（异步，不阻塞响应）
     if (autoEmbed) {
-      triggerAutoEmbed(caseId, 'save-relation').catch(e => console.error('[save-relation] 自动嵌入失败:', e));
+      pipeline.triggerAutoEmbed(caseId, 'save-relation').catch(e => console.error('[save-relation] 自动嵌入失败:', e));
     }
 
     res.json({ success: true, relation: result.rows[0], duplicated: false });
@@ -319,9 +318,10 @@ router.post('/:caseId/batch-save-relations', authMiddleware, async (req, res) =>
     // 复用共享的关系保存逻辑
     const result = await pipeline.saveRelationsBulk(caseId, relations);
 
-    // 关系保存完成后，自动触发嵌入生成（异步，不阻塞响应）
+    // 关系保存完成后，按需自动触发嵌入生成（异步，不阻塞响应）
+    // 注意：尊重前端传入的 autoEmbed 参数，避免在 finalize 流程中重复触发
     if (autoEmbed && result.savedCount > 0) {
-      triggerAutoEmbed(caseId, 'batch-save-relations').catch(e => console.error('[batch-save-relations] 自动嵌入失败:', e));
+      pipeline.triggerAutoEmbed(caseId, 'batch-save-relations').catch(e => console.error('[batch-save-relations] 自动嵌入失败:', e));
     }
 
     res.json({ success: true, saved: result.savedCount, skipped: result.skipped, relations: result.savedRelations });
