@@ -584,7 +584,9 @@ export async function inferRelations(caseId, schemaId, candidates) {
     id: `relation-candidate-${i}`,
     name: r.name,
     sourceName: r.sourceName,
+    sourceType: r.sourceType || '',
     targetName: r.targetName,
+    targetType: r.targetType || '',
     confidence: r.confidence || 0.5,
     evidence: r.evidence || '',
     status: 'pending'
@@ -614,24 +616,47 @@ export async function saveRelationsBulk(caseId, relations) {
     return { savedCount: 0, skipped: [], savedRelations };
   }
 
-  // 优化：一次性查询所有涉及的实体名称，避免 N+1 查询
-  const entityNames = [...new Set(approvedRelations.flatMap(r => [r.sourceName, r.targetName]).filter(Boolean))];
-  if (entityNames.length === 0) {
+  // 优化：使用 (name, entityType) 元组查找实体，避免同名不同类型实体被错误匹配
+  // 构建所有需要查询的 (name, entityType) 组合
+  const nameTypePairs = new Set();
+  for (const r of approvedRelations) {
+    if (r.sourceName) nameTypePairs.add(`${r.sourceName}::${r.sourceType || ''}`);
+    if (r.targetName) nameTypePairs.add(`${r.targetName}::${r.targetType || ''}`);
+  }
+  if (nameTypePairs.size === 0) {
     return { savedCount: 0, skipped, savedRelations };
   }
 
+  // 批量查询：按名称查询，然后在内存中按类型匹配
+  const allEntityNames = [...new Set([...nameTypePairs].map(p => p.split('::')[0]))];
   const entitiesResult = await pool.query(
-    'SELECT id, name FROM case_entities WHERE case_id = $1 AND name = ANY($2)',
-    [caseId, entityNames]
+    'SELECT id, name, entity_type FROM case_entities WHERE case_id = $1 AND name = ANY($2)',
+    [caseId, allEntityNames]
   );
-  const nameToId = new Map(entitiesResult.rows.map(r => [r.name, r.id]));
+  // 构建 (name::entityType) → id 的映射，同时构建 name → [id, ...] 的回退映射
+  const nameTypeToId = new Map(
+    entitiesResult.rows.map(r => [`${r.name}::${r.entity_type}`, r.id])
+  );
+  const nameToFallbackId = new Map();
+  for (const r of entitiesResult.rows) {
+    if (!nameToFallbackId.has(r.name)) {
+      nameToFallbackId.set(r.name, r.id);
+    }
+  }
 
   // 构建关系元组
   const relTuples = approvedRelations
     .filter(r => r.sourceName && r.targetName && r.name)
     .map(r => {
-      const sourceId = nameToId.get(r.sourceName);
-      const targetId = nameToId.get(r.targetName);
+      // 优先使用 (name, entityType) 精确匹配，回退到 name-only 匹配（向后兼容）
+      const sourceKey = r.sourceType ? `${r.sourceName}::${r.sourceType}` : null;
+      const targetKey = r.targetType ? `${r.targetName}::${r.targetType}` : null;
+      const sourceId = (sourceKey && nameTypeToId.has(sourceKey))
+        ? nameTypeToId.get(sourceKey)
+        : nameToFallbackId.get(r.sourceName);
+      const targetId = (targetKey && nameTypeToId.has(targetKey))
+        ? nameTypeToId.get(targetKey)
+        : nameToFallbackId.get(r.targetName);
       return sourceId && targetId ? { sourceId, targetId, relationType: r.name, rel: r } : null;
     })
     .filter(Boolean);
@@ -687,11 +712,18 @@ export async function saveRelationsBulk(caseId, relations) {
     if (processedKeys.has(key)) continue; // 已在上面的 dedup 块中处理过（已插入或已标记为重复）
     if (!rel.sourceName || !rel.targetName || !rel.name) {
       skipped.push({ sourceName: rel.sourceName, targetName: rel.targetName, reason: '缺少必要字段 (sourceName/targetName/name)' });
-    } else if (!nameToId.has(rel.sourceName) || !nameToId.has(rel.targetName)) {
-      const missing = [];
-      if (!nameToId.has(rel.sourceName)) missing.push(rel.sourceName);
-      if (!nameToId.has(rel.targetName)) missing.push(rel.targetName);
-      skipped.push({ sourceName: rel.sourceName, targetName: rel.targetName, reason: `实体未找到: ${missing.join(', ')}` });
+    } else {
+      // 检查实体是否存在（优先按 (name, type) 查找，回退按 name 查找）
+      const sourceKey = rel.sourceType ? `${rel.sourceName}::${rel.sourceType}` : null;
+      const targetKey = rel.targetType ? `${rel.targetName}::${rel.targetType}` : null;
+      const sourceFound = (sourceKey && nameTypeToId.has(sourceKey)) || nameToFallbackId.has(rel.sourceName);
+      const targetFound = (targetKey && nameTypeToId.has(targetKey)) || nameToFallbackId.has(rel.targetName);
+      if (!sourceFound || !targetFound) {
+        const missing = [];
+        if (!sourceFound) missing.push(rel.sourceType ? `${rel.sourceName}(${rel.sourceType})` : rel.sourceName);
+        if (!targetFound) missing.push(rel.targetType ? `${rel.targetName}(${rel.targetType})` : rel.targetName);
+        skipped.push({ sourceName: rel.sourceName, targetName: rel.targetName, reason: `实体未找到: ${missing.join(', ')}` });
+      }
     }
   }
 
