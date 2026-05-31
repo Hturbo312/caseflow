@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useAgentStore, useGraphStore, useCaseStore, useSchemaStore, useAuthStore, useExtractionStore } from '@store';
 import { caseApi, schemaApi } from '@services/api';
+import { API_BASE_URL, authHelper } from '../../../../utils';
 import { useAIConfig, useSessionHistory } from './hooks';
 import { useToastStore } from '@components/Toast/ToastStore.js';
 import { parseDocument, extractFileExtension } from '@utils/documentParser';
@@ -199,7 +200,7 @@ const AICopilot = ({ onShowLogin }) => {
     }
   }, [handleSend]);
 
-  // 案例拆解：保存提取结果
+  // 案例拆解：保存提取结果（优化：批量 API 代替 N 次独立调用）
   const handleConfirmSave = useCallback(async () => {
     const result = currentSession.extractResult;
     if (!result) return;
@@ -218,45 +219,80 @@ const AICopilot = ({ onShowLogin }) => {
         targetCaseId = response.case.id?.toString();
       }
 
-      // 并行保存实体
-      const entityPromises = (result.entities || []).map(entity => {
-        const newEntity = {
-          ...entity,
-          id: `e-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        };
-        return caseApi.addEntity(targetCaseId, newEntity).then((res) => {
-          const saved = res.entity;
-          saved.id = saved.id.toString();
-          saved.entityType = saved.entity_type;
-          addNodeToGraph(saved);
-          return saved;
-        });
-      });
-      const addedEntities = await Promise.all(entityPromises);
+      const token = authHelper.getToken();
+      const authHeaders = {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      };
 
-      // 并行保存关系
-      const relationPromises = (result.relations || []).map(rel => {
-        const sourceEntity = addedEntities.find(e => e.name === rel.sourceName);
-        const targetEntity = addedEntities.find(e => e.name === rel.targetName);
-        if (sourceEntity && targetEntity) {
-          const newRelation = {
-            sourceEntityId: sourceEntity.id,
-            targetEntityId: targetEntity.id,
-            relationType: rel.name,
-          };
-          return caseApi.addRelation(targetCaseId, newRelation).then((res) => {
-            const saved = res.relation;
-            saved.id = saved.id.toString();
-            saved.sourceId = saved.source_entity_id.toString();
-            saved.targetId = saved.target_entity_id.toString();
-            saved.name = saved.relation_type;
-            addLinkToGraph(saved);
-            return saved;
-          });
+      // 1. 批量保存实体（代替 N 次独立 addEntity 调用）
+      const entitiesToSave = (result.entities || []).map(entity => ({
+        name: entity.name,
+        entityType: entity.entityType,
+        properties: entity.properties || {},
+      }));
+
+      let addedEntities = [];
+      if (entitiesToSave.length > 0) {
+        const entRes = await fetch(`${API_BASE_URL}/extraction/${targetCaseId}/batch-save-entities`, {
+          method: 'POST',
+          headers: authHeaders,
+          body: JSON.stringify({ entities: entitiesToSave, autoEmbed: false }),
+        });
+        if (!entRes.ok) throw new Error(`实体保存失败: HTTP ${entRes.status}`);
+        const entData = await entRes.json();
+        addedEntities = entData.entities || [];
+        console.log(`[handleConfirmSave] 批量保存了 ${entData.saved} 个实体，跳过 ${entData.skipped?.length || 0} 个`);
+      }
+
+      // 将保存的实体添加到图谱
+      for (const saved of addedEntities) {
+        const graphNode = { ...saved, id: String(saved.id), entityType: saved.entity_type };
+        addNodeToGraph(graphNode);
+      }
+
+      // 2. 批量保存关系（代替 N 次独立 addRelation 调用）
+      const relationsToSave = (result.relations || [])
+        .map(rel => {
+          const sourceEntity = addedEntities.find(e => e.name === rel.sourceName);
+          const targetEntity = addedEntities.find(e => e.name === rel.targetName);
+          return sourceEntity && targetEntity
+            ? { sourceName: rel.sourceName, targetName: rel.targetName, name: rel.name, status: 'approved' }
+            : null;
+        })
+        .filter(Boolean);
+
+      if (relationsToSave.length > 0) {
+        const relRes = await fetch(`${API_BASE_URL}/extraction/${targetCaseId}/batch-save-relations`, {
+          method: 'POST',
+          headers: authHeaders,
+          body: JSON.stringify({ relations: relationsToSave, autoEmbed: false }),
+        });
+        if (relRes.ok) {
+          const relData = await relRes.json();
+          const savedRelations = relData.relations || [];
+          for (const saved of savedRelations) {
+            const graphLink = {
+              ...saved,
+              id: String(saved.id),
+              sourceId: String(saved.source_entity_id),
+              targetId: String(saved.target_entity_id),
+              name: saved.relation_type,
+            };
+            addLinkToGraph(graphLink);
+          }
+          console.log(`[handleConfirmSave] 批量保存了 ${relData.saved} 条关系`);
+        } else {
+          console.warn('[handleConfirmSave] 关系保存失败，跳过');
         }
-        return Promise.resolve(null);
+      }
+
+      // 3. 触发一次嵌入生成（代替 N 次 autoEmbed 调用）
+      await fetch(`${API_BASE_URL}/extraction/${targetCaseId}/finalize`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({ relations: [], autoEmbed: true, preSaved: true }),
       });
-      await Promise.all(relationPromises);
 
       // 刷新图谱
       loadAllCasesToGraph();
@@ -266,13 +302,13 @@ const AICopilot = ({ onShowLogin }) => {
       setCaseText('');
       setInputValue('');
 
-      toast.success(t('ai.saveSuccess', { entities: addedEntities.length, relations: result.relations?.length || 0 }));
+      toast.success(t('ai.saveSuccess', { entities: addedEntities.length, relations: relationsToSave.length }));
     } catch (error) {
       console.error('保存失败:', error);
       toast.error(t('common.saveFailed') + ': ' + error.message);
     }
     setIsSaving(false);
-  }, [currentSession.extractResult, currentCaseId, caseText, currentSchemaId, addNodeToGraph, addLinkToGraph, loadAllCasesToGraph, setExtractResult, toast]);
+  }, [currentSession.extractResult, currentCaseId, caseText, currentSchemaId, addNodeToGraph, addLinkToGraph, loadAllCasesToGraph, setExtractResult, toast, t]);
 
   // 案例拆解：开始调整
   const handleRequestAdjustment = useCallback(() => {

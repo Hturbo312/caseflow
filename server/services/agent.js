@@ -94,7 +94,7 @@ export function startSessionCleanup() {
         cleaned++;
       }
     }
-    if (cleaned > 0) console.log(`[agentSessions] 清理了 ${cleaned} 个过期会话`);
+    if (cleaned > 0) console.log(`[agentSessions] Cleaned up ${cleaned} expired session(s)`);
   }, 5 * 60 * 1000);
 }
 
@@ -464,6 +464,10 @@ function buildAiRequestBody(systemPrompt, messages, agent, cfg, extra = {}) {
   return requestBody;
 }
 
+// 共享 HTTP/HTTPS Agent（keep-alive 连接池，减少重复 TCP 握手开销）
+const httpAgent = new http.Agent({ keepAlive: true, timeout: 600000 });
+const httpsAgent = new https.Agent({ keepAlive: true, timeout: 600000 });
+
 // 调用 AI - 使用 node:https 而非 fetch（fetch 有 300s bodyTimeout 限制）
 export async function callAI(systemPrompt, messages, agent, userConfig) {
   const cfg = resolveAiConfig(userConfig);
@@ -476,10 +480,12 @@ export async function callAI(systemPrompt, messages, agent, userConfig) {
   const body = JSON.stringify(requestBody);
   const url = new URL(cfg.endpoint);
   const client = url.protocol === 'https:' ? https : http;
+  const httpAgentInstance = url.protocol === 'https:' ? httpsAgent : httpAgent;
 
   return new Promise((resolve, reject) => {
     const req = client.request(url, {
       method: 'POST',
+      agent: httpAgentInstance,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${cfg.apiKey}`,
