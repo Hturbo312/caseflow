@@ -1,12 +1,15 @@
-import React, { memo, useState, useMemo } from 'react';
+import React, { memo, useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Check, X, CheckCheck, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useI18n } from '../../../../../i18n';
+import { useToastStore } from '@components/Toast/ToastStore.js';
 
 const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
   const { t } = useI18n();
+  const toast = useToastStore();
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [expandedEvidence, setExpandedEvidence] = useState(new Set());
+  const prevPendingRef = useRef(-1);
 
   const stats = {
     total: relations.length,
@@ -14,6 +17,18 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
     skipped: relations.filter(r => r.status === 'skipped').length,
     pending: relations.filter(r => r.status === 'pending').length,
   };
+
+  // 优化：当所有关系审核完成时（pending 从 >0 变为 0），toast 提示用户
+  useEffect(() => {
+    if (prevPendingRef.current > 0 && stats.pending === 0 && stats.total > 0) {
+      toast.success(
+        stats.approved > 0
+          ? t('pipeline.reviewComplete', { approved: stats.approved, skipped: stats.skipped })
+          : t('pipeline.reviewAllSkipped')
+      );
+    }
+    prevPendingRef.current = stats.pending;
+  }, [stats.pending, stats.total, stats.approved, stats.skipped, t, toast]);
 
   const getConfidenceColor = (confidence) => {
     if (confidence >= 0.8) return 'text-green-600';

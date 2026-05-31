@@ -6,7 +6,16 @@ const router = express.Router();
 
 // ============================================================
 // 共享：GraphML XML 构建器（export-all 和单案例 export 共用）
-// ============================================================
+// 共享：CSV 值转义（RFC 4180）
+const csvEscape = (val) => {
+  const str = String(val ?? '');
+  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+};
+
+// 共享：GraphML XML 构建器（export-all 和单案例 export 共用）
 const escapeXml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 const GRAPHML_KEYS = [
@@ -177,15 +186,6 @@ router.get('/export-all', authMiddleware, async (req, res) => {
     });
 
     if (format === 'csv') {
-      // CSV 安全转义：处理引号和逗号
-      const csvEscape = (val) => {
-        const str = String(val ?? '');
-        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-          return `"${str.replace(/"/g, '""')}"`;
-        }
-        return str;
-      };
-
       const entityRows = [];
       const relationRows = [];
       for (const exp of allExports) {
@@ -427,15 +427,6 @@ router.get('/:id/export', authMiddleware, async (req, res) => {
     };
 
     if (format === 'csv') {
-      // CSV 安全转义：处理引号、逗号和换行
-      const csvEscape = (val) => {
-        const str = String(val ?? '');
-        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-          return `"${str.replace(/"/g, '""')}"`;
-        }
-        return str;
-      };
-
       const entityCsv = 'id,name,entityType,color,properties,created_at\n' +
         entitiesResult.rows.map(e => {
           const props = typeof e.properties === 'string' ? e.properties : JSON.stringify(e.properties || {});
