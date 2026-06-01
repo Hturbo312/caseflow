@@ -254,14 +254,27 @@ const AICopilot = ({ onShowLogin }) => {
       }
 
       // 2. 批量保存关系（代替 N 次独立 addRelation 调用）
-      // 优化：使用 Map 做 O(1) 查找，避免 .find() 在循环中导致 O(n*m) 复杂度
-      const entityByName = new Map(addedEntities.map(e => [e.name, e]));
+      // 优化：使用 (name, entityType) 复合键，避免同名不同类型实体碰撞
+      // 同时传递 sourceType/targetType 供后端精确匹配
+      const entityByKey = new Map(addedEntities.map(e => [`${e.name}::${e.entity_type}`, e]));
       const relationsToSave = (result.relations || [])
         .map(rel => {
-          const sourceEntity = entityByName.get(rel.sourceName);
-          const targetEntity = entityByName.get(rel.targetName);
+          // 优先精确匹配 (name + type)，回退到仅 name 匹配（AI 可能猜错类型）
+          const sourceEntity = entityByKey.get(`${rel.sourceName}::${rel.sourceType || ''}`)
+            || entityByKey.get(`${rel.sourceName}::`)
+            || [...entityByKey.values()].find(e => e.name === rel.sourceName);
+          const targetEntity = entityByKey.get(`${rel.targetName}::${rel.targetType || ''}`)
+            || entityByKey.get(`${rel.targetName}::`)
+            || [...entityByKey.values()].find(e => e.name === rel.targetName);
           return sourceEntity && targetEntity
-            ? { sourceName: rel.sourceName, targetName: rel.targetName, name: rel.name, status: 'approved' }
+            ? {
+                sourceName: rel.sourceName,
+                sourceType: sourceEntity.entity_type,
+                targetName: rel.targetName,
+                targetType: targetEntity.entity_type,
+                name: rel.name,
+                status: 'approved',
+              }
             : null;
         })
         .filter(Boolean);
@@ -293,11 +306,15 @@ const AICopilot = ({ onShowLogin }) => {
 
       // 3. 触发一次嵌入生成（代替 N 次 autoEmbed 调用）
       // 优化：仅当实际保存了实体时才触发，避免无意义的空嵌入 API 调用
-      await fetch(`${API_BASE_URL}/extraction/${targetCaseId}/finalize`, {
+      const finalizeRes = await fetch(`${API_BASE_URL}/extraction/${targetCaseId}/finalize`, {
         method: 'POST',
         headers: authHeaders,
         body: JSON.stringify({ relations: [], autoEmbed: addedEntities.length > 0, preSaved: true }),
       });
+      if (!finalizeRes.ok) {
+        console.error(`[handleConfirmSave] finalize 失败: HTTP ${finalizeRes.status}`);
+        toast.warn(t('ai.finalizeFailed'));
+      }
 
       // 刷新图谱
       loadAllCasesToGraph();
