@@ -534,17 +534,17 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
   const httpAgentInstance = url.protocol === 'https:' ? httpsAgent : httpAgent;
 
   const IDLE_TIMEOUT_MS = 120000; // 2分钟空闲超时（无数据到达时）
-  let idleTimeout = setTimeout(() => req.destroy(), IDLE_TIMEOUT_MS);
+  let idleTimeout;
+  let totalChunks = 0;
+  let req;
 
   function resetIdleTimeout() {
     clearTimeout(idleTimeout);
-    idleTimeout = setTimeout(() => req.destroy(), IDLE_TIMEOUT_MS);
+    idleTimeout = setTimeout(() => { if (req) req.destroy(); }, IDLE_TIMEOUT_MS);
   }
 
-  let totalChunks = 0;
-
   return new Promise((resolve, reject) => {
-    const req = client.request(url, {
+    req = client.request(url, {
       method: 'POST',
       agent: httpAgentInstance,
       headers: {
@@ -646,6 +646,7 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
     });
     req.write(body);
     req.end();
+    resetIdleTimeout(); // 启动空闲超时计时器（req 创建完成后）
   });
 }
 

@@ -242,7 +242,9 @@ const AICopilot = ({ onShowLogin }) => {
         if (!entRes.ok) throw new Error(t('ai.entitySaveFailed', { status: entRes.status }));
         const entData = await entRes.json();
         addedEntities = entData.entities || [];
-        console.log(`[handleConfirmSave] 批量保存了 ${entData.saved} 个实体，跳过 ${entData.skipped?.length || 0} 个`);
+        if (entData.skipped?.length > 0) {
+          console.error(`[handleConfirmSave] 跳过了 ${entData.skipped.length} 个重复实体`);
+        }
       }
 
       // 将保存的实体添加到图谱
@@ -283,9 +285,8 @@ const AICopilot = ({ onShowLogin }) => {
             };
             addLinkToGraph(graphLink);
           }
-          console.log(`[handleConfirmSave] batch saved ${relData.saved} relations`);
         } else {
-          console.warn('[handleConfirmSave] relation save failed, HTTP ' + relRes.status);
+          console.error('[handleConfirmSave] relation save failed, HTTP ' + relRes.status);
           toast.warn(t('ai.relationSaveFailed'));
         }
       }
