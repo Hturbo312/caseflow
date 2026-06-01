@@ -279,6 +279,7 @@ const AICopilot = ({ onShowLogin }) => {
         })
         .filter(Boolean);
 
+      let relationsSaved = false;
       if (relationsToSave.length > 0) {
         const relRes = await fetch(`${API_BASE_URL}/extraction/${targetCaseId}/batch-save-relations`, {
           method: 'POST',
@@ -288,6 +289,7 @@ const AICopilot = ({ onShowLogin }) => {
         if (relRes.ok) {
           const relData = await relRes.json();
           const savedRelations = relData.relations || [];
+          // 将保存的关系添加到图谱（与实体保存保持一致）
           for (const saved of savedRelations) {
             const graphLink = {
               ...saved,
@@ -298,18 +300,25 @@ const AICopilot = ({ onShowLogin }) => {
             };
             addLinkToGraph(graphLink);
           }
+          relationsSaved = true;
         } else {
           console.error('[handleConfirmSave] relation save failed, HTTP ' + relRes.status);
           toast.warn(t('ai.relationSaveFailed'));
+          // 关键修复：批量保存失败时不标记 preSaved，让 finalize 安全网尝试直接保存
         }
       }
 
       // 3. 触发一次嵌入生成（代替 N 次 autoEmbed 调用）
       // 优化：仅当实际保存了实体时才触发，避免无意义的空嵌入 API 调用
+      // 关键修复：preSaved 仅在实际保存成功时为 true，失败时让 finalize 安全网接管
       const finalizeRes = await fetch(`${API_BASE_URL}/extraction/${targetCaseId}/finalize`, {
         method: 'POST',
         headers: authHeaders,
-        body: JSON.stringify({ relations: [], autoEmbed: addedEntities.length > 0, preSaved: true }),
+        body: JSON.stringify({
+          relations: relationsToSave,
+          autoEmbed: addedEntities.length > 0,
+          preSaved: relationsSaved,
+        }),
       });
       if (!finalizeRes.ok) {
         console.error(`[handleConfirmSave] finalize 失败: HTTP ${finalizeRes.status}`);
