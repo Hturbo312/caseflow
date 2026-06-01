@@ -827,6 +827,9 @@ export const useGraphStore = create((set, get) => ({
     const currentSchemaId = useSchemaStore.getState().currentSchemaId;
     const allCases = useCaseStore.getState().cases;
 
+    // 守卫：数据未就绪时跳过，防止清空图谱
+    if (!currentSchemaId || !allCases || allCases.length === 0) return;
+
     // 过滤当前 schema 下的所有案例（兼容字符串和数字类型）
     const schemaCases = allCases.filter(c =>
       c.schemaId === currentSchemaId ||

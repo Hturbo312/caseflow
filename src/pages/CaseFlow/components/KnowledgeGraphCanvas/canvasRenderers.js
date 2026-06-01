@@ -194,7 +194,7 @@ export const renderLink = ({
   const start = link.source;
   const end = link.target;
 
-  if (!start || !end || typeof start.x === 'undefined' || typeof end.y === 'undefined') return;
+  if (!start || !end || typeof start.x === 'undefined' || typeof start.y === 'undefined' || typeof end.x === 'undefined' || typeof end.y === 'undefined') return;
 
   const srcId = typeof start === 'object' ? start.id : start;
   const tgtId = typeof end === 'object' ? end.id : end;

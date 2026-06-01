@@ -668,7 +668,11 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
   // Force layout: wider spacing for CPI-style global labels
   const nodeCount = filteredNodes.length;
   const linkCount = filteredLinks.length;
-  const communityKey = useMemo(() => filteredNodes.map(n => `${n.caseId}:${n.type}`).sort().join(','), [filteredNodes]);
+  // 只依赖结构数据（caseId + type），不依赖 filteredNodes 完整引用，
+  // 避免 force simulation 更新 x/y 后触发不必要的 reheat
+  const communityKey = useMemo(() => {
+    return filteredNodes.map(n => `${n.caseId}:${n.type}`).sort().join(',');
+  }, [nodeCount, linkCount]);
 
   // Collision force to prevent node overlap — radius includes node visual + label area below
   const forceCollide = useMemo(() => {
