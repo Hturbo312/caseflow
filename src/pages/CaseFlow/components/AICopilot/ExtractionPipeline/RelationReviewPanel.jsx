@@ -1,6 +1,6 @@
 import React, { memo, useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Check, X, CheckCheck, XCircle, ChevronDown, ChevronUp, ArrowUpDown } from 'lucide-react';
+import { ArrowRight, Check, X, CheckCheck, XCircle, ChevronDown, ChevronUp, ArrowUpDown, Sparkles } from 'lucide-react';
 import { useI18n } from '../../../../../i18n';
 import { useToastStore } from '@components/Toast/ToastStore.js';
 
@@ -101,6 +101,20 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
     setSelectedIds(new Set()); // 清空选中状态，避免残留指示器
   };
 
+  // 智能审核：自动确认高置信度关系（confidence >= 0.8）
+  const handleSmartApprove = () => {
+    const highConfidenceIds = sortedRelations
+      .filter(r => r.status === 'pending' && (r.confidence || 0) >= 0.8)
+      .map(r => r.id);
+    if (highConfidenceIds.length === 0) {
+      toast.info(t('pipeline.smartApproveNone'));
+      return;
+    }
+    highConfidenceIds.forEach(id => onUpdateStatus(id, 'approved'));
+    toast.success(t('pipeline.smartApproveToast', { count: highConfidenceIds.length }));
+    setSelectedIds(new Set());
+  };
+
   const handleBatchApprove = () => {
     if (selectedIds.size === 0) return;
     Array.from(selectedIds).forEach(id => onUpdateStatus(id, 'approved'));
@@ -171,6 +185,14 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
           >
             <CheckCheck size={14} />
             {selectedIds.size > 0 ? t('pipeline.selected', { count: selectedIds.size }) : t('pipeline.selectPending')}
+          </button>
+          {/* 智能审核：自动确认高置信度关系 */}
+          <button
+            onClick={handleSmartApprove}
+            className="text-xs text-purple-600 hover:text-purple-700 flex items-center gap-1"
+            title={t('pipeline.smartApproveHint')}
+          >
+            <Sparkles size={13} /> {t('pipeline.smartApprove')}
           </button>
           {selectedIds.size > 0 && (
             <>

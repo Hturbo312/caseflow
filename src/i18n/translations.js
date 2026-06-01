@@ -378,6 +378,10 @@ export const zh = {
   'pipeline.confidenceMedium': '中置信',
   'pipeline.confidenceHigh': '高置信',
   'pipeline.noApprovedEntitiesHint': '请先审核至少一个实体再保存',
+  'pipeline.smartApprove': '智能审核',
+  'pipeline.smartApproveHint': '自动确认置信度 ≥80% 的关系',
+  'pipeline.smartApproveToast': '已自动确认 {count} 条高置信度关系',
+  'pipeline.smartApproveNone': '没有置信度 ≥80% 的待审核关系',
   // AICopilot
   'ai.schemaBuilder': 'Schema构建',
   'ai.caseBreakdown': '案例拆解',
@@ -928,6 +932,10 @@ export const en = {
   'pipeline.confidenceMedium': 'Medium',
   'pipeline.confidenceHigh': 'High',
   'pipeline.noApprovedEntitiesHint': 'Please approve at least one entity before saving',
+  'pipeline.smartApprove': 'Smart Approve',
+  'pipeline.smartApproveHint': 'Auto-approve relations with confidence ≥80%',
+  'pipeline.smartApproveToast': 'Auto-approved {count} high-confidence relations',
+  'pipeline.smartApproveNone': 'No pending relations with confidence ≥80%',
   // AICopilot
   'ai.schemaBuilder': 'Schema Builder',
   'ai.caseBreakdown': 'Case Breakdown',
