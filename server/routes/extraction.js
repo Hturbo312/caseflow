@@ -221,9 +221,11 @@ router.post('/:caseId/batch-save-entities', authMiddleware, async (req, res) => 
     // 分离新实体和已存在的实体
     const toInsert = [];
     const skipped = [];
+    let alreadyExistingCount = 0;
     for (const e of dedupedEntities) {
       const key = `${e.name}::${e.entityType}`;
       if (existingSet.has(key)) {
+        alreadyExistingCount++;
         skipped.push({ name: e.name, entityType: e.entityType, reason: '实体已存在' });
       } else {
         toInsert.push(e);
@@ -259,6 +261,7 @@ router.post('/:caseId/batch-save-entities', authMiddleware, async (req, res) => 
       entities: savedEntities,
       saved: savedEntities.length,
       skipped,
+      alreadyExisting: alreadyExistingCount,
       total_requested: entities.length,
     });
   } catch (error) {
@@ -333,7 +336,7 @@ router.post('/:caseId/batch-save-relations', authMiddleware, async (req, res) =>
       pipeline.triggerAutoEmbed(caseId, 'batch-save-relations').catch(e => console.error('[batch-save-relations] 自动嵌入失败:', e));
     }
 
-    res.json({ success: true, saved: result.savedCount, skipped: result.skipped, relations: result.savedRelations });
+    res.json({ success: true, saved: result.savedCount, skipped: result.skipped, alreadyExisting: result.alreadyExistingCount || 0, relations: result.savedRelations });
   } catch (error) {
     console.error(`[extraction/:caseId/batch-save-relations] 错误:`, error.message);
     res.status(500).json({ error: error.message });

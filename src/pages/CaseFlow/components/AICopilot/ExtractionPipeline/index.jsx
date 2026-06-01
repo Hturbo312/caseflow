@@ -159,9 +159,11 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
             console.error(`[handleFinalize] 跳过了 ${relData.skipped.length} 条关系:`, relData.skipped);
           }
           // 如果实际保存数量少于已审核数量，说明有部分关系保存失败，应阻断 finalize
-          if (relData.saved < approvedRelations.length) {
-            console.error(`[handleFinalize] 关系保存不完整: 已审核 ${approvedRelations.length}, 实际保存 ${relData.saved}`);
-            toast.error(t('ai.relationSaveIncomplete', { approved: approvedRelations.length, saved: relData.saved }));
+          // 注意：已存在的关系（alreadyExisting）也算成功，不应视为保存失败
+          const effectiveSaved = relData.saved + (relData.alreadyExisting || 0);
+          if (effectiveSaved < approvedRelations.length) {
+            console.error(`[handleFinalize] 关系保存不完整: 已审核 ${approvedRelations.length}, 实际保存 ${relData.saved}, 已存在 ${relData.alreadyExisting || 0}`);
+            toast.error(t('ai.relationSaveIncomplete', { approved: approvedRelations.length, saved: effectiveSaved }));
             setPhase('error', t('common.saveFailed'));
             return;
           }

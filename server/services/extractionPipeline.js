@@ -605,7 +605,7 @@ export async function inferRelations(caseId, schemaId, candidates) {
 // ============================================================
 
 // 共享函数：批量保存关系（避免 extraction.js 和 finalizeCase 代码重复）
-// 返回: { savedCount, skipped, savedRelations }
+// 返回: { savedCount, skipped, savedRelations, alreadyExistingCount }
 export async function saveRelationsBulk(caseId, relations) {
   const approvedRelations = relations.filter(r => r.status === 'approved');
   const skipped = [];
@@ -614,7 +614,7 @@ export async function saveRelationsBulk(caseId, relations) {
   if (approvedRelations.length === 0) {
     // 没有待保存的关系（可能全部已审核完毕或本来就是空列表）
     // 不应把 skipped/pending 状态的关系误报为"跳过"
-    return { savedCount: 0, skipped: [], savedRelations };
+    return { savedCount: 0, skipped: [], savedRelations, alreadyExistingCount: 0 };
   }
 
   // 优化：使用 (name, entityType) 元组查找实体，避免同名不同类型实体被错误匹配
@@ -625,7 +625,7 @@ export async function saveRelationsBulk(caseId, relations) {
     if (r.targetName) nameTypePairs.add(`${r.targetName}::${r.targetType || ''}`);
   }
   if (nameTypePairs.size === 0) {
-    return { savedCount: 0, skipped, savedRelations };
+    return { savedCount: 0, skipped, savedRelations, alreadyExistingCount: 0 };
   }
 
   // 批量查询：按名称查询，然后在内存中按类型匹配
@@ -678,12 +678,13 @@ export async function saveRelationsBulk(caseId, relations) {
       existingResult.rows.map(r => `${r.source_entity_id}-${r.target_entity_id}-${r.relation_type}`)
     );
 
-    // 分离待插入和已存在的关系
+    // 分离待插入和已存在的关系（已存在不算错误，单独计数）
     const toInsert = [];
+    let alreadyExistingCount = 0;
     for (const item of relTuples) {
       const key = `${item.sourceId}-${item.targetId}-${item.relationType}`;
       if (existingSet.has(key)) {
-        skipped.push({ sourceName: item.rel.sourceName, targetName: item.rel.targetName, reason: '关系已存在' });
+        alreadyExistingCount++;
       } else {
         toInsert.push(item);
       }
@@ -728,7 +729,7 @@ export async function saveRelationsBulk(caseId, relations) {
     }
   }
 
-  return { savedCount: savedRelations.length, skipped, savedRelations };
+  return { savedCount: savedRelations.length, skipped, savedRelations, alreadyExistingCount };
 }
 export async function finalizeCase(caseId, options = {}) {
   const { relations = [], autoEmbed = false, preSaved = false } = options;
