@@ -2,7 +2,7 @@ import React, { memo } from 'react';
 import { Loader2, Play, SkipForward, Save, RotateCcw } from 'lucide-react';
 import { useI18n } from '../../../../../i18n';
 
-const PipelineControls = memo(({ phase, isProcessing, onParseText, onGeneratePlan, onNext, onFinalize, onReset, plan, extractedTypes }) => {
+const PipelineControls = memo(({ phase, isProcessing, onParseText, onGeneratePlan, onNext, onFinalize, onReset, plan, extractedTypes, approvedEntityCount }) => {
   const { t } = useI18n();
   const renderControls = () => {
     if (isProcessing) {
@@ -37,6 +37,7 @@ const PipelineControls = memo(({ phase, isProcessing, onParseText, onGeneratePla
           </button>
         );
 
+      case 'consistency_checking':
       case 'extracting':
         const allExtracted = plan?.every(item => extractedTypes?.includes(item.entity_type));
         if (allExtracted) {
@@ -54,10 +55,18 @@ const PipelineControls = memo(({ phase, isProcessing, onParseText, onGeneratePla
 
       case 'inferring_relations':
       case 'finalizing':
+        // 禁用条件：没有已审核的实体，保存无意义
+        const canFinalize = approvedEntityCount == null || approvedEntityCount > 0;
         return (
           <button
             onClick={onFinalize}
-            className="w-full py-2.5 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
+            disabled={!canFinalize}
+            className={`w-full py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+              canFinalize
+                ? 'bg-green-500 text-white hover:bg-green-600'
+                : 'bg-green-300 text-green-100 cursor-not-allowed'
+            }`}
+            title={!canFinalize ? t('pipeline.noApprovedEntitiesHint') : undefined}
           >
             <Save size={16} />
             {t('ai.confirmSave')}

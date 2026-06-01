@@ -53,6 +53,9 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
   // 已提取的类型
   const extractedTypes = Object.keys(candidates);
 
+  // 已审核的实体数量（用于控制 Finalize 按钮可用性）
+  const approvedEntityCount = Object.values(candidates).flat().filter(c => c.status === 'approved').length;
+
   // 当前激活的实体类型（第一个未审完的）
   const activeEntityType = plan?.find(p => !extractedTypes.includes(p.entity_type))?.entity_type
     || extractedTypes[0];
@@ -297,6 +300,7 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
           onReset={handleReset}
           plan={plan}
           extractedTypes={extractedTypes}
+          approvedEntityCount={approvedEntityCount}
         />
         {phaseLabel && phase !== 'idle' && phase !== 'completed' && (
           <p className="text-xs text-gray-400 mt-1.5 text-center">{phaseLabel}</p>
