@@ -73,9 +73,14 @@ const CaseFlow = () => {
   }, [verifyAuth, loadSchemas, loadCases, initializeGraph]);
 
   // 当 schema 变化时重新加载所有案例
+  // 注意：不要将 loadAllCasesToGraph 放入依赖数组，因为 zustand store 中的
+  // 箭头函数每次渲染都会创建新的引用，导致 useEffect 每次渲染都执行，
+  // 在数据未就绪时清空图谱
   useEffect(() => {
-    loadAllCasesToGraph();
-  }, [currentSchemaId, loadAllCasesToGraph]);
+    if (currentSchemaId) {
+      loadAllCasesToGraph();
+    }
+  }, [currentSchemaId]);
 
   // 创建新案例
   const onCreateCase = useCallback(async () => {

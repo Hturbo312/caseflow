@@ -1,6 +1,10 @@
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+dotenv.config({ path: join(__dirname, '.env') });
 
 export const JWT_SECRET = process.env.JWT_SECRET || 'caseflow-secret-key-change-in-production';
 export const PORT = process.env.PORT || 3000;
