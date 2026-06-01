@@ -525,6 +525,11 @@ export const zh = {
   // 文件解析与保存
   'ai.saveSuccess': '保存成功：{entities} 个实体，{relations} 条关系',
   'ai.fileParsed': '文件解析成功：{name}，{count} 字符',
+  // 导出
+  'ai.noGraphData': '没有可导出的图谱数据',
+  // 删除确认
+  'common.deleteCaseFailed': '删除案例失败',
+  'common.deleteSchemaFailed': '删除 Schema 失败',
   // Session history
   'session.confirmDelete': '确定要删除这个会话吗？',
   'session.today': '今天',
@@ -1062,6 +1067,11 @@ export const en = {
   // File parsing & save
   'ai.saveSuccess': 'Saved successfully: {entities} entities, {relations} relations',
   'ai.fileParsed': 'File parsed successfully: {name}, {count} characters',
+  // Export
+  'ai.noGraphData': 'No graph data to export',
+  // Delete confirmations
+  'common.deleteCaseFailed': 'Failed to delete case',
+  'common.deleteSchemaFailed': 'Failed to delete schema',
   // Session history
   'session.confirmDelete': 'Are you sure you want to delete this session?',
   'session.today': 'Today',

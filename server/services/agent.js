@@ -35,44 +35,52 @@ function extractApiErrorMessage(data, statusCode, isStream = false) {
 }
 
 /**
+ * 构建标准化 AI 配置对象（DRY helper，消除 resolveAiConfig 中的重复代码）
+ */
+function buildAiConfig({ apiKey, endpoint, model, temperature, maxTokens, useTemperature, useMaxTokens }) {
+  return {
+    apiKey: apiKey || null,
+    endpoint: endpoint || null,
+    model: model || 'glm-4-flash',
+    temperature: temperature != null ? parseFloat(temperature) : 0.7,
+    maxTokens: maxTokens != null ? parseInt(maxTokens) : 16384,
+    useTemperature: useTemperature ?? true,
+    useMaxTokens: useMaxTokens ?? true,
+  };
+}
+
+/**
  * 解析 AI 配置：用户配置优先，回退到全局缓存（环境变量 / 管理员配置）
+ * 优化：提取共享构建逻辑，消除冗余分支；增加 endpoint 无 apiKey 的校验
  */
 function resolveAiConfig(userConfig) {
   // 用户有配置时使用用户配置（兼容 api_key 和 apiKey 两种命名）
   const userApiKey = userConfig?.api_key || userConfig?.apiKey;
   if (userApiKey) {
-    return {
+    return buildAiConfig({
       apiKey: userApiKey,
       endpoint: userConfig.endpoint,
-      model: userConfig.model || 'glm-4-flash',
-      temperature: parseFloat(userConfig.temperature ?? 0.7),
-      maxTokens: parseInt(userConfig.max_tokens ?? userConfig.maxTokens ?? 16384),
+      model: userConfig.model,
+      temperature: userConfig.temperature ?? 0.7,
+      maxTokens: userConfig.max_tokens ?? userConfig.maxTokens ?? 16384,
       useTemperature: userConfig.use_temperature ?? userConfig.useTemperature ?? true,
       useMaxTokens: userConfig.use_max_tokens ?? userConfig.useMaxTokens ?? true,
-    };
+    });
   }
   // 回退到全局缓存（环境变量或管理员通过 API 设置的全局配置）
   if (aiConfigCache && aiConfigCache.apiKey && aiConfigCache.endpoint) {
-    return {
+    return buildAiConfig({
       apiKey: aiConfigCache.apiKey,
       endpoint: aiConfigCache.endpoint,
-      model: aiConfigCache.model || 'glm-4-flash',
+      model: aiConfigCache.model,
       temperature: aiConfigCache.temperature ?? 0.7,
       maxTokens: aiConfigCache.maxTokens ?? 16384,
       useTemperature: aiConfigCache.useTemperature ?? true,
       useMaxTokens: aiConfigCache.useMaxTokens ?? true,
-    };
+    });
   }
   // 两者都没有，返回 null 配置
-  return {
-    apiKey: null,
-    endpoint: null,
-    model: 'glm-4-flash',
-    temperature: 0.7,
-    maxTokens: 16384,
-    useTemperature: true,
-    useMaxTokens: true,
-  };
+  return buildAiConfig({});
 }
 
 // 内存中的 Agent 会话存储（带 TTL 清理，防止内存泄漏）
@@ -468,6 +476,18 @@ function buildAiRequestBody(systemPrompt, messages, agent, cfg, extra = {}) {
 const httpAgent = new http.Agent({ keepAlive: true, timeout: 600000 });
 const httpsAgent = new https.Agent({ keepAlive: true, timeout: 600000 });
 
+/**
+ * 解析 endpoint URL 并返回对应的 HTTP 客户端和 Agent（DRY helper，消除 callAI/callAIStream 中的重复逻辑）
+ */
+function resolveHttpClient(endpoint) {
+  const url = new URL(endpoint);
+  return {
+    url,
+    client: url.protocol === 'https:' ? https : http,
+    agent: url.protocol === 'https:' ? httpsAgent : httpAgent,
+  };
+}
+
 // 调用 AI - 使用 node:https 而非 fetch（fetch 有 300s bodyTimeout 限制）
 export async function callAI(systemPrompt, messages, agent, userConfig) {
   const cfg = resolveAiConfig(userConfig);
@@ -476,11 +496,8 @@ export async function callAI(systemPrompt, messages, agent, userConfig) {
   }
 
   const requestBody = buildAiRequestBody(systemPrompt, messages, agent, cfg);
-
   const body = JSON.stringify(requestBody);
-  const url = new URL(cfg.endpoint);
-  const client = url.protocol === 'https:' ? https : http;
-  const httpAgentInstance = url.protocol === 'https:' ? httpsAgent : httpAgent;
+  const { url, client, agent: httpAgentInstance } = resolveHttpClient(cfg.endpoint);
 
   return new Promise((resolve, reject) => {
     const req = client.request(url, {
@@ -529,9 +546,7 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
   const requestBody = buildAiRequestBody(systemPrompt, messages, agent, cfg, { stream: true });
   const body = JSON.stringify(requestBody);
 
-  const url = new URL(cfg.endpoint);
-  const client = url.protocol === 'https:' ? https : http;
-  const httpAgentInstance = url.protocol === 'https:' ? httpsAgent : httpAgent;
+  const { url, client, agent: httpAgentInstance } = resolveHttpClient(cfg.endpoint);
 
   const IDLE_TIMEOUT_MS = 120000; // 2分钟空闲超时（无数据到达时）
   let idleTimeout;
