@@ -731,6 +731,10 @@ export async function saveRelationsBulk(caseId, relations) {
 
   return { savedCount: savedRelations.length, skipped, savedRelations, alreadyExistingCount };
 }
+
+// ============================================================
+// Step 6b: 完成案例（标记 case_memory 为 completed）
+// ============================================================
 export async function finalizeCase(caseId, options = {}) {
   const { relations = [], autoEmbed = false, preSaved = false } = options;
 
@@ -746,12 +750,14 @@ export async function finalizeCase(caseId, options = {}) {
   // 如果前端已通过 batch-save-relations 预保存，跳过冗余 DB 操作
   let savedRelations = 0;
   let relationSkipped = [];
+  let relationAlreadyExisting = 0;
   if (relations.length > 0 && !preSaved) {
     const result = await saveRelationsBulk(caseId, relations);
     savedRelations = result.savedCount;
     relationSkipped = result.skipped || [];
-    if (relationSkipped.length > 0) {
-      console.log(`[finalizeCase] 关系保存: ${savedRelations} 条已保存, ${relationSkipped.length} 条跳过`);
+    relationAlreadyExisting = result.alreadyExistingCount || 0;
+    if (relationSkipped.length > 0 || relationAlreadyExisting > 0) {
+      console.log(`[finalizeCase] 关系保存: ${savedRelations} 条已保存, ${relationAlreadyExisting} 条已存在, ${relationSkipped.length} 条跳过`);
     }
   } else if (preSaved && relations.length > 0) {
     // 预保存模式下，统计 approved 数量用于返回
@@ -774,7 +780,7 @@ export async function finalizeCase(caseId, options = {}) {
     triggerAutoEmbed(caseId, 'finalizeCase').catch(e => console.error('[finalizeCase] 自动嵌入失败:', e));
   }
 
-  return { success: true, schema_id: schemaId, saved_relations: savedRelations, skipped_relations: relationSkipped };
+  return { success: true, schema_id: schemaId, saved_relations: savedRelations, skipped_relations: relationSkipped, already_existing_relations: relationAlreadyExisting };
 }
 
 // 异步触发嵌入生成（统一函数，供 extraction.js 和 finalizeCase 共用）

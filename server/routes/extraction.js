@@ -167,6 +167,10 @@ router.post('/:caseId/save-entity', authMiddleware, async (req, res) => {
     );
     if (existing.rows.length > 0) {
       // 返回已有实体，标记为 duplicated
+      // 注意：重复实体也触发 autoEmbed（可能之前保存时 autoEmbed=false 或未触发）
+      if (autoEmbed) {
+        pipeline.triggerAutoEmbed(caseId, 'save-entity-duplicate').catch(e => console.error('[save-entity-duplicate] 自动嵌入失败:', e));
+      }
       return res.json({ success: true, entity: existing.rows[0], duplicated: true });
     }
 
