@@ -381,14 +381,32 @@ const GraphToolbar = ({
                     </>
                   )}
                   {totalCases && totalCases > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => { onExportAll?.('json'); setShowExportDropdown(false); }}
-                      className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 text-gray-700"
-                      title={t('ai.exportAllHint')}
-                    >
-                      {t('ai.exportAllCases')} (JSON)
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => { onExportAll?.('json'); setShowExportDropdown(false); }}
+                        className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 text-gray-700"
+                        title={t('ai.exportAllHint')}
+                      >
+                        {t('ai.exportAllCases')} (JSON)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { onExportAll?.('csv'); setShowExportDropdown(false); }}
+                        className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 text-gray-700"
+                        title={t('ai.exportAllHint')}
+                      >
+                        {t('ai.exportAllCases')} (CSV)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { onExportAll?.('graphml'); setShowExportDropdown(false); }}
+                        className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 text-gray-700"
+                        title={t('ai.exportAllHint')}
+                      >
+                        {t('ai.exportAllCases')} (GraphML)
+                      </button>
+                    </>
                   )}
                 </div>
               )}

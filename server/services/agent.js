@@ -610,7 +610,7 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
                 throw e;
               }
               // JSON 解析失败：尝试恢复（保留当前行供下次合并）
-              buffer = (buffer ? buffer + '\\n' : '') + line;
+              buffer = (buffer ? buffer + '\n' : '') + line;
             }
           }
         }
