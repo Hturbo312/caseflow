@@ -271,12 +271,17 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
     setDbEntities([]);
   }, [caseId]);
 
-  // 切换到 relations tab 时加载 DB 实体（用于颜色显示）
+  // 优化：切换到 relations tab 时加载 DB 实体（用于颜色显示）
+  // 使用 ref 追踪已加载的 caseId，避免重复请求和 stale closure 问题
+  const loadedCaseIdRef = useRef(null);
   useEffect(() => {
-    if (activeTab === 'relations' && caseId && dbEntities.length === 0) {
+    if (activeTab === 'relations' && caseId && loadedCaseIdRef.current !== caseId) {
+      loadedCaseIdRef.current = caseId;
       loadDbEntities();
     }
-  }, [activeTab, caseId, dbEntities.length, loadDbEntities]);
+    // caseId 变化时重置追踪，确保新案例重新加载
+    if (!caseId) loadedCaseIdRef.current = null;
+  }, [activeTab, caseId]);
 
   const tabs = [
     { id: 'progress', label: t('ai.progress'), icon: LayoutList },

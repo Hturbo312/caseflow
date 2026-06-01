@@ -181,6 +181,7 @@ export const zh = {
   // Confirm modal
   'confirm.title': '确认操作',
   'confirm.ok': '确定',
+  'confirm.cancel': '取消',
   // Login modal
   'login.title': '登录',
   'login.registerTitle': '注册账号',
@@ -735,6 +736,7 @@ export const en = {
   // Confirm modal
   'confirm.title': 'Confirm',
   'confirm.ok': 'OK',
+  'confirm.cancel': 'Cancel',
   // Login modal
   'login.title': 'Login',
   'login.registerTitle': 'Register',
