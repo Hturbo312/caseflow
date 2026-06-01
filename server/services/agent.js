@@ -594,17 +594,23 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
               // 检测 API 错误响应（流中可能返回 error 字段）
               if (parsed.error) {
                 const errMsg = parsed.error.message || JSON.stringify(parsed.error);
-                throw new Error(`AI 流式响应错误: ${errMsg}`);
+                throw new Error(`AI_STREAM_ERROR:${errMsg}`);
               }
               const content = parsed.choices?.[0]?.delta?.content;
               if (content) {
                 onChunk(content);
               }
             } catch (e) {
-              // 如果是上述 throw 的 API 错误，重新抛出
-              if (e.message && e.message.startsWith('AI 流式响应错误')) throw e;
-              // 解析失败：尝试恢复（保留当前行供下次合并）
-              buffer = (buffer ? buffer + '\n' : '') + line;
+              // API 错误：向上抛出，终止流
+              if (e.message && e.message.startsWith('AI_STREAM_ERROR:')) {
+                throw new Error(e.message.replace('AI_STREAM_ERROR:', 'AI 流式响应错误: '));
+              }
+              // onChunk 抛出的业务错误：向上抛出，终止流
+              if (!e.message || !e.message.startsWith('AI 流式响应错误')) {
+                throw e;
+              }
+              // JSON 解析失败：尝试恢复（保留当前行供下次合并）
+              buffer = (buffer ? buffer + '\\n' : '') + line;
             }
           }
         }

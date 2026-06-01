@@ -9,6 +9,7 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
   const toast = useToastStore();
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [expandedEvidence, setExpandedEvidence] = useState(new Set());
+  const [confidenceFilter, setConfidenceFilter] = useState('all'); // all | low | medium | high
   const prevPendingRef = useRef(-1);
 
   // 优化：useMemo 缓存 stats，避免每次渲染重复 filter 4 次
@@ -49,9 +50,18 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
   }, [entities]);
 
   // 优化：按置信度降序排列关系，高置信度的优先展示便于用户审核
+  // 优化：支持置信度过滤，让用户聚焦需要人工审核的低置信度关系
   const sortedRelations = useMemo(() => {
-    return [...relations].sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
-  }, [relations]);
+    let filtered = [...relations];
+    if (confidenceFilter === 'low') {
+      filtered = filtered.filter(r => (r.confidence || 0) < 0.5);
+    } else if (confidenceFilter === 'medium') {
+      filtered = filtered.filter(r => (r.confidence || 0) >= 0.5 && (r.confidence || 0) < 0.8);
+    } else if (confidenceFilter === 'high') {
+      filtered = filtered.filter(r => (r.confidence || 0) >= 0.8);
+    }
+    return filtered.sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+  }, [relations, confidenceFilter]);
 
   // 优化：将 relation 的 source/target entity info 缓存，避免渲染时重复 Map 查找
   const relationEntityInfoMap = useMemo(() => {
@@ -122,6 +132,27 @@ const RelationReviewPanel = memo(({ relations, entities, onUpdateStatus }) => {
             <ArrowUpDown size={10} />
             {t('pipeline.sortByConfidence')}
           </span>
+          {/* 置信度过滤 */}
+          <div className="flex items-center gap-0.5 ml-2">
+            {[
+              { key: 'all', label: t('pipeline.confidenceAll'), color: '' },
+              { key: 'low', label: t('pipeline.confidenceLow'), color: 'text-red-500' },
+              { key: 'medium', label: t('pipeline.confidenceMedium'), color: 'text-amber-500' },
+              { key: 'high', label: t('pipeline.confidenceHigh'), color: 'text-green-500' },
+            ].map(f => (
+              <button
+                key={f.key}
+                onClick={() => setConfidenceFilter(f.key)}
+                className={`px-1.5 py-0.5 text-[10px] rounded transition-colors ${
+                  confidenceFilter === f.key
+                    ? `bg-gray-200 font-semibold ${f.color || 'text-gray-700'}`
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="flex gap-3 text-xs text-gray-500">
           <span>{t('pipeline.totalRelations', { count: stats.total })}</span>

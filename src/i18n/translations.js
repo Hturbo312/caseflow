@@ -373,6 +373,10 @@ export const zh = {
   'pipeline.reviewComplete': '关系审核完成！{approved} 条已确认，{skipped} 条已跳过，点击「确认保存到图谱」完成提取。',
   'pipeline.reviewAllSkipped': '所有关系已跳过，点击「确认保存到图谱」完成提取。',
   'pipeline.sortByConfidence': '按置信度排序',
+  'pipeline.confidenceAll': '全部',
+  'pipeline.confidenceLow': '低置信',
+  'pipeline.confidenceMedium': '中置信',
+  'pipeline.confidenceHigh': '高置信',
   'pipeline.noApprovedEntitiesHint': '请先审核至少一个实体再保存',
   // AICopilot
   'ai.schemaBuilder': 'Schema构建',
@@ -919,6 +923,10 @@ export const en = {
   'pipeline.reviewComplete': 'Relation review complete! {approved} confirmed, {skipped} skipped. Click "Confirm Save to Graph" to finalize.',
   'pipeline.reviewAllSkipped': 'All relations skipped. Click "Confirm Save to Graph" to finalize.',
   'pipeline.sortByConfidence': 'Sorted by confidence',
+  'pipeline.confidenceAll': 'All',
+  'pipeline.confidenceLow': 'Low',
+  'pipeline.confidenceMedium': 'Medium',
+  'pipeline.confidenceHigh': 'High',
   'pipeline.noApprovedEntitiesHint': 'Please approve at least one entity before saving',
   // AICopilot
   'ai.schemaBuilder': 'Schema Builder',
