@@ -1,5 +1,6 @@
 import pool from '../db.js';
 import { getAgentMeta, buildAgentContext, buildSystemPrompt, callAI, parseAgentOutput } from './agent.js';
+import { PORT } from '../config.js';
 import crypto from 'crypto';
 
 // ============================================================
@@ -777,7 +778,6 @@ export async function finalizeCase(caseId, options = {}) {
 
 // 异步触发嵌入生成（统一函数，供 extraction.js 和 finalizeCase 共用）
 export async function triggerAutoEmbed(caseId, source = 'auto') {
-  const { PORT } = await import('../config.js');
   try {
     const response = await fetch(`http://localhost:${PORT}/api/rag/embed-entities`, {
       method: 'POST',

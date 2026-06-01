@@ -59,8 +59,8 @@ function resolveAiConfig(userConfig) {
       model: aiConfigCache.model || 'glm-4-flash',
       temperature: aiConfigCache.temperature ?? 0.7,
       maxTokens: aiConfigCache.maxTokens ?? 16384,
-      useTemperature: aiConfigCache.useTemperature !== undefined ? aiConfigCache.useTemperature : true,
-      useMaxTokens: aiConfigCache.useMaxTokens !== undefined ? aiConfigCache.useMaxTokens : true,
+      useTemperature: aiConfigCache.useTemperature ?? true,
+      useMaxTokens: aiConfigCache.useMaxTokens ?? true,
     };
   }
   // 两者都没有，返回 null 配置
