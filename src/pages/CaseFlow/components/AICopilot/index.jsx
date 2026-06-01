@@ -252,10 +252,12 @@ const AICopilot = ({ onShowLogin }) => {
       }
 
       // 2. 批量保存关系（代替 N 次独立 addRelation 调用）
+      // 优化：使用 Map 做 O(1) 查找，避免 .find() 在循环中导致 O(n*m) 复杂度
+      const entityByName = new Map(addedEntities.map(e => [e.name, e]));
       const relationsToSave = (result.relations || [])
         .map(rel => {
-          const sourceEntity = addedEntities.find(e => e.name === rel.sourceName);
-          const targetEntity = addedEntities.find(e => e.name === rel.targetName);
+          const sourceEntity = entityByName.get(rel.sourceName);
+          const targetEntity = entityByName.get(rel.targetName);
           return sourceEntity && targetEntity
             ? { sourceName: rel.sourceName, targetName: rel.targetName, name: rel.name, status: 'approved' }
             : null;
@@ -281,9 +283,10 @@ const AICopilot = ({ onShowLogin }) => {
             };
             addLinkToGraph(graphLink);
           }
-          console.log(`[handleConfirmSave] 批量保存了 ${relData.saved} 条关系`);
+          console.log(`[handleConfirmSave] batch saved ${relData.saved} relations`);
         } else {
-          console.warn('[handleConfirmSave] 关系保存失败，跳过');
+          console.warn('[handleConfirmSave] relation save failed, HTTP ' + relRes.status);
+          toast.warn(t('ai.relationSaveFailed'));
         }
       }
 
