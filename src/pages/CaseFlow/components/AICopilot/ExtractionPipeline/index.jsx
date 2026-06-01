@@ -1,4 +1,4 @@
-import React, { memo, useState, useCallback, useEffect } from 'react';
+import React, { memo, useState, useCallback, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FileText, Network, LayoutList } from 'lucide-react';
 import { useExtractionStore, useSchemaStore } from '@store';

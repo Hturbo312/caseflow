@@ -575,6 +575,8 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
 
       const decoder = new TextDecoder();
       let buffer = '';
+      let failedParseCount = 0; // 追踪连续解析失败次数，防止无限重试
+      const MAX_PARSE_FAILURES = 3; // 超过此次数则跳过当前行
 
       res.on('data', (chunk) => {
         resetIdleTimeout(); // 收到数据则重置空闲超时
@@ -587,10 +589,14 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = line.slice(6);
-            if (data === '[DONE]') continue;
+            if (data === '[DONE]') {
+              failedParseCount = 0;
+              continue;
+            }
 
             try {
               const parsed = JSON.parse(data);
+              failedParseCount = 0; // 解析成功则重置计数器
               // 检测 API 错误响应（流中可能返回 error 字段）
               if (parsed.error) {
                 const errMsg = parsed.error.message || JSON.stringify(parsed.error);
@@ -609,7 +615,13 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
               if (!e.message || !e.message.startsWith('AI 流式响应错误')) {
                 throw e;
               }
-              // JSON 解析失败：尝试恢复（保留当前行供下次合并）
+              // JSON 解析失败：尝试有限次数后跳过，避免死循环
+              failedParseCount++;
+              if (failedParseCount >= MAX_PARSE_FAILURES) {
+                console.warn(`[callAIStream] 跳过无法解析的 SSE 数据 (${failedParseCount} 次失败): ${line.slice(0, 100)}`);
+                failedParseCount = 0;
+                continue;
+              }
               buffer = (buffer ? buffer + '\n' : '') + line;
             }
           }
