@@ -313,7 +313,9 @@ const AICopilot = ({ onShowLogin }) => {
       });
       if (!finalizeRes.ok) {
         console.error(`[handleConfirmSave] finalize 失败: HTTP ${finalizeRes.status}`);
-        toast.warn(t('ai.finalizeFailed'));
+        toast.error(t('ai.finalizeFailed'));
+        // 关键修复：finalize 失败时阻止后续的"成功"提示和状态清理
+        return;
       }
 
       // 刷新图谱

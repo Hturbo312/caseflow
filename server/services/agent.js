@@ -20,11 +20,6 @@ function extractApiErrorMessage(data, statusCode, isStream = false) {
     }
     else if (parsed.message) errorMsg += ` - ${parsed.message}`;
     else if (parsed.choices?.[0]?.message?.content) errorMsg += ` - ${parsed.choices[0].message.content.slice(0, 200)}`;
-    else if (typeof data === 'string') {
-      // 对于非 JSON 响应（如 HTML 错误页），提供截断预览
-      const preview = data.length > 300 ? data.slice(0, 300) + '...' : data;
-      errorMsg += ` - ${preview}`;
-    }
   } catch {
     if (typeof data === 'string') {
       const preview = data.length > 300 ? data.slice(0, 300) + '...' : data;
