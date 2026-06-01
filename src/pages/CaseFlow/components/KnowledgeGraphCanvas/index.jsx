@@ -160,7 +160,57 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
       console.error('导出失败:', e);
       showError(t('toast.exportFailed') + e.message);
     }
-  }, [currentCaseId]);
+  }, [currentCaseId, t, showSuccess, showError]);
+
+  // 导出全部案例图谱数据
+  const handleExportAllCases = useCallback(async (format) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/cases/export-all?format=${format}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error(`导出失败: HTTP ${res.status}`);
+      const data = await res.json();
+
+      if (format === 'graphml') {
+        const blob = new Blob([data.graphml], { type: 'application/xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'caseflow-all.graphml';
+        a.click();
+        URL.revokeObjectURL(url);
+      } else if (format === 'csv') {
+        const entitiesBlob = new Blob([data.entities_csv], { type: 'text/csv' });
+        const eUrl = URL.createObjectURL(entitiesBlob);
+        const eA = document.createElement('a');
+        eA.href = eUrl;
+        eA.download = 'caseflow-all-entities.csv';
+        eA.click();
+        URL.revokeObjectURL(eUrl);
+
+        const relationsBlob = new Blob([data.relations_csv], { type: 'text/csv' });
+        const rUrl = URL.createObjectURL(relationsBlob);
+        const rA = document.createElement('a');
+        rA.href = rUrl;
+        rA.download = 'caseflow-all-relations.csv';
+        rA.click();
+        URL.revokeObjectURL(rUrl);
+      } else {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'caseflow-all.json';
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+      showSuccess(t('ai.exportAllSuccess', { cases: data.total_cases || 0 }));
+    } catch (e) {
+      console.error('导出全部案例失败:', e);
+      showError(t('toast.exportFailed') + e.message);
+    }
+  }, [t, showSuccess, showError]);
 
   // Hover & focus state for dynamic highlighting
   const [hoveredNode, setHoveredNode] = useState(null);
@@ -856,6 +906,8 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
         showNoCaseAlert={showNoCaseAlert}
         onDismissNoCaseAlert={() => setShowNoCaseAlert(false)}
         onExport={handleExportGraph}
+        totalCases={cases?.length || 0}
+        onExportAll={handleExportAllCases}
       />
 
       {/* 路径分析面板 */}

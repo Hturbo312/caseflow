@@ -58,6 +58,8 @@ const GraphToolbar = ({
   onDismissNoCaseAlert,
   // Export
   onExport,
+  totalCases,
+  onExportAll,
 }) => {
   const { t } = useI18n();
   const prefersReducedMotion = useReducedMotion();
@@ -335,8 +337,8 @@ const GraphToolbar = ({
           {/* 分隔线 - 移动端隐藏 */}
           <div className="w-px h-6 bg-gray-200 mx-1 hidden sm:block" />
 
-          {/* 导出按钮（仅当有案例时显示） */}
-          {currentCaseId && (
+          {/* 导出按钮（有案例时显示） */}
+          {(currentCaseId || (totalCases && totalCases > 0)) && (
             <div className="relative export-dropdown">
               <button
                 type="button"
@@ -349,28 +351,45 @@ const GraphToolbar = ({
                 <span className="hidden md:inline">{t('toolbar.export')}</span>
               </button>
               {showExportDropdown && (
-                <div className="absolute top-full right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-20 overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => { onExport?.('json'); setShowExportDropdown(false); }}
-                    className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 text-gray-700"
-                  >
-                    {t('toolbar.exportJSON')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { onExport?.('csv'); setShowExportDropdown(false); }}
-                    className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 text-gray-700"
-                  >
-                    {t('toolbar.exportCSV')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { onExport?.('graphml'); setShowExportDropdown(false); }}
-                    className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 text-gray-700"
-                  >
-                    {t('toolbar.exportGraphML')}
-                  </button>
+                <div className="absolute top-full right-0 mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 z-20 overflow-hidden">
+                  {currentCaseId && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => { onExport?.('json'); setShowExportDropdown(false); }}
+                        className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 text-gray-700"
+                      >
+                        {t('toolbar.exportJSON')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { onExport?.('csv'); setShowExportDropdown(false); }}
+                        className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 text-gray-700"
+                      >
+                        {t('toolbar.exportCSV')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { onExport?.('graphml'); setShowExportDropdown(false); }}
+                        className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 text-gray-700"
+                      >
+                        {t('toolbar.exportGraphML')}
+                      </button>
+                      {totalCases && totalCases > 1 && (
+                        <div className="border-t border-gray-100" />
+                      )}
+                    </>
+                  )}
+                  {totalCases && totalCases > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => { onExportAll?.('json'); setShowExportDropdown(false); }}
+                      className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 text-gray-700"
+                      title={t('ai.exportAllHint')}
+                    >
+                      {t('ai.exportAllCases')} (JSON)
+                    </button>
+                  )}
                 </div>
               )}
             </div>

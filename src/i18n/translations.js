@@ -527,6 +527,9 @@ export const zh = {
   'ai.fileParsed': '文件解析成功：{name}，{count} 字符',
   // 导出
   'ai.noGraphData': '没有可导出的图谱数据',
+  'ai.exportAllCases': '导出全部案例',
+  'ai.exportAllSuccess': '全部案例导出成功，共 {cases} 个案例',
+  'ai.exportAllHint': '导出所有案例的图谱数据',
   // 删除确认
   'common.deleteCaseFailed': '删除案例失败',
   'common.deleteSchemaFailed': '删除 Schema 失败',
@@ -1069,6 +1072,9 @@ export const en = {
   'ai.fileParsed': 'File parsed successfully: {name}, {count} characters',
   // Export
   'ai.noGraphData': 'No graph data to export',
+  'ai.exportAllCases': 'Export All Cases',
+  'ai.exportAllSuccess': 'All cases exported successfully, {cases} cases total',
+  'ai.exportAllHint': 'Export graph data for all cases',
   // Delete confirmations
   'common.deleteCaseFailed': 'Failed to delete case',
   'common.deleteSchemaFailed': 'Failed to delete schema',
