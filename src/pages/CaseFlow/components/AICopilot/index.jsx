@@ -254,18 +254,18 @@ const AICopilot = ({ onShowLogin }) => {
       }
 
       // 2. 批量保存关系（代替 N 次独立 addRelation 调用）
-      // 优化：使用 (name, entityType) 复合键，避免同名不同类型实体碰撞
-      // 同时传递 sourceType/targetType 供后端精确匹配
+      // 优化：使用 (name, entityType) 复合键 + name-only 回退 Map，O(1) 查找
       const entityByKey = new Map(addedEntities.map(e => [`${e.name}::${e.entity_type}`, e]));
+      const entityByName = new Map(addedEntities.map(e => [e.name, e]));
       const relationsToSave = (result.relations || [])
         .map(rel => {
           // 优先精确匹配 (name + type)，回退到仅 name 匹配（AI 可能猜错类型）
           const sourceEntity = entityByKey.get(`${rel.sourceName}::${rel.sourceType || ''}`)
             || entityByKey.get(`${rel.sourceName}::`)
-            || [...entityByKey.values()].find(e => e.name === rel.sourceName);
+            || entityByName.get(rel.sourceName);
           const targetEntity = entityByKey.get(`${rel.targetName}::${rel.targetType || ''}`)
             || entityByKey.get(`${rel.targetName}::`)
-            || [...entityByKey.values()].find(e => e.name === rel.targetName);
+            || entityByName.get(rel.targetName);
           return sourceEntity && targetEntity
             ? {
                 sourceName: rel.sourceName,
@@ -327,6 +327,11 @@ const AICopilot = ({ onShowLogin }) => {
         return;
       }
 
+      // 检查 finalize 返回的实际保存/跳过数量
+      const finalizeData = await finalizeRes.json();
+      const actualSavedRels = finalizeData.data?.saved_relations || 0;
+      const skippedRels = finalizeData.data?.skipped_relations || [];
+
       // 刷新图谱
       loadAllCasesToGraph();
 
@@ -335,7 +340,13 @@ const AICopilot = ({ onShowLogin }) => {
       setCaseText('');
       setInputValue('');
 
-      toast.success(t('ai.saveSuccess', { entities: addedEntities.length, relations: relationsToSave.length }));
+      // 根据实际保存结果展示不同的提示
+      if (skippedRels.length > 0) {
+        console.warn(`[handleConfirmSave] ${skippedRels.length} 条关系被跳过:`, skippedRels);
+        toast.warn(t('ai.relationSaveIncomplete', { approved: relationsToSave.length, saved: actualSavedRels }));
+      } else {
+        toast.success(t('ai.saveSuccess', { entities: addedEntities.length, relations: actualSavedRels }));
+      }
     } catch (error) {
       console.error('保存失败:', error);
       toast.error(t('common.saveFailed') + ': ' + error.message);
