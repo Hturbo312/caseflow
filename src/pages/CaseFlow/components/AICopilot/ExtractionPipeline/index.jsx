@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { FileText, Network, LayoutList } from 'lucide-react';
 import { useExtractionStore, useSchemaStore } from '@store';
 import { useToastStore } from '@components/Toast/ToastStore.js';
+import ConfirmModal from '@components/Toast/ConfirmModal';
 import { useI18n } from '../../../../../i18n';
 import { API_BASE_URL, authHelper } from '../../../../../utils';
 import ProgressPanel from './ProgressPanel';
@@ -40,6 +41,7 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
   const { currentSchema } = useSchemaStore();
   const [activeTab, setActiveTab] = useState('progress'); // progress | entities | relations | segments
   const [dbEntities, setDbEntities] = useState([]); // 从数据库加载的已保存实体（含 color）
+  const [pendingRelationsConfirm, setPendingRelationsConfirm] = useState(false); // 待审核关系确认弹窗
 
   // 初始化
   useEffect(() => {
@@ -99,17 +101,9 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
     }
   }, [inferRelations]);
 
-  const handleFinalize = useCallback(async () => {
+  // 核心 finalize 执行逻辑（独立函数，供 handleFinalize 和确认弹窗共用）
+  const executeFinalize = useCallback(async () => {
     try {
-      // 检查是否有待审核的关系，提醒用户
-      const pendingRels = relationCandidates?.filter(r => r.status === 'pending') || [];
-      if (pendingRels.length > 0) {
-        const confirmed = window.confirm(
-          t('ai.pendingRelationsWarning', { count: pendingRels.length })
-        );
-        if (!confirmed) return;
-      }
-
       setPhase('finalizing', t('ai.saving'));
       const token = authHelper.getToken();
 
@@ -213,7 +207,22 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
       console.error('[handleFinalize] 保存失败:', e);
       setPhase('error', `${t('common.saveFailed')}: ${e.message}`);
     }
-  }, [candidates, onComplete, relationCandidates, caseId, setPhase, t, toast]);
+  }, [candidates, onComplete, currentSchema, relationCandidates, caseId, setPhase, t, toast]);
+
+  // 触发 finalize：如有待审核关系则弹窗确认，否则直接执行
+  const handleFinalize = useCallback(() => {
+    const pendingRels = relationCandidates?.filter(r => r.status === 'pending') || [];
+    if (pendingRels.length > 0) {
+      setPendingRelationsConfirm(true);
+      return;
+    }
+    executeFinalize();
+  }, [relationCandidates, executeFinalize]);
+
+  const handleConfirmPendingRelations = useCallback(() => {
+    setPendingRelationsConfirm(false);
+    executeFinalize();
+  }, [executeFinalize]);
 
   const handleNext = useCallback(() => {
     handleInferRelations();
@@ -374,6 +383,18 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
           )}
         </AnimatePresence>
       </div>
+
+      {/* 待审核关系确认弹窗 */}
+      <ConfirmModal
+        isOpen={pendingRelationsConfirm}
+        onClose={() => setPendingRelationsConfirm(false)}
+        onConfirm={handleConfirmPendingRelations}
+        title={t('ai.pendingRelationsTitle')}
+        message={t('ai.pendingRelationsWarning', { count: relationCandidates?.filter(r => r.status === 'pending').length || 0 })}
+        confirmText={t('ai.confirmFinalizeAnyway')}
+        cancelText={t('common.cancel')}
+        variant="warning"
+      />
     </div>
   );
 });
