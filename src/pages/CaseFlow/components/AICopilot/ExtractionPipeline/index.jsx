@@ -129,7 +129,7 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
             'Content-Type': 'application/json',
             ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({ entities: entitiesWithColor, autoEmbed: false }),
+          body: JSON.stringify({ entities: entitiesWithColor, autoEmbed: true }),
         });
         if (!entRes.ok) {
           console.error(`[handleFinalize] 实体保存失败: ${entRes.status}`);
@@ -151,7 +151,7 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
             'Content-Type': 'application/json',
             ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({ relations: approvedRelations, autoEmbed: false }),
+          body: JSON.stringify({ relations: approvedRelations, autoEmbed: true }),
         });
         if (relRes.ok) {
           const relData = await relRes.json();
@@ -173,10 +173,9 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
         }
       }
 
-      // 3. 调用后端 finalize：标记 case_memory 为 completed + 触发 autoEmbed
-      // 同时传递已审核的关系作为安全网（后端 saveRelationsBulk 有去重保护，不会重复插入）
-      // 注意：由于关系已在上面通过 batch-save-relations 预保存，传递 preSaved=true 避免冗余 DB 操作
-      // 优化：仅当实际保存了实体时才触发 autoEmbed，避免无意义的空嵌入 API 调用
+      // 3. 调用后端 finalize：标记 case_memory 为 completed + 触发 autoEmbed 安全网
+      // autoEmbed 在 batch-save-entities/relations 中已触发（force=false 避免重复），
+      // 此处 finalize 的 autoEmbed 作为兜底，确保无遗漏
       const hasEntitiesSaved = approvedEntities.length > 0;
       const finalizeRes = await fetch(`${API_BASE_URL}/extraction/${caseId}/finalize`, {
         method: 'POST',

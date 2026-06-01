@@ -24,6 +24,9 @@ router.post('/:caseId/schema-analyze', authMiddleware, async (req, res) => {
     const { schemaId } = req.body;
     if (!schemaId) return res.status(400).json({ error: 'schemaId 是必需的' });
 
+    req.socket.setTimeout(660000);
+    res.setTimeout(660000);
+
     const result = await pipeline.runSchemaAnalysis(schemaId);
     res.json({ success: true, data: result });
   } catch (error) {
@@ -53,6 +56,9 @@ router.post('/:caseId/plan', authMiddleware, async (req, res) => {
     const { caseId } = req.params;
     const { schemaId } = req.body;
     if (!schemaId) return res.status(400).json({ error: 'schemaId 是必需的' });
+
+    req.socket.setTimeout(660000);
+    res.setTimeout(660000);
 
     const result = await pipeline.generateExtractionPlan(caseId, schemaId);
     res.json({ success: true, data: result });
@@ -117,6 +123,9 @@ router.post('/:caseId/check-consistency/:entityType', authMiddleware, async (req
     const { caseId, entityType } = req.params;
     const { candidates } = req.body;
     if (!candidates) return res.status(400).json({ error: 'candidates 是必需的' });
+
+    req.socket.setTimeout(660000);
+    res.setTimeout(660000);
 
     const result = await pipeline.checkConsistency(caseId, entityType, candidates);
     res.json({ success: true, data: result });
