@@ -302,12 +302,12 @@ function chunkParagraphs(segments, maxChars = 4000) {
     const len = s.content.length + 2; // +2 for \n\n
     if (currentLen + len > maxChars && current.length > 0) {
       chunks.push(current);
-      current = [s];
-      currentLen = len;
-    } else {
-      current.push(s);
-      currentLen += len;
+      current = [];
+      currentLen = 0;
     }
+    // 修复：单个超长段落也会被加入（之前当 current 为空且超长时会静默丢弃）
+    current.push(s);
+    currentLen += len;
   }
   if (current.length > 0) chunks.push(current);
   return chunks;

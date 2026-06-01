@@ -456,6 +456,8 @@ export const zh = {
   'ai.embeddingSection': 'Embedding 配置',
   'ai.saveConfig': '保存配置',
   'ai.confidence': '置信度',
+  'ai.parallelExtract': '并行提取中...',
+  'ai.chunkedReread': '超长文本已分块并行处理',
   'ai.delete': '删除',
   // Pipeline phases & progress
   'pipeline.parseText': '解析文本',
@@ -989,6 +991,8 @@ export const en = {
   'ai.embeddingSection': 'Embedding Configuration',
   'ai.saveConfig': 'Save Config',
   'ai.confidence': 'Confidence',
+  'ai.parallelExtract': 'Parallel extracting...',
+  'ai.chunkedReread': 'Long text chunked for parallel processing',
   'ai.delete': 'Delete',
   // Pipeline phases & progress
   'pipeline.parseText': 'Parse Text',
