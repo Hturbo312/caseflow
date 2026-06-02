@@ -1507,9 +1507,10 @@ export const useExtractionStore = create((set, get) => ({
     )
   })),
 
-  // 保存所有已审核的实体和关系，完成提取
+  // 注意：finalize 已迁移至组件层（ExtractionPipeline.executeFinalize / AICopilot.handleConfirmSave）
+  // 此函数保留仅作向后兼容，建议使用组件层的最终保存逻辑
   finalize: async () => {
-    const { currentCaseId } = get();
+    const { currentCaseId, candidates, relationCandidates } = get();
     if (!currentCaseId) return;
 
     set({ phase: 'finalizing', phaseLabel: '保存中...', isProcessing: true });
@@ -1520,38 +1521,39 @@ export const useExtractionStore = create((set, get) => ({
         ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       };
 
-      // 收集所有 approved 的实体和关系
-      const { candidates, relationCandidates } = get();
       const approvedEntities = Object.values(candidates).flat().filter(c => c.status === 'approved');
       const approvedRelations = relationCandidates?.filter(r => r.status === 'approved') || [];
 
-      // 批量保存实体
       if (approvedEntities.length > 0) {
+        const schemaEntityTypes = useSchemaStore.getState().currentSchema?.entityTypes || [];
+        const colorMap = new Map(schemaEntityTypes.map(et => [et.name, et.color || null]));
         await fetch(`${API_BASE_URL}/extraction/${currentCaseId}/batch-save-entities`, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ entities: approvedEntities.map(c => ({
-            name: c.name,
-            entityType: c.entityType,
-            properties: c.properties
-          })), autoEmbed: false }),
+          body: JSON.stringify({
+            entities: approvedEntities.map(c => ({
+              name: c.name,
+              entityType: c.entityType,
+              properties: c.properties,
+              color: c.color || colorMap.get(c.entityType) || null,
+            })),
+            autoEmbed: true,
+          }),
         });
       }
 
-      // 批量保存已审核的关系
       if (approvedRelations.length > 0) {
         await fetch(`${API_BASE_URL}/extraction/${currentCaseId}/batch-save-relations`, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ relations: approvedRelations, autoEmbed: false }),
+          body: JSON.stringify({ relations: approvedRelations, autoEmbed: true }),
         });
       }
 
-      // 调用后端 finalize：标记 completed + 触发 autoEmbed
       await fetch(`${API_BASE_URL}/extraction/${currentCaseId}/finalize`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ autoEmbed: true }),
+        body: JSON.stringify({ relations: approvedRelations, autoEmbed: approvedEntities.length > 0, preSaved: false }),
       });
 
       set({ phase: 'completed', phaseLabel: '提取完成', isProcessing: false });

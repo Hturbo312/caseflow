@@ -992,7 +992,7 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
           </div>
         ) : (
           <ForceGraph2D
-            key={`graph-${focusMode}-${focusNodeId ?? ''}-${focusCaseId ?? ''}`}
+            key={`graph-${focusMode}-${focusNodeId ?? ''}-${focusCaseId ?? ''}-${nodes.length}-${links.length}`}
             ref={fgRef}
             graphData={graphData}
             width={dimensions.width}

@@ -713,7 +713,9 @@ export async function saveRelationsBulk(caseId, relations) {
     const key = `${rel.sourceName}|||${rel.targetName}|||${rel.name}`;
     if (processedKeys.has(key)) continue; // 已在上面的 dedup 块中处理过（已插入或已标记为重复）
     if (!rel.sourceName || !rel.targetName || !rel.name) {
-      skipped.push({ sourceName: rel.sourceName, targetName: rel.targetName, reason: '缺少必要字段 (sourceName/targetName/name)' });
+      const skipReason = '缺少必要字段 (sourceName/targetName/name)';
+      console.warn(`[saveRelationsBulk] 跳过关系: ${skipReason}`, { sourceName: rel.sourceName, targetName: rel.targetName, name: rel.name });
+      skipped.push({ sourceName: rel.sourceName, targetName: rel.targetName, reason: skipReason });
     } else {
       // 检查实体是否存在（优先按 (name, type) 查找，回退按 name 查找）
       const sourceKey = rel.sourceType ? `${rel.sourceName}::${rel.sourceType}` : null;
@@ -724,7 +726,9 @@ export async function saveRelationsBulk(caseId, relations) {
         const missing = [];
         if (!sourceFound) missing.push(rel.sourceType ? `${rel.sourceName}(${rel.sourceType})` : rel.sourceName);
         if (!targetFound) missing.push(rel.targetType ? `${rel.targetName}(${rel.targetType})` : rel.targetName);
-        skipped.push({ sourceName: rel.sourceName, targetName: rel.targetName, reason: `实体未找到: ${missing.join(', ')}` });
+        const skipReason = `实体未找到: ${missing.join(', ')}`;
+        console.warn(`[saveRelationsBulk] 跳过关系: ${skipReason}`);
+        skipped.push({ sourceName: rel.sourceName, targetName: rel.targetName, reason: skipReason });
       }
     }
   }
