@@ -473,9 +473,15 @@ const httpsAgent = new https.Agent({ keepAlive: true, timeout: 600000 });
 
 /**
  * 解析 endpoint URL 并返回对应的 HTTP 客户端和 Agent（DRY helper，消除 callAI/callAIStream 中的重复逻辑）
+ * 增加 URL 合法性校验，避免 new URL() 对畸形地址抛出未捕获异常
  */
 function resolveHttpClient(endpoint) {
-  const url = new URL(endpoint);
+  let url;
+  try {
+    url = new URL(endpoint);
+  } catch (e) {
+    throw new Error(`AI endpoint URL 无效: ${endpoint} (${e.message})`);
+  }
   return {
     url,
     client: url.protocol === 'https:' ? https : http,
@@ -547,10 +553,17 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
   let idleTimeout;
   let totalChunks = 0;
   let req;
+  let settled = false; // 防止重复 reject（idle timeout 和 error/close 事件可能同时触发）
 
   function resetIdleTimeout() {
     clearTimeout(idleTimeout);
-    idleTimeout = setTimeout(() => { if (req) req.destroy(); }, IDLE_TIMEOUT_MS);
+    idleTimeout = setTimeout(() => {
+      if (req && !settled) {
+        settled = true;
+        req.destroy();
+        reject(new Error(`AI 流式响应空闲超时（${IDLE_TIMEOUT_MS / 1000}s 无数据，已接收 ${totalChunks} 个 chunk），请稍后重试`));
+      }
+    }, IDLE_TIMEOUT_MS);
   }
 
   return new Promise((resolve, reject) => {
@@ -568,6 +581,8 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
         let errorData = '';
         res.on('data', chunk => { errorData += chunk; });
         res.on('end', () => {
+          if (settled) return;
+          settled = true;
           reject(new Error(extractApiErrorMessage(errorData, res.statusCode, true)));
         });
         return;
@@ -630,6 +645,7 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
 
       res.on('end', () => {
         clearTimeout(idleTimeout);
+        if (settled) return; // 已被 idle timeout 处理
         // 处理 buffer 中剩余数据（不以 \n 结尾的最后一行）
         if (buffer.trim()) {
           const remainingLine = buffer.trim();
@@ -639,6 +655,7 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
               try {
                 const parsed = JSON.parse(data);
                 if (parsed.error) {
+                  settled = true;
                   reject(new Error(`AI 流式响应错误: ${parsed.error.message || JSON.stringify(parsed.error)}`));
                   return;
                 }
@@ -646,6 +663,7 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
                 if (content) onChunk(content);
               } catch (e) {
                 if (e.message && e.message.startsWith('AI 流式响应错误')) {
+                  settled = true;
                   reject(e);
                   return;
                 }
@@ -654,21 +672,28 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
             }
           }
         }
+        settled = true;
         resolve();
       });
 
       res.on('error', (e) => {
         clearTimeout(idleTimeout);
+        if (settled) return;
+        settled = true;
         reject(e);
       });
     });
 
     req.on('error', (e) => {
       clearTimeout(idleTimeout);
+      if (settled) return;
+      settled = true;
       reject(e);
     });
     req.on('timeout', () => {
       clearTimeout(idleTimeout);
+      if (settled) return;
+      settled = true;
       req.destroy();
       reject(new Error(`AI 流式调用超时（已接收 ${totalChunks} 个 chunk），请稍后重试`));
     });
