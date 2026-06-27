@@ -52,11 +52,11 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 // 更新 Schema
 router.put('/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
-  const { name, description } = req.body;
+  const { name, description, layout } = req.body;
   try {
     const result = await pool.query(
-      'UPDATE schemas SET name = COALESCE($1, name), description = COALESCE($2, description) WHERE id = $3 RETURNING *',
-      [name, description, id]
+      'UPDATE schemas SET name = COALESCE($1, name), description = COALESCE($2, description), layout = COALESCE($3, layout) WHERE id = $4 RETURNING *',
+      [name, description, layout ? JSON.stringify(layout) : null, id]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Schema not found' });

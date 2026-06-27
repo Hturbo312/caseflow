@@ -20,7 +20,9 @@ import {
   History,
   MessageCirclePlus,
   RefreshCw,
-  Upload
+  Upload,
+  Eye,
+  ChevronDown
 } from 'lucide-react';
 import { useAgentStore, useGraphStore, useCaseStore, useSchemaStore, useAuthStore, useExtractionStore } from '@store';
 import { caseApi, schemaApi } from '@services/api';
@@ -36,37 +38,10 @@ import ExtractResultPanel from './ExtractResultPanel';
 import SettingsModal from './SettingsModal';
 import ExtractionPipeline from './ExtractionPipeline';
 import SchemaResultPanel from './SchemaResultPanel';
+import AdjustmentModal from './panels/AdjustmentModal';
 
 // Agent 配置
-const createAgentConfig = (t) => ({
-  schema_builder: {
-    icon: Database,
-    color: 'from-emerald-500 to-teal-500',
-    bgColor: 'bg-emerald-50',
-    textColor: 'text-emerald-600',
-    title: t('ai.schemaBuilder'),
-    subtitle: t('ai.schemaBuilderDesc'),
-    placeholder: t('ai.schemaBuilderPlaceholder')
-  },
-  case_extractor: {
-    icon: Wand2,
-    color: 'from-indigo-500 to-purple-500',
-    bgColor: 'bg-indigo-50',
-    textColor: 'text-indigo-600',
-    title: t('ai.caseBreakdown'),
-    subtitle: t('ai.caseBreakdownDesc'),
-    placeholder: t('ai.caseBreakdownPlaceholder')
-  },
-  analysis_assistant: {
-    icon: MessageSquare,
-    color: 'from-cyan-500 to-blue-500',
-    bgColor: 'bg-cyan-50',
-    textColor: 'text-cyan-600',
-    title: t('ai.conversationAnalysis'),
-    subtitle: t('ai.conversationDesc'),
-    placeholder: t('ai.conversationPlaceholder')
-  }
-});
+import { createAgentConfig } from './agents/config';
 
 const AICopilot = ({ onShowLogin }) => {
   const { t, locale } = useI18n();
@@ -77,7 +52,10 @@ const AICopilot = ({ onShowLogin }) => {
     clearCurrentSession,
     invokeAgent,
     loadAgents,
-    setExtractResult
+    setExtractResult,
+    setSchemaMode,
+    reflectionIteration,
+    reflectionStatus,
   } = useAgentStore();
 
   const { selectedNode, addNodeToGraph, addLinkToGraph, loadAllCasesToGraph } = useGraphStore();
@@ -121,11 +99,15 @@ const AICopilot = ({ onShowLogin }) => {
 
   // 案例拆解模式状态
   const [caseText, setCaseText] = useState('');
+  const [extractionPrompt, setExtractionPrompt] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [extractionMode, setExtractionMode] = useState('chat'); // 'chat' | 'pipeline'
   const [isCreatingSchema, setIsCreatingSchema] = useState(false);
   const [isParsingFile, setIsParsingFile] = useState(false);
   const fileInputRef = useRef(null);
+
+  // 展开的旧版本消息
+  const [expandedOldMessages, setExpandedOldMessages] = useState(new Set());
 
   const currentSchema = getCurrentSchema();
 
@@ -184,14 +166,31 @@ const AICopilot = ({ onShowLogin }) => {
     if (!inputValue.trim() || currentSession?.isThinking) return;
 
     const context = buildContext();
+    const extraParams = {};
+    if (currentAgentName === 'schema_builder' && currentSession.schemaMode === 'generate') {
+      extraParams.schema_mode = 'generate';
+    }
+
     try {
-      await invokeAgent(inputValue, context);
+      await invokeAgent(inputValue, context, Object.keys(extraParams).length > 0 ? extraParams : undefined);
       setInputValue('');
+      // 发送后重置 schemaMode
+      if (currentAgentName === 'schema_builder' && currentSession.schemaMode === 'generate') {
+        setSchemaMode('discuss');
+      }
     } catch (error) {
       console.error('invokeAgent 调用失败:', error);
       toast.error(t('common.sendFailed'));
     }
-  }, [isAuthenticated, inputValue, currentSession?.isThinking, buildContext, invokeAgent, onShowLogin, toast]);
+  }, [isAuthenticated, inputValue, currentSession?.isThinking, currentSession.schemaMode, buildContext, invokeAgent, onShowLogin, toast, setSchemaMode]);
+
+  // 生成Schema
+  const handleGenerateSchema = useCallback(() => {
+    if (currentSession?.isThinking) return;
+    setInputValue(t('ai.systemGenerateSchema'));
+    setSchemaMode('generate');
+    inputRef.current?.focus();
+  }, [currentSession?.isThinking, setSchemaMode]);
 
   const handleKeyPress = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -642,28 +641,19 @@ const AICopilot = ({ onShowLogin }) => {
         )}
       </div>
 
-      {/* 案例拆解模式的额外控制面板 */}
+      {/* 案例拆解模式：输入表单 + 对话区 */}
       {currentAgentName === 'case_extractor' && extractionMode === 'chat' && (
-        <div className="border-b border-gray-200 p-4 space-y-3">
-          {/* 当前选择状态 */}
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <Database className="w-3.5 h-3.5" />
-            <span>Schema: {currentSchema?.name || t('common.notSelected')}</span>
-            {currentCaseId && (
-              <>
-                <span className="text-gray-300">|</span>
-                <FileText className="w-3.5 h-3.5" />
-                <span>{t('common.case')}: {cases.find(c => c.id === currentCaseId)?.name || t('common.notSelected')}</span>
-              </>
-            )}
-          </div>
-
-          {/* 案例文本 */}
-          <div>
+        <div className={`${
+          (currentSession.messages || []).length === 0
+            ? 'flex-1 flex flex-col p-6'
+            : 'border-b border-gray-200 p-4'
+        }`} style={{ gap: '12px' }}>
+          {/* 输入 1：案例材料 */}
+          <div className="flex-1 flex flex-col min-h-0">
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-medium text-gray-500">{t('ai.caseText')}</label>
+              <label className="text-sm font-semibold text-gray-700">案例材料</label>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">{caseText.length.toLocaleString()} {t('ai.characters')}</span>
+                <span className="text-xs text-gray-400">{caseText.length.toLocaleString()} 字</span>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -690,67 +680,67 @@ const AICopilot = ({ onShowLogin }) => {
             <textarea
               value={caseText}
               onChange={(e) => setCaseText(e.target.value)}
-              placeholder={t('ai.caseTextPlaceholder')}
-              rows={4}
+              placeholder="粘贴案例文本，或上传 PDF / Word / TXT 文件..."
+              className="w-full flex-1 min-h-0 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+            />
+          </div>
+
+          {/* 输入 2：提取要求 */}
+          <div className="flex-shrink-0">
+            <label className="text-sm font-semibold text-gray-700 mb-1 block">提取要求</label>
+            <textarea
+              value={extractionPrompt}
+              onChange={(e) => setExtractionPrompt(e.target.value)}
+              placeholder="告诉 AI 你想提取什么，例如：提取案例中的主体、事件、策略...（可选）"
+              rows={2}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
             />
           </div>
 
-          {/* Schema 预览 */}
-          {currentSchema && (
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <div className="text-xs font-semibold text-gray-500 mb-2">{t('ai.schemaStructure')}</div>
-              <div className="flex flex-wrap gap-1.5">
-                {(currentSchema.entityTypes || []).slice(0, 5).map(type => (
-                  <div key={type.id} className="flex items-center gap-1.5 px-2 py-1 bg-white rounded border border-gray-200">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: type.color }} />
-                    <span className="text-xs">{type.name}</span>
-                  </div>
-                ))}
-                {(currentSchema.entityTypes || []).length > 5 && (
-                  <span className="text-xs text-gray-400">+{(currentSchema.entityTypes || []).length - 5}</span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* 按钮组 */}
-          <div className="flex gap-2">
-            <button
-              onClick={handleStartPipeline}
-              disabled={!caseText.trim() || !currentSchemaId || currentSession.isThinking}
-              className={`flex-1 py-2.5 bg-gradient-to-r ${currentConfig.color} text-white rounded-lg font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
-            >
-              <Sparkles className="w-4 h-4" />
-              {t('ai.startExtraction')}
-            </button>
-            <button
-              onClick={async () => {
-                if (caseText.trim() && currentSchemaId) {
-                  try {
-                    await invokeAgent(caseText, {
-                      schema_id: currentSchemaId,
-                      case_id: currentCaseId,
-                      case_text: caseText
-                    });
-                  } catch (error) {
-                    console.error('invokeAgent 调用失败:', error);
-                    toast.error(t('common.extractionFailed') + ': ' + (error.message || t('common.unknownError')));
-                  }
+          {/* 确认拆解按钮 */}
+          <button
+            onClick={async () => {
+              if (caseText.trim() && currentSchemaId) {
+                const userInput = extractionPrompt.trim()
+                  ? `案例材料已提供。\n额外要求：${extractionPrompt}`
+                  : '请帮我拆解这个案例，提取所有实体和关系。';
+                try {
+                  await invokeAgent(userInput, {
+                    schema_id: currentSchemaId,
+                    case_id: currentCaseId,
+                    case_text: caseText
+                  });
+                  setExtractionPrompt('');
+                } catch (error) {
+                  console.error('invokeAgent 调用失败:', error);
+                  toast.error(t('common.extractionFailed') + ': ' + (error.message || t('common.unknownError')));
                 }
-              }}
-              disabled={!caseText.trim() || !currentSchemaId || currentSession.isThinking}
-              className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-lg font-medium hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              <Wand2 className="w-4 h-4" />
-              {t('ai.singleExtract')}
-            </button>
-          </div>
+              }
+            }}
+            disabled={!caseText.trim() || !currentSchemaId || currentSession.isThinking}
+            className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {currentSession.isThinking ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                AI 拆解中...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                确认拆解
+              </>
+            )}
+          </button>
         </div>
       )}
 
       {/* 消息列表 / Pipeline 区域 */}
-      <div className="flex-1 overflow-y-auto">
+      <div className={`${
+        currentAgentName === 'case_extractor' && extractionMode === 'chat' && (currentSession.messages || []).length === 0
+          ? 'flex-none'
+          : 'flex-1'
+      } overflow-y-auto`}>
         {currentAgentName === 'case_extractor' && extractionMode === 'pipeline' && currentCaseId ? (
           /* Pipeline 模式：全屏提取流程 */
           <ExtractionPipeline
@@ -763,12 +753,13 @@ const AICopilot = ({ onShowLogin }) => {
           <div className="p-4 space-y-4">
             {/* 空状态 */}
             {(currentSession.messages || []).length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center">
-                <div className={`w-16 h-16 bg-gradient-to-br ${currentConfig.color} rounded-2xl flex items-center justify-center mb-4`}>
-                  <IconComponent className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-lg font-bold text-gray-700 mb-2">{currentConfig.title}</h3>
-                <p className="text-sm text-gray-500 max-w-xs mb-4">{currentConfig.subtitle}</p>
+              currentAgentName === 'case_extractor' ? null : (
+                <div className="h-full flex flex-col items-center justify-center text-center">
+                  <div className={`w-16 h-16 bg-gradient-to-br ${currentConfig.color} rounded-2xl flex items-center justify-center mb-4`}>
+                    <IconComponent className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-700 mb-2">{currentConfig.title}</h3>
+                  <p className="text-sm text-gray-500 max-w-xs mb-4">{currentConfig.subtitle}</p>
 
                 {/* 推荐问题 */}
                 <div className="w-full max-w-md space-y-2">
@@ -790,57 +781,87 @@ const AICopilot = ({ onShowLogin }) => {
                   ))}
                 </div>
               </div>
+              )
             ) : (
               <>
                 {/* 对话消息列表 */}
-                {(currentSession.messages || []).map((message) => (
-                  <motion.div
-                    key={message.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`flex items-start gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
-                  >
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        message.role === 'user'
-                          ? 'bg-blue-500'
-                          : `bg-gradient-to-br ${currentConfig.color}`
-                      }`}
+                {(currentSession.messages || []).map((message) => {
+                  const isOldVersion = message.isLatest === false;
+                  const isExpanded = expandedOldMessages.has(message.id);
+
+                  return (
+                    <motion.div
+                      key={message.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`flex items-start gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''} ${isOldVersion ? 'opacity-50' : ''}`}
                     >
-                      {message.role === 'user' ? (
-                        <User className="w-4 h-4 text-white" />
-                      ) : (
-                        <Bot className="w-4 h-4 text-white" />
-                      )}
-                    </div>
-                    <div
-                      className={`max-w-[80%] p-3 rounded-2xl text-sm ${
-                        message.isError
-                          ? 'bg-red-50 text-red-700 border border-red-200'
-                          : message.role === 'user'
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {message.role === 'assistant' ? (
-                        <div className="markdown-content prose prose-sm max-w-none">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            disallowedElements={['script', 'iframe', 'object', 'embed', 'form', 'input']}
-                            unwrapDisallowed={true}
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          message.role === 'user'
+                            ? 'bg-blue-500'
+                            : `bg-gradient-to-br ${currentConfig.color}`
+                        }`}
+                      >
+                        {message.role === 'user' ? (
+                          <User className="w-4 h-4 text-white" />
+                        ) : (
+                          <Bot className="w-4 h-4 text-white" />
+                        )}
+                      </div>
+                      <div
+                        className={`max-w-[80%] p-3 rounded-2xl text-sm ${
+                          message.isError
+                            ? 'bg-red-50 text-red-700 border border-red-200'
+                            : message.role === 'user'
+                              ? 'bg-blue-500 text-white'
+                              : isOldVersion
+                                ? 'bg-gray-50 text-gray-400 border border-dashed border-gray-200'
+                                : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {isOldVersion && !isExpanded && (
+                          <button
+                            onClick={() => {
+                              const next = new Set(expandedOldMessages);
+                              if (next.has(message.id)) {
+                                next.delete(message.id);
+                              } else {
+                                next.add(message.id);
+                              }
+                              setExpandedOldMessages(next);
+                            }}
+                            className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-500 mb-1"
                           >
-                            {message.content}
-                          </ReactMarkdown>
-                        </div>
-                      ) : (
-                        message.content
-                      )}
-                      {message.isStreaming && (
-                        <span className="inline-block w-1.5 h-4 bg-gray-400 ml-0.5 animate-pulse" />
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
+                            <Eye className="w-3 h-3" />
+                            {t('ai.oldVersionLabel').replace('{iteration}', message.iteration || '?')}
+                            <ChevronDown className="w-3 h-3" />
+                          </button>
+                        )}
+                        {(!isOldVersion || isExpanded) && (
+                          <>
+                            {message.role === 'assistant' ? (
+                              <div className="markdown-content prose prose-sm max-w-none">
+                                <ReactMarkdown
+                                  remarkPlugins={[remarkGfm]}
+                                  disallowedElements={['script', 'iframe', 'object', 'embed', 'form', 'input']}
+                                  unwrapDisallowed={true}
+                                >
+                                  {message.content}
+                                </ReactMarkdown>
+                              </div>
+                            ) : (
+                              message.content
+                            )}
+                          </>
+                        )}
+                        {message.isStreaming && (
+                          <span className="inline-block w-1.5 h-4 bg-gray-400 ml-0.5 animate-pulse" />
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
 
                 {/* 案例拆解模式：提取结果面板（仅聊天模式） */}
                 {currentAgentName === 'case_extractor' && extractionMode === 'chat' && (
@@ -852,6 +873,7 @@ const AICopilot = ({ onShowLogin }) => {
                       selectedCaseId={currentCaseId}
                       onConfirmSave={handleConfirmSave}
                       onRequestAdjustment={handleRequestAdjustment}
+                      onStartPipeline={currentSchemaId ? handleStartPipeline : null}
                     />
                   </div>
                 )}
@@ -879,6 +901,33 @@ const AICopilot = ({ onShowLogin }) => {
       {/* 输入区 - 案例拆解模式隐藏 */}
       {currentAgentName !== 'case_extractor' && (
         <div className="border-t border-gray-200 p-4">
+          {/* Schema Builder 生成按钮 */}
+          {currentAgentName === 'schema_builder' && currentSession.schemaMode !== 'generate' && (
+            <div className="mb-3 flex items-center justify-between">
+              <button
+                onClick={handleGenerateSchema}
+                disabled={currentSession.isThinking || (currentSession.messages || []).length === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                {t('ai.generateSchema')}
+              </button>
+              {(currentSession.messages || []).length > 0 && (
+                <span className="text-xs text-gray-400">{t('ai.generateSchemaHint')}</span>
+              )}
+            </div>
+          )}
+
+          {/* 反思循环指示器 */}
+          {currentSession?.isThinking && reflectionStatus && (
+            <div className="mb-2 flex items-center gap-2 px-3 py-1.5 text-xs text-gray-400">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              {reflectionStatus === 'evaluating' && t('ai.selfEvaluating')}
+              {reflectionStatus === 'refining' && t('ai.refiningOutput').replace('{iteration}', reflectionIteration).replace('{maxIterations}', '2')}
+              {reflectionStatus === 'generating' && t('ai.generatingIteration').replace('{iteration}', reflectionIteration).replace('{maxIterations}', '2')}
+            </div>
+          )}
+
           <div className="flex items-end gap-3">
             <div className="flex-1 relative">
               <textarea
@@ -906,72 +955,16 @@ const AICopilot = ({ onShowLogin }) => {
       {/* 案例拆解模式 - 调整输入弹窗（仅聊天模式） */}
       <AnimatePresence>
         {currentAgentName === 'case_extractor' && extractionMode === 'chat' && inputValue && currentSession.extractResult && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/30 backdrop-blur-sm z-20 flex items-end p-4"
-            onClick={() => setInputValue('')}
-          >
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 20, opacity: 0 }}
-              className="w-full bg-white rounded-2xl shadow-xl p-4"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <RefreshCw className="w-4 h-4 text-indigo-500" />
-                <span className="font-medium text-gray-700">{t('ai.adjustTitle')}</span>
-              </div>
-              <textarea
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder={t('ai.adjustPlaceholder')}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                autoFocus
-              />
-              <div className="flex gap-2 mt-3">
-                <button
-                  onClick={() => setInputValue('')}
-                  className="flex-1 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
-                >
-                  {t('common.cancel')}
-                </button>
-                <button
-                  onClick={async () => {
-                    if (inputValue.trim()) {
-                      try {
-                        await invokeAgent(inputValue, {
-                          schema_id: currentSchemaId,
-                          case_id: currentCaseId,
-                          case_text: caseText
-                        });
-                      } catch (error) {
-                        console.error('invokeAgent 调用失败:', error);
-                        toast.error(t('common.adjustmentFailed'));
-                      }
-                    }
-                  }}
-                  disabled={!inputValue.trim() || currentSession.isThinking}
-                  className="flex-1 py-2 bg-indigo-500 text-white rounded-lg text-sm font-medium hover:bg-indigo-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {currentSession.isThinking ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      {t('ai.processing')}
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4" />
-                      {t('ai.sendAdjustment')}
-                    </>
-                  )}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
+          <AdjustmentModal
+            inputValue={inputValue}
+            setInputValue={setInputValue}
+            isThinking={currentSession.isThinking}
+            onSend={(value) => invokeAgent(value, {
+              schema_id: currentSchemaId,
+              case_id: currentCaseId,
+              case_text: caseText
+            })}
+          />
         )}
       </AnimatePresence>
 

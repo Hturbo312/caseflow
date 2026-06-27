@@ -323,12 +323,18 @@ function formatSchemaContext(schema) {
 }
 
 // 构建系统提示
-export function buildSystemPrompt(agent, context) {
+export function buildSystemPrompt(agent, context, options = {}) {
   let prompt = agent.system_prompt || '';
 
   switch (agent.name) {
-    case 'schema_builder':
+    case 'schema_builder': {
+      const { schemaMode } = options;
+      if (!schemaMode || schemaMode === 'discuss') {
+        prompt += `\n\n【重要】当前处于讨论阶段。如果用户的需求已经比较清晰，请直接给出具体的实体类型、属性、关系建议（用自然语言，不要输出JSON）。只有当用户的需求非常模糊时，才提出1-2个澄清问题。`;
+      }
+      // generate 模式：原 prompt 的 JSON 要求自然生效
       break;
+    }
 
     case 'case_extractor':
       if (context.schema) {
@@ -489,7 +495,7 @@ function resolveHttpClient(endpoint) {
   };
 }
 
-// 调用 AI - 使用 node:https 而非 fetch（fetch 有 300s bodyTimeout 限制）
+// 调用 AI - 非流式（使用 fetch，DashScope coding 端点对 node:https 返回 405）
 export async function callAI(systemPrompt, messages, agent, userConfig) {
   const cfg = resolveAiConfig(userConfig);
   if (!cfg.apiKey || !cfg.endpoint) {
@@ -497,44 +503,31 @@ export async function callAI(systemPrompt, messages, agent, userConfig) {
   }
 
   const requestBody = buildAiRequestBody(systemPrompt, messages, agent, cfg);
-  const body = JSON.stringify(requestBody);
-  const { url, client, agent: httpAgentInstance } = resolveHttpClient(cfg.endpoint);
 
-  return new Promise((resolve, reject) => {
-    const req = client.request(url, {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 600000); // 10分钟超时
+
+  try {
+    const response = await fetch(cfg.endpoint, {
       method: 'POST',
-      agent: httpAgentInstance,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${cfg.apiKey}`,
-        'Content-Length': Buffer.byteLength(body)
       },
-      timeout: 600000 // 10分钟超时
-    }, (res) => {
-      let data = '';
-      res.on('data', chunk => { data += chunk; });
-      res.on('end', () => {
-        if (res.statusCode !== 200) {
-          reject(new Error(extractApiErrorMessage(data, res.statusCode)));
-          return;
-        }
-        try {
-          const parsed = JSON.parse(data);
-          resolve(parsed.choices?.[0]?.message?.content || '');
-        } catch (e) {
-          reject(new Error(`AI API JSON 解析失败: ${e.message}`));
-        }
-      });
-      res.on('error', reject);
+      body: JSON.stringify(requestBody),
+      signal: controller.signal,
     });
-    req.on('error', reject);
-    req.on('timeout', () => {
-      req.destroy();
-      reject(new Error('AI API 调用超时，请稍后重试'));
-    });
-    req.write(body);
-    req.end();
-  });
+
+    if (!response.ok) {
+      const data = await response.text();
+      throw new Error(extractApiErrorMessage(data, response.status));
+    }
+
+    const parsed = await response.json();
+    return parsed.choices?.[0]?.message?.content || '';
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 // 流式调用 AI（使用 node:https + 共享 keep-alive agent，与 callAI 保持一致）
@@ -780,4 +773,103 @@ function extractBalancedJson(text) {
     }
   }
   return null;
+}
+
+/**
+ * 通用 Agent Loop 执行器 — 同一套循环框架，不同 agent 通过 loop_config 配置评估行为。
+ * 流式策略：每次迭代都流式输出，旧版本保留、新版本作为新消息追加。
+ * @returns {Promise<boolean>} true 表示 loop 已处理（SSE 已响应并结束），false 表示未启用 loop
+ */
+export async function executeAgentLoop({
+  systemPrompt, messages, agent, userConfig, userId,
+  loopConfig, res, session, sessionId, user_input,
+  saveChatHistory, updateSessionMeta, touchSession,
+}) {
+  if (!loopConfig?.enabled) return false;
+
+  const { maxIterations, evaluationPrompt, passThreshold = 7 } = loopConfig;
+  const allMessages = [];
+
+  for (let iteration = 1; iteration <= maxIterations; iteration++) {
+    // 构建当前迭代的 systemPrompt（追加反馈）
+    let currentPrompt = systemPrompt;
+    if (iteration > 1 && allMessages.length > 0) {
+      const prevEval = allMessages[allMessages.length - 1]._evaluation || {};
+      currentPrompt = systemPrompt + `\n\n## 自我改进反馈\n上一次评估：得分 ${prevEval.score || '?'}\n问题：${(prevEval.issues || []).join('；') || '无'}\n改进建议：${prevEval.improvement_suggestions || '无'}\n\n请根据以上反馈重新生成更完善的输出。`;
+    }
+
+    res.write(`data: ${JSON.stringify({ type: 'iteration_start', iteration, max: maxIterations })}\n\n`);
+
+    let fullResponse = '';
+    if (iteration > 1) {
+      res.write(`data: ${JSON.stringify({ type: 'thinking_phase', iteration, status: 'refining' })}\n\n`);
+    }
+
+    await callAIStream(currentPrompt, messages, agent, (chunk) => {
+      fullResponse += chunk;
+      res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk, iteration })}\n\n`);
+    }, userConfig, userId);
+
+    const output = parseAgentOutput(fullResponse, agent.output_format);
+
+    // 最后一次迭代不评估（没有重试机会了）
+    if (iteration < maxIterations) {
+      res.write(`data: ${JSON.stringify({ type: 'thinking_phase', iteration, status: 'evaluating' })}\n\n`);
+
+      let evaluation;
+      try {
+        const evalResponse = await callAI(
+          evaluationPrompt,
+          [{ role: 'user', content: `请评估以下输出：\n\n${fullResponse}` }],
+          { ...agent, name: 'evaluator' },
+          userConfig
+        );
+
+        const jsonMatch = typeof evalResponse === 'string' ? evalResponse.match(/\{[\s\S]*\}/) : null;
+        evaluation = jsonMatch ? JSON.parse(jsonMatch[0]) : { passed: true, score: 8 };
+        // 验证 evaluation 结构
+        if (typeof evaluation.score !== 'number') evaluation.score = 8;
+        if (typeof evaluation.passed !== 'boolean') evaluation.passed = evaluation.score >= passThreshold;
+      } catch (evalError) {
+        console.error(`[executeAgentLoop] 评估步骤出错 (iteration ${iteration}):`, evalError.message);
+        evaluation = { passed: true, score: 8, issues: [], improvement_suggestions: '评估步骤出错，跳过评估' };
+      }
+
+      output._evaluation = evaluation;
+
+      allMessages.push({ content: fullResponse, output, iteration });
+
+      if (evaluation.passed || evaluation.score >= passThreshold) {
+        break;
+      }
+    } else {
+      allMessages.push({ content: fullResponse, output, iteration });
+    }
+  }
+
+  // 发送所有迭代结果（剥离 _evaluation 元数据）
+  for (const msg of allMessages) {
+    const cleanOutput = { ...msg.output };
+    delete cleanOutput._evaluation;
+    res.write(`data: ${JSON.stringify({
+      type: 'done',
+      full_response: msg.content,
+      output: cleanOutput,
+      iteration: msg.iteration,
+      totalIterations: allMessages.length,
+    })}\n\n`);
+  }
+
+  // 保存历史（只保存最后一次迭代的内容）
+  const lastMsg = allMessages[allMessages.length - 1];
+  if (agent.supports_multi_turn && session) {
+    session.messages.push({ role: 'user', content: user_input });
+    session.messages.push({ role: 'assistant', content: lastMsg.content });
+    touchSession(sessionId);
+  }
+  saveChatHistory(userId, agent.name, sessionId, user_input, lastMsg.content).catch(e => console.error('保存聊天记录失败:', e));
+  updateSessionMeta(userId, agent.name, sessionId, user_input).catch(e => console.error('更新会话元数据失败:', e));
+
+  res.end();
+  return true;
 }

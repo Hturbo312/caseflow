@@ -14,7 +14,10 @@ const AGENTS_DATA = [
 - 验证Schema结构的完整性和合理性
 
 输出要求：
-必须以 JSON 格式输出，包含以下字段：
+**在讨论阶段**：如果用户的需求已经比较清晰，请直接给出具体的实体类型、属性、关系建议（用自然语言，不要输出JSON）。只有当用户的需求非常模糊时，才提出1-2个澄清问题。
+**在生成阶段**（当用户明确要求"生成Schema"时）：必须以 JSON 格式输出完整 schema，包含 entityTypes、relations、message 字段。
+
+JSON 格式示例：
 {
   "entityTypes": [
     {
@@ -38,14 +41,29 @@ const AGENTS_DATA = [
 
 注意事项：
 1. 实体类型名称应简洁明确，使用中文
-2. 颢色建议使用十六进制格式，如 #3b82f6
+2. 颜色建议使用十六进制格式，如 #3b82f6
 3. 属性类型根据实际需求选择，枚举类型需要提供 options
 4. 关系方向：directed(有向)、bidirectional(双向)、undirected(无向)
 5. 如果用户的需求不明确，先询问澄清`,
     output_schema: { entityTypes: [], relations: [], message: '' },
     context_type: 'none',
     supports_multi_turn: true,
-    output_format: 'json'
+    output_format: 'json',
+    loop_config: {
+      enabled: true,
+      maxIterations: 2,
+      passThreshold: 7,
+      evaluationPrompt: `请评估以下 Schema 输出质量：
+
+评估标准：
+1. 是否至少包含 2 个实体类型？
+2. 每个实体类型是否至少包含 1 个属性？
+3. 是否至少包含 1 个关系？
+4. 实体类型名称是否不重复？
+5. 关系中的 from/to 是否引用了已定义的实体类型？
+
+输出格式：{ "passed": true/false, "score": 0-10, "issues": [], "improvement_suggestions": "" }`
+    }
   },
   {
     name: 'case_extractor',
@@ -105,7 +123,20 @@ const AGENTS_DATA = [
     output_schema: { entities: [], relations: [], summary: '', status: '', need_confirm: false },
     context_type: 'schema_case',
     supports_multi_turn: true,
-    output_format: 'json'
+    output_format: 'json',
+    loop_config: {
+      enabled: true,
+      maxIterations: 2,
+      passThreshold: 7,
+      evaluationPrompt: `请评估以下实体提取结果质量：
+
+评估标准：
+1. 提取的实体是否都有合理的 entityType？
+2. 实体属性是否从文本中合理提取（非编造）？
+3. 关系的 sourceName/targetName 是否对应已提取的实体？
+
+输出格式：{ "passed": true/false, "score": 0-10, "issues": [], "improvement_suggestions": "" }`
+    }
   },
   {
     name: 'analysis_assistant',
@@ -147,7 +178,21 @@ const AGENTS_DATA = [
     output_schema: null,
     context_type: 'chat_rag',
     supports_multi_turn: true,
-    output_format: 'markdown'
+    output_format: 'markdown',
+    loop_config: {
+      enabled: true,
+      maxIterations: 2,
+      passThreshold: 7,
+      evaluationPrompt: `请评估以下分析回答质量：
+
+评估标准：
+1. 回答是否基于检索到的图谱数据（非编造）？
+2. 分析是否有逻辑性，结论是否有依据？
+3. 是否使用了合理的结构化表达（如分点、Markdown）？
+4. 是否遗漏了用户问题中的重要方面？
+
+输出格式：{ "passed": true/false, "score": 0-10, "issues": [], "improvement_suggestions": "" }`
+    }
   },
   {
     name: 'schema_analyzer',
@@ -183,7 +228,8 @@ const AGENTS_DATA = [
     output_schema: null,
     context_type: 'schema_only',
     supports_multi_turn: false,
-    output_format: 'markdown'
+    output_format: 'markdown',
+    loop_config: null
   },
   {
     name: 'text_parser',
@@ -229,7 +275,8 @@ const AGENTS_DATA = [
     output_schema: { global_summary: '', segments: [] },
     context_type: 'case_text',
     supports_multi_turn: false,
-    output_format: 'json'
+    output_format: 'json',
+    loop_config: null
   },
   {
     name: 'extraction_planner',
@@ -270,7 +317,8 @@ const AGENTS_DATA = [
     output_schema: { plan: [] },
     context_type: 'schema_case',
     supports_multi_turn: false,
-    output_format: 'json'
+    output_format: 'json',
+    loop_config: null
   },
   {
     name: 'consistency_checker',
@@ -313,7 +361,8 @@ const AGENTS_DATA = [
     output_schema: { merge_groups: [], unique_indices: [] },
     context_type: 'none',
     supports_multi_turn: false,
-    output_format: 'json'
+    output_format: 'json',
+    loop_config: null
   },
   {
     name: 'relation_inferrer',
@@ -356,7 +405,8 @@ const AGENTS_DATA = [
     output_schema: { relations: [] },
     context_type: 'schema_case',
     supports_multi_turn: false,
-    output_format: 'json'
+    output_format: 'json',
+    loop_config: null
   }
 ];
 
@@ -575,9 +625,15 @@ export async function initializeDatabase() {
         context_type VARCHAR(50),
         supports_multi_turn BOOLEAN DEFAULT false,
         output_format VARCHAR(50) DEFAULT 'json',
+        loop_config JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // 为已有表添加 loop_config 列（迁移）
+    await pool.query(`
+      ALTER TABLE agent_meta ADD COLUMN IF NOT EXISTS loop_config JSONB;
     `);
 
     // 创建聊天历史表
@@ -611,16 +667,16 @@ export async function initializeDatabase() {
       const existing = await pool.query('SELECT id FROM agent_meta WHERE name = $1', [agent.name]);
       if (existing.rows.length === 0) {
         await pool.query(`
-          INSERT INTO agent_meta (name, display_name, description, system_prompt, output_schema, context_type, supports_multi_turn, output_format)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        `, [agent.name, agent.display_name, agent.description, agent.system_prompt, JSON.stringify(agent.output_schema), agent.context_type, agent.supports_multi_turn, agent.output_format]);
+          INSERT INTO agent_meta (name, display_name, description, system_prompt, output_schema, context_type, supports_multi_turn, output_format, loop_config)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `, [agent.name, agent.display_name, agent.description, agent.system_prompt, JSON.stringify(agent.output_schema), agent.context_type, agent.supports_multi_turn, agent.output_format, JSON.stringify(agent.loop_config)]);
         console.log(`Agent '${agent.name}' created`);
       } else {
         await pool.query(`
           UPDATE agent_meta
-          SET display_name = $2, description = $3, system_prompt = $4, output_schema = $5, context_type = $6, supports_multi_turn = $7, output_format = $8, updated_at = CURRENT_TIMESTAMP
+          SET display_name = $2, description = $3, system_prompt = $4, output_schema = $5, context_type = $6, supports_multi_turn = $7, output_format = $8, loop_config = $9, updated_at = CURRENT_TIMESTAMP
           WHERE name = $1
-        `, [agent.name, agent.display_name, agent.description, agent.system_prompt, JSON.stringify(agent.output_schema), agent.context_type, agent.supports_multi_turn, agent.output_format]);
+        `, [agent.name, agent.display_name, agent.description, agent.system_prompt, JSON.stringify(agent.output_schema), agent.context_type, agent.supports_multi_turn, agent.output_format, JSON.stringify(agent.loop_config)]);
         console.log(`Agent '${agent.name}' updated`);
       }
     }

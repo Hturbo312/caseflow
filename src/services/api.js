@@ -241,7 +241,7 @@ export const agentApi = {
   }),
 
   // 流式调用 Agent (SSE)
-  invokeStream: async (agentName, params, onChunk, onDone, onError) => {
+  invokeStream: async (agentName, params, onChunk, onDone, onError, onThinkingPhase, onIterationStart) => {
     const token = authHelper.getToken();
     const url = `${API_BASE_URL}/agents/${agentName}/invoke/stream`;
 
@@ -286,11 +286,15 @@ export const agentApi = {
                 sessionId = parsed.session_id;
               } else if (parsed.type === 'chunk') {
                 fullResponse += parsed.content;
-                onChunk(parsed.content, fullResponse);
+                onChunk(parsed.content, fullResponse, parsed.iteration);
               } else if (parsed.type === 'done') {
-                onDone(parsed.full_response, sessionId, parsed.output);
+                onDone(parsed.full_response, sessionId, parsed.output, parsed.iteration, parsed.totalIterations);
               } else if (parsed.type === 'error') {
                 onError(parsed.error);
+              } else if (parsed.type === 'thinking_phase') {
+                if (onThinkingPhase) onThinkingPhase(parsed);
+              } else if (parsed.type === 'iteration_start') {
+                if (onIterationStart) onIterationStart(parsed);
               }
             } catch (e) {
               // 不完整的JSON，丢弃该行

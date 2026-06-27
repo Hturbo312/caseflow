@@ -965,15 +965,20 @@ export const useGraphStore = create((set, get) => ({
   },
 
   addNodeToGraph: (entity) => set((state) => {
+    // 防止重复添加：如果节点已存在则跳过
+    if (state.allNodes.some(n => n.id === entity.id)) return {};
     const nodeData = { id: entity.id, name: entity.name, type: entity.type || entity.entityType, properties: entity.properties, x: Math.random() * 400 + 100, y: Math.random() * 300 + 100 };
     return ({
     allNodes: [...state.allNodes, nodeData],
     nodes: [...state.nodes, nodeData]
   })}),
-  addLinkToGraph: (relation) => set((state) => ({
+  addLinkToGraph: (relation) => set((state) => {
+    // 防止重复添加：如果链接已存在则跳过
+    if (state.allLinks.some(l => l.id === relation.id)) return {};
+    return ({
     allLinks: [...state.allLinks, { id: relation.id, source: relation.source || relation.sourceId, target: relation.target || relation.targetId, name: relation.name }],
     links: [...state.links, { id: relation.id, source: relation.source || relation.sourceId, target: relation.target || relation.targetId, name: relation.name }]
-  })),
+  })}),
   removeNodeFromGraph: (nodeId) => set((state) => ({
     allNodes: state.allNodes.filter(n => n.id !== nodeId),
     nodes: state.nodes.filter(n => n.id !== nodeId),
@@ -1006,13 +1011,17 @@ export const useAgentStore = create((set, get) => ({
 
   // 各 Agent 的会话状态
   sessions: {
-    schema_builder: { sessionId: null, messages: [], isThinking: false },
+    schema_builder: { sessionId: null, messages: [], isThinking: false, schemaMode: 'discuss', extractResult: null },
     case_extractor: { sessionId: null, messages: [], isThinking: false, extractResult: null },
     analysis_assistant: { sessionId: null, messages: [], isThinking: false, ragContext: [] },
   },
 
   // 会话历史列表
   sessionHistory: [],
+
+  // 反思循环状态
+  reflectionIteration: 0,
+  reflectionStatus: null,
 
   // 加载 Agent 列表
   loadAgents: async () => {
@@ -1067,7 +1076,7 @@ export const useAgentStore = create((set, get) => ({
   startNewSession: () => {
     const { currentAgentName, sessions } = get();
     const agentDefaults = {
-      schema_builder: { sessionId: null, messages: [], isThinking: false },
+      schema_builder: { sessionId: null, messages: [], isThinking: false, schemaMode: 'discuss', extractResult: null },
       case_extractor: { sessionId: null, messages: [], isThinking: false, extractResult: null },
       analysis_assistant: { sessionId: null, messages: [], isThinking: false, ragContext: [] },
     };
@@ -1101,6 +1110,17 @@ export const useAgentStore = create((set, get) => ({
 
   // 切换 Agent
   setCurrentAgent: (agentName) => set({ currentAgentName: agentName }),
+
+  // 设置 Schema 生成模式
+  setSchemaMode: (mode) => set((state) => {
+    const session = state.sessions.schema_builder;
+    return {
+      sessions: {
+        ...state.sessions,
+        schema_builder: { ...session, schemaMode: mode }
+      }
+    };
+  }),
 
   // 获取当前 Agent 会话
   getCurrentSession: () => {
@@ -1139,7 +1159,7 @@ export const useAgentStore = create((set, get) => ({
   },
 
   // 调用 Agent (流式)
-  invokeAgent: async (userInput, context = {}) => {
+  invokeAgent: async (userInput, context = {}, extraParams = {}) => {
     const { currentAgentName, sessions } = get();
     const session = sessions[currentAgentName];
 
@@ -1163,11 +1183,16 @@ export const useAgentStore = create((set, get) => ({
           messages: [...session.messages, userMessage, assistantMessage],
           isThinking: true
         }
-      }
+      },
+      reflectionIteration: 0,
+      reflectionStatus: null,
     });
 
+    // 追踪当前迭代的消息 ID
+    let currentAssistantMessageId = assistantMessageId;
+
     // 流式更新助手消息
-    const onChunk = (chunk, fullContent) => {
+    const onChunk = (chunk, fullContent, iteration = 1) => {
       const currentSessions = get().sessions;
       const currentMessages = currentSessions[currentAgentName].messages;
 
@@ -1177,7 +1202,7 @@ export const useAgentStore = create((set, get) => ({
           [currentAgentName]: {
             ...currentSessions[currentAgentName],
             messages: currentMessages.map(msg =>
-              msg.id === assistantMessageId
+              msg.id === currentAssistantMessageId
                 ? { ...msg, content: fullContent, isStreaming: true }
                 : msg
             )
@@ -1186,7 +1211,7 @@ export const useAgentStore = create((set, get) => ({
       });
     };
 
-    const onDone = (fullResponse, sessionId, outputFromServer) => {
+    const onDone = (fullResponse, sessionId, outputFromServer, iteration = 1, totalIterations = 1) => {
       const currentSessions = get().sessions;
       const currentMessages = currentSessions[currentAgentName].messages;
 
@@ -1202,22 +1227,61 @@ export const useAgentStore = create((set, get) => ({
           console.error('JSON parse error:', e);
         }
       }
+      // 只有当 output 是有效结果（非 parse_error）时才设为 extractResult
+      const validExtract = output && !output.parse_error ? output : null;
 
-      set({
-        sessions: {
-          ...currentSessions,
-          [currentAgentName]: {
-            sessionId,
-            messages: currentMessages.map(msg =>
-              msg.id === assistantMessageId
-                ? { ...msg, content: fullResponse, isStreaming: false, output }
-                : msg
-            ),
-            isThinking: false,
-            extractResult: (currentAgentName === 'case_extractor' || currentAgentName === 'schema_builder') ? output : null
-          }
-        }
-      });
+      if (iteration > 1) {
+        // 多版本：保留旧消息，创建新消息
+        const newAssistantMessage = {
+          role: 'assistant',
+          content: fullResponse,
+          id: Date.now(),
+          iteration,
+          isLatest: true,
+          isStreaming: false,
+          output,
+        };
+        const updatedMessages = currentMessages.map(msg =>
+          msg.isLatest === false || (msg.id !== assistantMessageId && !msg.isLatest)
+            ? msg
+            : msg.isStreaming
+              ? { ...msg, isStreaming: false, isLatest: false, replacedBy: newAssistantMessage.id, output }
+              : msg
+        );
+        currentAssistantMessageId = newAssistantMessage.id;
+
+        set({
+          sessions: {
+            ...currentSessions,
+            [currentAgentName]: {
+              sessionId,
+              messages: [...updatedMessages, newAssistantMessage],
+              isThinking: false,
+              extractResult: (currentAgentName === 'case_extractor' || currentAgentName === 'schema_builder') ? validExtract : null
+            }
+          },
+          reflectionIteration: 0,
+          reflectionStatus: null,
+        });
+      } else {
+        set({
+          sessions: {
+            ...currentSessions,
+            [currentAgentName]: {
+              sessionId,
+              messages: currentMessages.map(msg =>
+                msg.id === currentAssistantMessageId
+                  ? { ...msg, content: fullResponse, isStreaming: false, output, iteration: 1, isLatest: true }
+                  : msg
+              ),
+              isThinking: false,
+              extractResult: (currentAgentName === 'case_extractor' || currentAgentName === 'schema_builder') ? validExtract : null
+            }
+          },
+          reflectionIteration: 0,
+          reflectionStatus: null,
+        });
+      }
 
       // 刷新历史列表
       get().loadSessionHistory(currentAgentName);
@@ -1233,13 +1297,29 @@ export const useAgentStore = create((set, get) => ({
           [currentAgentName]: {
             ...currentSessions[currentAgentName],
             messages: currentMessages.map(msg =>
-              msg.id === assistantMessageId
+              msg.id === currentAssistantMessageId
                 ? { ...msg, content: `错误: ${error}`, isStreaming: false, isError: true }
                 : msg
             ),
             isThinking: false
           }
-        }
+        },
+        reflectionIteration: 0,
+        reflectionStatus: null,
+      });
+    };
+
+    const onThinkingPhase = (data) => {
+      set({
+        reflectionIteration: data.iteration,
+        reflectionStatus: data.status,
+      });
+    };
+
+    const onIterationStart = (data) => {
+      set({
+        reflectionIteration: data.iteration,
+        reflectionStatus: 'generating',
       });
     };
 
@@ -1248,11 +1328,14 @@ export const useAgentStore = create((set, get) => ({
       {
         session_id: session.sessionId,
         user_input: userInput,
-        context
+        context,
+        ...extraParams,
       },
       onChunk,
       onDone,
-      onError
+      onError,
+      onThinkingPhase,
+      onIterationStart,
     );
   },
 

@@ -1,6 +1,6 @@
 import React, { memo, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Focus, Trash2, ChevronDown, ChevronUp, Building, Link2, Hash, Activity, MapPin, Calendar, FileText, Settings } from 'lucide-react';
+import { Focus, Trash2, ChevronDown, ChevronUp, Building, Link2, Activity, MapPin, Calendar, FileText, Settings } from 'lucide-react';
 import { useI18n } from '../../../../i18n';
 import { calculateTopologyMetrics } from './utils';
 
@@ -132,32 +132,10 @@ const CaseCard = memo(({
     return calculateTopologyMetrics(entityCount, relationCount);
   }, [entityCount, relationCount]);
 
-  // 语义标签
-  const semanticTags = useMemo(() => {
-    const tags = [...(caseItem.tags || [])];
-    const tagTypes = entityTypes.filter(t => t.showAsTag).map(t => t.name);
-
-    const entityTags = [];
-    caseItem.entities?.forEach(entity => {
-      const type = entity.entityType;
-      if (tagTypes.includes(type) || entityTypeConfig.get(type)?.showAsTag) {
-        if (!entityTags.includes(type)) entityTags.push(type);
-      }
-    });
-
-    if (entityTags.length === 0) {
-      const typeTags = [...new Set(caseItem.entities?.map(e => e.entityType) || [])].slice(0, 3);
-      return [...tags, ...typeTags].slice(0, 5);
-    }
-    return [...tags, ...entityTags].slice(0, 5);
-  }, [caseItem.tags, caseItem.entities, entityTypes, entityTypeConfig]);
-
   // 生成逻辑摘要
   const summary = useMemo(() => {
     if (caseItem.description) {
-      return caseItem.description.length > 60
-        ? caseItem.description.substring(0, 60) + '...'
-        : caseItem.description;
+      return caseItem.description;
     }
     if (coreEntities.length > 0) {
       const names = coreEntities.slice(0, 3).map(e => e.name).join('、');
@@ -314,20 +292,6 @@ const CaseCard = memo(({
           </div>
         )}
 
-        {/* 语义标签 */}
-        {config.showTags && semanticTags.length > 0 && (
-          <div className="caseflow-card-tags">
-            <span className="caseflow-card-section-label">
-              <Hash size={10} /> {t('case.semanticTags')}
-            </span>
-            <div className="caseflow-card-tag-list">
-              {semanticTags.map((tag, index) => (
-                <span key={index} className="caseflow-card-tag">{tag}</span>
-              ))}
-            </div>
-          </div>
-        )}
-
         {isSelected && focusMode === 'case' && (
           <div className="caseflow-card-focus-indicator">
             <Focus size={12} />
@@ -396,7 +360,7 @@ const CaseCard = memo(({
                   {t('case.allLinks')} ({relationCount})
                 </h4>
                 <div className="caseflow-card-detail-relations">
-                  {caseItem.relations.slice(0, 6).map((rel, index) => {
+                  {caseItem.relations.map((rel, index) => {
                     const source = caseItem.entities?.find(e => e.id === rel.sourceId || e.id === rel.source_id);
                     const target = caseItem.entities?.find(e => e.id === rel.targetId || e.id === rel.target_id);
                     return (
@@ -409,9 +373,6 @@ const CaseCard = memo(({
                       </div>
                     );
                   })}
-                  {caseItem.relations.length > 6 && (
-                    <span className="caseflow-card-detail-more">{t('case.moreRelations', { count: caseItem.relations.length - 6 })}</span>
-                  )}
                 </div>
               </div>
             )}

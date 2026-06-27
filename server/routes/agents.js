@@ -8,7 +8,8 @@ import {
   callAI,
   callAIStream,
   parseAgentOutput,
-  touchSession
+  touchSession,
+  executeAgentLoop,
 } from '../services/agent.js';
 import pool from '../db.js';
 
@@ -107,13 +108,36 @@ router.post('/:name/invoke', authMiddleware, async (req, res) => {
     let newSessionId = session_id || `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     if (!session && agent.supports_multi_turn) {
-      session = {
-        agentName: name,
-        messages: [],
-        createdAt: new Date(),
-        lastActive: Date.now()
-      };
-      agentSessions.set(newSessionId, session);
+      // 尝试从数据库恢复历史
+      try {
+        const historyResult = await pool.query(
+          'SELECT role, content FROM chat_history WHERE session_id = $1 AND user_id = $2 ORDER BY id ASC',
+          [session_id, userId]
+        );
+        const historyMessages = historyResult.rows.map(r => ({ role: r.role, content: r.content }));
+        if (historyMessages.length > 0) {
+          session = {
+            agentName: name,
+            messages: historyMessages,
+            createdAt: new Date(),
+            lastActive: Date.now()
+          };
+          agentSessions.set(newSessionId, session);
+          console.log(`[session] 恢复会话 ${newSessionId}，${historyMessages.length} 条历史消息`);
+        }
+      } catch (e) {
+        console.error('[session] 恢复会话历史失败:', e.message);
+      }
+      // 如果数据库也没有历史，创建空会话
+      if (!session) {
+        session = {
+          agentName: name,
+          messages: [],
+          createdAt: new Date(),
+          lastActive: Date.now()
+        };
+        agentSessions.set(newSessionId, session);
+      }
     }
 
     // 会话清理定时器已在 server/index.js 启动时初始化，无需重复调用
@@ -125,9 +149,9 @@ router.post('/:name/invoke', authMiddleware, async (req, res) => {
     }
     messages.push({ role: 'user', content: user_input });
 
-    const systemPrompt = buildSystemPrompt(agent, fullContext);
+    const systemPrompt = buildSystemPrompt(agent, fullContext, { schemaMode: req.body.schema_mode });
 
-    const aiResponse = await callAI(systemPrompt, messages, agent, userConfig);
+    const aiResponse = await callAI(systemPrompt, messages, agent, userConfig, userId);
 
     const output = parseAgentOutput(aiResponse, agent.output_format);
 
@@ -200,19 +224,53 @@ router.post('/:name/invoke/stream', authMiddleware, async (req, res) => {
     // 会话清理定时器已在 server/index.js 启动时初始化
 
     let messages = [];
-    if (agent.supports_multi_turn && session) {
-      messages = [...session.messages];
-      touchSession(newSessionId);
+    if (agent.supports_multi_turn) {
+      if (session) {
+        // 内存中有会话，直接使用
+        messages = [...session.messages];
+        touchSession(newSessionId);
+      } else if (session_id) {
+        // 内存中没有（可能是服务器重启），从数据库恢复
+        try {
+          const historyResult = await pool.query(
+            'SELECT role, content FROM chat_history WHERE session_id = $1 AND user_id = $2 ORDER BY id ASC',
+            [session_id, userId]
+          );
+          messages = historyResult.rows.map(r => ({ role: r.role, content: r.content }));
+          if (messages.length > 0) {
+            // 恢复内存会话，避免后续请求重复查库
+            session = {
+              agentName: name,
+              messages: [...messages],
+              createdAt: new Date(),
+              lastActive: Date.now()
+            };
+            agentSessions.set(newSessionId, session);
+            console.log(`[session] 恢复会话 ${newSessionId}，${messages.length} 条历史消息`);
+          }
+        } catch (e) {
+          console.error('[session] 恢复会话历史失败:', e.message);
+        }
+      }
     }
     messages.push({ role: 'user', content: user_input });
 
-    const systemPrompt = buildSystemPrompt(agent, fullContext);
+    const systemPrompt = buildSystemPrompt(agent, fullContext, { schemaMode: req.body.schema_mode });
+
+    // 尝试使用通用 Agent Loop 执行器
+    const loopConfig = agent.loop_config;
+    const loopHandled = await executeAgentLoop({
+      systemPrompt, messages, agent, userConfig, userId,
+      loopConfig, res, session, sessionId: newSessionId, user_input,
+      saveChatHistory, updateSessionMeta, touchSession,
+    });
+    if (loopHandled) return; // loop 已处理 SSE 响应
 
     let fullResponse = '';
     await callAIStream(systemPrompt, messages, agent, (chunk) => {
       fullResponse += chunk;
       res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
-    }, userConfig);
+    }, userConfig, userId);
 
     // 解析输出
     const output = parseAgentOutput(fullResponse, agent.output_format);

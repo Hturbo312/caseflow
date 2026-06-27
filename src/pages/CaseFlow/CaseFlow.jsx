@@ -16,13 +16,15 @@ import { Link } from 'react-router-dom';
 import { useGraphStore, useSchemaStore, useAuthStore } from '../../store';
 import { useAuth, useCaseData } from '../../hooks';
 import { useMobileDetect } from '../../hooks/useMobileDetect';
-import SchemaArchitect from './components/SchemaArchitect';
+import SchemaArchitect from './components/SchemaArchitect/index';
 import KnowledgeGraphCanvas from './components/KnowledgeGraphCanvas';
 import AICopilot from './components/AICopilot';
 import LoginModal from './components/LoginModal';
 import { CaseListPanel, CreateCaseModal } from './components/CaseManagement';
 import { useI18n } from '../../i18n';
 import './CaseFlow.css';
+import './components/CaseManagement/CaseCard.css';
+import './responsive.css';
 
 const CaseFlow = () => {
   const [leftActiveModule, setLeftActiveModule] = useState('schema');
@@ -71,6 +73,22 @@ const CaseFlow = () => {
     };
     initData();
   }, [verifyAuth, loadSchemas, loadCases, initializeGraph]);
+
+  // 登录成功后重新加载数据（修复 LoginModal 登录后数据不刷新的问题）
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadSchemas();
+      loadCases();
+      // 注意：不在这里调用 loadAllCasesToGraph，等 cases 加载完成后再调用
+    }
+  }, [isAuthenticated]);
+
+  // cases 加载完成后加载图谱
+  useEffect(() => {
+    if (cases.length > 0 && currentSchemaId) {
+      loadAllCasesToGraph();
+    }
+  }, [cases, currentSchemaId]);
 
   // 当 schema 变化时重新加载所有案例
   // 注意：不要将 loadAllCasesToGraph 放入依赖数组，因为 zustand store 中的

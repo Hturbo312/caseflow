@@ -48,6 +48,15 @@ export function resetAiConfig() {
   };
 }
 
+// 允许使用全局 AI 配置的白名单用户 ID（逗号分隔）
+// 不在白名单的用户必须自己配置 AI API key，否则无法使用 AI 功能
+export const ALLOWED_USER_IDS = (process.env.AI_ALLOWED_USER_IDS || '1')
+  .split(',')
+  .map(id => parseInt(id.trim(), 10))
+  .filter(id => !isNaN(id));
+
+console.log('AI白名单用户:', ALLOWED_USER_IDS);
+
 console.log('AI配置状态:', {
   configured: !!(aiConfigCache.apiKey && aiConfigCache.endpoint),
   endpoint: aiConfigCache.endpoint,

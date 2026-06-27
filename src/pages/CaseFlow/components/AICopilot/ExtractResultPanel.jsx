@@ -20,7 +20,8 @@ const ExtractResultPanel = memo(({
   isSaving,
   selectedCaseId,
   onConfirmSave,
-  onRequestAdjustment
+  onRequestAdjustment,
+  onStartPipeline
 }) => {
   const { t } = useI18n();
 
@@ -158,6 +159,16 @@ const ExtractResultPanel = memo(({
           {t('ai.adjustResult')}
         </button>
       </div>
+
+      {/* 进入多轮提取（Pipeline 模式） */}
+      {onStartPipeline && (
+        <button
+          onClick={onStartPipeline}
+          className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl font-medium hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-sm"
+        >
+          {t('ai.startPipeline')}
+        </button>
+      )}
 
       {/* 提示信息 */}
       {!selectedCaseId && (

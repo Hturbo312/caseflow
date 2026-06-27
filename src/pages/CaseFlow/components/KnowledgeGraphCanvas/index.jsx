@@ -4,6 +4,7 @@ import * as d3Force from 'd3-force';
 import { Share2, Globe, Focus } from 'lucide-react';
 import { useCaseStore, useSchemaStore } from '@store';
 import { useGraphData } from './hooks';
+import { useGraphExport } from './hooks/useGraphExport';
 import { caseApi } from '@services/api';
 import { useToastStore } from '@components/Toast/ToastStore';
 import ConfirmModal from '@components/Toast/ConfirmModal';
@@ -68,7 +69,7 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
     handleEngineStop
   } = useGraphData();
 
-  const { cases, addEntityToCase, addRelationToCase } = useCaseStore();
+  const { cases, addEntityToCase, addRelationToCase, deleteEntityFromCase, deleteRelationFromCase } = useCaseStore();
   const { schemas, currentSchemaId } = useSchemaStore();
   const { t } = useI18n();
 
@@ -109,108 +110,7 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
   const [showNoCaseAlert, setShowNoCaseAlert] = useState(false);
 
   // 图谱导出
-  const handleExportGraph = useCallback(async (format) => {
-    if (!currentCaseId) return;
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/cases/${currentCaseId}/export?format=${format}`, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-      });
-      if (!res.ok) throw new Error(`导出失败: HTTP ${res.status}`);
-      const data = await res.json();
-
-      if (format === 'graphml') {
-        // 下载 .graphml 文件
-        const blob = new Blob([data.graphml], { type: 'application/xml' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${data.case_name || 'graph'}.graphml`;
-        a.click();
-        URL.revokeObjectURL(url);
-      } else if (format === 'csv') {
-        // 下载两个 CSV 文件
-        const entitiesBlob = new Blob([data.entities_csv], { type: 'text/csv' });
-        const eUrl = URL.createObjectURL(entitiesBlob);
-        const eA = document.createElement('a');
-        eA.href = eUrl;
-        eA.download = `${data.case_name || 'graph'}_entities.csv`;
-        eA.click();
-        URL.revokeObjectURL(eUrl);
-
-        const relationsBlob = new Blob([data.relations_csv], { type: 'text/csv' });
-        const rUrl = URL.createObjectURL(relationsBlob);
-        const rA = document.createElement('a');
-        rA.href = rUrl;
-        rA.download = `${data.case_name || 'graph'}_relations.csv`;
-        rA.click();
-        URL.revokeObjectURL(rUrl);
-      } else {
-        // JSON 下载
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${data.case?.name || 'graph'}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-      }
-      showSuccess(t('toast.exportSuccess'));
-    } catch (e) {
-      console.error('导出失败:', e);
-      showError(t('toast.exportFailed') + e.message);
-    }
-  }, [currentCaseId, t, showSuccess, showError]);
-
-  // 导出全部案例图谱数据
-  const handleExportAllCases = useCallback(async (format) => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/cases/export-all?format=${format}`, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-      });
-      if (!res.ok) throw new Error(`导出失败: HTTP ${res.status}`);
-      const data = await res.json();
-
-      if (format === 'graphml') {
-        const blob = new Blob([data.graphml], { type: 'application/xml' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'caseflow-all.graphml';
-        a.click();
-        URL.revokeObjectURL(url);
-      } else if (format === 'csv') {
-        const entitiesBlob = new Blob([data.entities_csv], { type: 'text/csv' });
-        const eUrl = URL.createObjectURL(entitiesBlob);
-        const eA = document.createElement('a');
-        eA.href = eUrl;
-        eA.download = 'caseflow-all-entities.csv';
-        eA.click();
-        URL.revokeObjectURL(eUrl);
-
-        const relationsBlob = new Blob([data.relations_csv], { type: 'text/csv' });
-        const rUrl = URL.createObjectURL(relationsBlob);
-        const rA = document.createElement('a');
-        rA.href = rUrl;
-        rA.download = 'caseflow-all-relations.csv';
-        rA.click();
-        URL.revokeObjectURL(rUrl);
-      } else {
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'caseflow-all.json';
-        a.click();
-        URL.revokeObjectURL(url);
-      }
-      showSuccess(t('ai.exportAllSuccess', { cases: data.total_cases || 0 }));
-    } catch (e) {
-      console.error('导出全部案例失败:', e);
-      showError(t('toast.exportFailed') + e.message);
-    }
-  }, [t, showSuccess, showError]);
+  const { handleExportGraph, handleExportAllCases } = useGraphExport(currentCaseId);
 
   // Hover & focus state for dynamic highlighting
   const [hoveredNode, setHoveredNode] = useState(null);
@@ -449,6 +349,8 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
       showWarning(t('toast.selectCaseFirst'));
       return;
     }
+    // 防止重复提交
+    if (entitySaving) return;
 
     setEntitySaving(true);
     try {
@@ -473,9 +375,10 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
     } catch (error) {
       console.error('创建实体失败:', error);
       showError(t('toast.entityCreateFailed') + error.message);
+    } finally {
+      setEntitySaving(false);
     }
-    setEntitySaving(false);
-  }, [entityForm, currentCaseId, addEntityToCase, addNodeToGraph, showWarning, showSuccess, showError]);
+  }, [entityForm.name, entityForm.entityType, entityForm.properties, currentCaseId, addEntityToCase, addNodeToGraph, showWarning, showSuccess, showError, entitySaving]);
 
   // 创建关系
   const handleCreateRelation = useCallback(async (relationType) => {
@@ -517,7 +420,8 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
     if (!node?.caseId || !node?.id) return;
 
     try {
-      await caseApi.deleteEntity(node.caseId, node.id);
+      // 同步删除 useCaseStore 缓存和数据库
+      await deleteEntityFromCase(node.caseId, node.id);
       removeNodeFromGraph(node.id);
       setSelectedNode(null);
       showSuccess(t('toast.entityDeleted'));
@@ -526,7 +430,7 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
       showError(t('toast.entityDeleteFailed') + error.message);
     }
     setDeleteEntityModal({ open: false, node: null });
-  }, [deleteEntityModal.node, removeNodeFromGraph, setSelectedNode, showSuccess, showError]);
+  }, [deleteEntityModal.node, removeNodeFromGraph, setSelectedNode, showSuccess, showError, deleteEntityFromCase]);
 
   // 删除关系确认处理
   const handleDeleteRelationConfirm = useCallback(async () => {
@@ -534,7 +438,8 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
     if (!link?.caseId || !link?.linkId) return;
 
     try {
-      await caseApi.deleteRelation(link.caseId, link.linkId);
+      // 同步删除 useCaseStore 缓存和数据库
+      await deleteRelationFromCase(link.caseId, link.linkId);
       removeLinkFromGraph(link.linkId);
       setSelectedLink(null);
       showSuccess(t('toast.relationDeleted'));
@@ -543,7 +448,7 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
       showError(t('toast.relationDeleteFailed') + error.message);
     }
     setDeleteRelationModal({ open: false, link: null });
-  }, [deleteRelationModal.link, removeLinkFromGraph, setSelectedLink, showSuccess, showError]);
+  }, [deleteRelationModal.link, removeLinkFromGraph, setSelectedLink, showSuccess, showError, deleteRelationFromCase]);
 
   // 搜索子图模式：只显示选中节点及其邻居
   const subgraphData = useMemo(() => {
@@ -612,10 +517,12 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
     return degreeMap;
   }, [filteredLinks]);
 
+  // graphData: 不要 spread 节点对象！直接使用 filteredNodes 的原始引用，
+  // 确保 link.source/target 与 nodes 数组中的对象是同一个引用。
+  // 否则 ForceGraph2D 内部节点替换后，link 指向旧节点导致线不动。
   const graphData = useMemo(() => {
-    const nodesWithDegree = filteredNodes.map(n => ({ ...n, degree: nodeDegreeMap.get(n.id) || 0 }));
-    return { nodes: nodesWithDegree, links: filteredLinks };
-  }, [filteredNodes, filteredLinks, nodeDegreeMap]);
+    return { nodes: filteredNodes, links: filteredLinks };
+  }, [filteredNodes, filteredLinks]);
 
   // 使用 useMemo 缓存路径节点 ID
   const pathNodeIds = useMemo(() => {
@@ -677,7 +584,7 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
   // Collision force to prevent node overlap — radius includes node visual + label area below
   const forceCollide = useMemo(() => {
     return d3Force.forceCollide().radius((node) => {
-      const degree = node.degree || 0;
+      const degree = nodeDegreeMap.get(node.id) || 0;
       let radius;
       if (degree >= 10) radius = 20;
       else if (degree >= 5) radius = 12;
@@ -687,7 +594,7 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
       // Add another 8px gap between adjacent nodes.
       return radius + 32;
     }).strength(0.8).iterations(3);
-  }, []);
+  }, [nodeDegreeMap]);
   useEffect(() => {
     if (!fgRef.current) return;
 
@@ -851,12 +758,12 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
     if (pathNodeIds.size > 0 && pathNodeIds.has(node.id)) return 10;
     if (relationSource && node.id === relationSource.id) return 12;
     if (relationTarget && node.id === relationTarget.id) return 12;
-    const degree = node.degree || 0;
+    const degree = nodeDegreeMap.get(node.id) || 0;
     if (degree >= 10) return 40;
     if (degree >= 5) return 24;
     if (degree >= 2) return 12;
     return 4;
-  }, [selectedSearchNode, pathNodeIds, pathStartNode, pathEndNode, relationSource, relationTarget]);
+  }, [selectedSearchNode, pathNodeIds, pathStartNode, pathEndNode, relationSource, relationTarget, nodeDegreeMap]);
 
   // Spatial grid for O(n) collision detection — rebuilt per render frame
   const spatialGrid = useMemo(() => {
