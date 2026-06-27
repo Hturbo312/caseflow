@@ -1,4 +1,9 @@
-# CaseFlow — Urban Planning Knowledge Graph Platform<br><small>城市规划知识图谱平台</small>
+# Urban CaseFlow
+
+<p align="center">
+  <strong>A human–AI framework for structuring, comparing, and mobilizing urban planning case knowledge</strong><br>
+  <sub>structured · comparable · traceable · human-supervised · context-sensitive</sub>
+</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react" alt="React 19">
@@ -7,286 +12,365 @@
   <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License">
 </p>
 
-**CaseFlow** is an open-source platform that helps urban planners, researchers, and analysts build interactive knowledge graphs from unstructured city planning documents. It combines visual graph exploration with AI-powered entity extraction to turn PDF reports, policy documents, and case studies into structured, queryable knowledge networks.
+---
 
-**CaseFlow** 是一个开源的城市规划知识图谱平台。帮助规划师、研究人员和分析师从非结构化的规划文档中提取实体与关系，构建可交互、可查询的知识网络。支持 PDF/DOCX/TXT 文档的 AI 智能解析，以及多案例对比分析。
+## Overview
+
+Urban planning routinely confronts complex, context-dependent problems. Planning knowledge includes not only formal rules, standards, and procedures, but also experiential insights accumulated through prior projects, policies, and local practices. This case-based knowledge typically resides in unstructured narrative forms — planning reports, policy documents, research papers, and project descriptions — making systematic comparison, retrieval, and reuse difficult.
+
+Urban CaseFlow is a **research prototype** that supports the knowledge-mobilization process through which prior planning experience is structured, reviewed, retrieved, compared, and brought to bear on current analysis. It is neither an automated planning system nor a decision-making tool. The system assists rather than replaces expert judgment.
+
+Urban CaseFlow 是一个面向城市规划案例知识结构化与调用的研究原型系统，重点支持规划经验从非结构化文本到可比较、可检索、可追溯知识图谱的转化过程。
 
 ---
 
-## Why CaseFlow? ｜ 为什么选择 CaseFlow？
+## Research Motivation
 
-Urban planning involves navigating complex webs of relationships — zoning regulations affect housing projects, transit lines shape neighborhood development, environmental policies constrain industrial zones. Traditional document-based workflows make it hard to see these connections.
+In planning reasoning, **rule-based knowledge** (regulations, codes, formal procedures) and **case-based knowledge** (contextual experience, stakeholder interactions, implementation adaptations, outcomes) are complementary. While formal rules are relatively straightforward to encode, the contextual richness of planning cases — actors, strategies, institutional conditions, spatial settings, and outcomes — remains embedded in narrative descriptions. This asymmetry limits systematic learning from prior planning experience.
 
-城市规划涉及错综复杂的关系网络——用地规划影响住房项目，交通线路塑造片区发展，环保政策制约产业园区。传统的文档式工作流难以洞察这些联系。
-
-CaseFlow transforms how planners work with planning knowledge:
-CaseFlow 从根本上改变了规划知识的组织方式：
-
-- **Extract** entities (developments, policies, zones, stakeholders, infrastructure) from planning documents
-  **提取** — 从规划文档中自动提取实体（开发项目、政策、用地、利益相关方、基础设施）
-- **Structure** them into typed knowledge graphs with configurable schemas
-  **结构化** — 将实体组织为带类型的知识图谱，支持自定义 Schema
-- **Visualize** relationships through interactive force-directed graphs
-  **可视化** — 通过交互式力导向图直观呈现关系网络
-- **Query** across cases to discover patterns and precedents
-  **查询** — 跨案例搜索，发现模式与先例
-- **Analyze** with built-in GraphRAG for semantic search
-  **分析** — 内置 GraphRAG 语义检索引擎，用自然语言提问
+Urban CaseFlow concentrates on a specific step in the knowledge lifecycle: **making implicit experiential knowledge embedded in planning narratives structurally explicit, comparable, and retrievable**, while preserving the institutional and regulatory context within which each case is situated. The system does not attempt to unify or replace rule-based and case-based reasoning paradigms; it provides infrastructure for case knowledge mobilization that must always be interpreted by domain experts.
 
 ---
 
-## Features ｜ 核心功能
+## Conceptual Workflow
 
-### Schema Architect ｜ Schema 架构设计器
+```mermaid
+flowchart TD
+    A[Planning Documents<br>规划文档] --> B[Research Question<br>研究问题]
+    B --> C[Dynamic Schema<br>动态Schema]
+    C --> D[Document Parsing<br>文档解析]
+    D --> E[LLM-Assisted Entity Extraction<br>LLM辅助实体抽取]
+    E --> F[Human Review & Consolidation<br>人工审核与合并]
+    F --> G[Relation Inference<br>关系推断]
+    G --> H[Evidence Review<br>证据复核]
+    H --> I[Knowledge Graph<br>知识图谱]
+    I --> J[Hybrid Retrieval / GraphRAG<br>混合检索]
+    J --> K[Cross-Case Evidence<br>跨案例证据]
+    K --> L[Expert Interpretation<br>专家解释]
 
-Define your urban planning domain model. Create entity types (*Zoning District*, *Transit Corridor*, *Development Project*, *Environmental Constraint*) with custom properties and relationship types. Visualize your schema as an interactive diagram before applying it to real data.
+    style E fill:#fff3cd,stroke:#f0ad4e
+    style F fill:#d4edda,stroke:#28a745
+    style G fill:#fff3cd,stroke:#f0ad4e
+    style H fill:#d4edda,stroke:#28a745
+    style L fill:#cce5ff,stroke:#007bff
+```
 
-定义城市规划领域模型。创建实体类型（如*用地分区*、*交通廊道*、*开发项目*、*环境约束*），配置自定义属性和关系类型。通过交互式图表可视化 Schema 结构。
-
-### AI-Powered Case Extraction ｜ AI 案例提取
-
-Upload planning documents (PDF, DOCX, TXT) and let AI extract entities and relationships according to your schema. Supports multi-round extraction pipelines with human-in-the-loop review.
-
-上传规划文档（PDF、DOCX、TXT），AI 根据你的 Schema 自动提取实体与关系。支持多轮提取管道，人工审核把关。
-
-- 📄 Parse planning reports, environmental impact assessments, master plans / 解析规划报告、环评报告、总体规划
-- 🤖 AI extracts entities aligned to your custom schema / AI 按自定义 Schema 提取实体
-- ✅ Review and approve extracted results before saving / 保存前审核确认提取结果
-- 🔄 Iterative refinement — adjust extraction prompts and re-run / 支持迭代优化，调整提示词重新提取
-
-### Interactive Knowledge Graph ｜ 交互式知识图谱
-
-Explore urban relationships through an interactive force-directed graph.
-通过交互式力导向图探索城市关系。
-
-- 🔍 Full-text search across all entities / 全实体全文搜索
-- 🛤️ Path analysis — find connections between any two entities / 路径分析 — 发现任意两个实体间的连接路径
-- 🎯 Focus mode — drill into specific cases or entities / 聚焦模式 — 深入特定案例或实体
-- 📊 Filter by entity type, case, or relationship / 按实体类型、案例、关系筛选
-- 💾 Export to GraphML, CSV, or JSON for GIS integration / 导出 GraphML/CSV/JSON，支持 GIS 集成
-
-### Multi-Case Analysis ｜ 多案例对比分析
-
-Compare planning cases side by side. Identify patterns across projects, reuse successful strategies, and spot emerging issues.
-并排对比多个规划案例，识别跨项目模式，复用成功经验，发现潜在问题。
-
-### GraphRAG Semantic Search ｜ GraphRAG 语义搜索
-
-Vector + full-text hybrid retrieval with graph expansion. Ask natural language questions and get answers grounded in your planning knowledge base.
-向量 + 全文混合检索，支持图谱扩展。用自然语言提问，获取基于规划知识库的准确回答。
+**Yellow nodes** indicate AI-generated content. **Green nodes** indicate human-in-the-loop review steps. **Blue** represents final expert interpretation, which is always the responsibility of the domain expert, not the system.
 
 ---
 
-## Use Cases ｜ 应用场景
+## Core Capabilities
 
-| Domain 领域 | Example 示例 |
-|--------|---------|
-| **Zoning & Land Use** 用地规划 | Map zoning changes → development projects → community feedback / 追踪用地变更→开发项目→社区反馈 |
-| **Transit Planning** 交通规划 | Track transit lines → stations → ridership → adjacent land use / 梳理交通线路→站点→客流→周边用地 |
-| **Environmental Review** 环评分析 | Link projects → environmental constraints → mitigation measures / 关联项目→环境约束→缓解措施 |
-| **Housing Policy** 住房政策 | Connect policies → affordable housing projects → funding sources / 连接政策→保障房项目→资金来源 |
-| **Stakeholder Analysis** 利益方分析 | Map organizations → positions → relationships on key issues / 梳理组织→立场→关键议题关系 |
-| **Master Plan Tracking** 总体规划跟踪 | Monitor plan goals → implementation projects → outcomes / 跟踪规划目标→实施项目→成效评估 |
+Each capability is verified against the current codebase. Features not yet implemented are listed under [Roadmap](#roadmap).
+
+### Dynamic Schema Architect
+Users define entity types, properties, and relation types specific to a research question. The schema constrains downstream extraction and is configurable per project. A visual designer (ReactFlow) shows the schema structure. AI can suggest schemas from natural language descriptions, which experts then review and modify.
+
+**Input:** Research question, domain knowledge.<br>
+**Output:** JSON schema with entity types, properties, and relation definitions.<br>
+**Human role:** Define, review, and approve the schema before extraction begins.
+
+### Document and Case Management
+Create cases, upload planning documents (PDF, DOCX, TXT; max 10MB), and manage case metadata. Documents are parsed into text segments for downstream processing.
+
+### LLM-Assisted Entity Extraction
+AI extracts entities from case text according to the active schema. The system supports both single-pass (chat mode) and multi-round extraction pipeline (pipeline mode). The extraction pipeline processes all entity types in parallel with chunked re-read for long documents.
+
+**Input:** Case text + schema definition.<br>
+**Output:** Candidate entities with suggested entity type, properties, and source evidence.<br>
+**Human role:** Review, correct, approve, or reject each candidate entity.
+
+### Entity Review and Consolidation
+Candidates are presented for expert review. Reviewers can approve, skip, edit, or merge entities. A consistency-checking agent suggests deduplication of similar or duplicate entities. Batch operations support approving or skipping multiple entities at once.
+
+**Input:** Candidate entity list.<br>
+**Output:** Approved entity set with resolved duplicates.<br>
+**Human role:** All approval, modification, and merge decisions.
+
+### Relation Inference and Validation
+After entities are confirmed, the system infers candidate relations between them using the schema's relation type definitions. Each candidate relation includes a confidence score and evidence citation. Relations flagged as low-confidence or connecting critical entities should receive particularly careful expert review.
+
+**Input:** Approved entities + schema relation definitions.<br>
+**Output:** Candidate relations with confidence scores and source evidence.<br>
+**Human role:** Review and approve or reject each candidate relation. Relations do not imply causal mechanisms; they indicate co-occurrence or institutional association patterns that require expert interpretation.
+
+### Source Evidence and Traceability
+Every extracted entity records the text segments from which it was derived (`source_segment_ids`). Relation candidates include evidence fields. Users can view original text segments alongside candidates during review.
+
+### Knowledge Graph Exploration
+Interactive 2D force-directed graph visualization. Features include full-text node search, entity type filtering, focus mode, path analysis between two entities, neighbor expansion by depth, and graph export (GraphML, CSV, JSON).
+
+### Cross-Case Evidence and Case Recommendation
+The system computes case similarity using three signals: graph-structure similarity (Jaccard over shared concept neighbors in Apache AGE), case-level vector similarity, and entity-type distribution similarity. A built-in recommendation endpoint returns structurally related cases. The GraphRAG analysis assistant can contextualize why cases are similar.
+
+**Important:** Structural similarity between cases does **not** mean that interventions or strategies are directly transferable. Similarity scores reflect shared entities and relational patterns in the knowledge graph, which must be interpreted against local spatial, institutional, regulatory, governance, and political conditions.
+
+### Hybrid Retrieval and GraphRAG
+The system combines vector search (pgvector, 1536-dimension embeddings), PostgreSQL full-text search (GIN indexes), and graph expansion (Apache AGE k-hop traversal) via Reciprocal Rank Fusion. The analysis assistant agent uses this hybrid retrieval context to ground its responses in your knowledge base, citing specific entities, relations, and cases.
+
+### Export
+Export individual cases or all cases in JSON, CSV, or GraphML format for external analysis, GIS integration, or publication.
 
 ---
 
-## Tech Stack ｜ 技术栈
+## System Architecture
 
-| Layer 层级 | Technology 技术 |
-|-------|-----------|
-| **Frontend** 前端 | React 19, Framer Motion, Tailwind CSS |
-| **Graph Viz** 图谱可视化 | react-force-graph-2d/3d, Three.js, d3-force |
-| **Schema Viz** Schema 可视化 | @xyflow/react (React Flow) |
-| **State** 状态管理 | Zustand |
-| **Backend** 后端 | Express 5, PostgreSQL 16 |
-| **AI** 人工智能 | OpenAI-compatible API (自备 API Key) |
-| **Vector Search** 向量搜索 | pgvector + GraphRAG hybrid retrieval |
-| **Document Parsing** 文档解析 | pdfjs-dist, mammoth (DOCX) |
+```mermaid
+flowchart LR
+    subgraph Frontend[Frontend - React SPA]
+        SA[Schema Architect]
+        KG[Knowledge Graph Canvas]
+        AC[AI Copilot]
+        CM[Case Management]
+    end
+
+    subgraph Backend[Express API Server - :3000]
+        REST[REST API]
+        SSE[SSE Streaming]
+        AG[Agent Engine]
+        EP[Extraction Pipeline]
+        GR[GraphRAG Service]
+    end
+
+    subgraph Database[PostgreSQL]
+        PG[(pgvector<br>1536-dim)]
+        AGE[(Apache AGE<br>Graph DB)]
+        REL[(Relational<br>Tables)]
+    end
+
+    subgraph External[External AI Services]
+        LLM[LLM API<br>OpenAI-compatible]
+        EMB[Embedding API<br>OpenAI-compatible]
+    end
+
+    Frontend -->|fetch / SSE| Backend
+    Backend --> Database
+    AG -->|HTTP| LLM
+    EP -->|HTTP| LLM
+    GR -->|HTTP| EMB
+    GR --> PG
+    GR --> AGE
+```
 
 ---
 
-## Getting Started ｜ 快速开始
+## Quick Start
 
-### Prerequisites ｜ 环境要求
+### Prerequisites
 
 - Node.js 18+
-- PostgreSQL 16+ (with pgvector extension / 需安装 pgvector 扩展)
-- OpenAI-compatible API key (支持 `/v1/chat/completions` 的任何服务)
+- PostgreSQL 16+ with [pgvector](https://github.com/pgvector/pgvector) extension
+- [Apache AGE](https://age.apache.org/) extension (required for graph traversal and case recommendation)
+- An OpenAI-compatible API key (any provider with `/v1/chat/completions` and `/v1/embeddings`)
 
-### Installation ｜ 安装
+### Installation
 
 ```bash
-# Clone the repository ｜ 克隆仓库
 git clone https://github.com/Hturbo312/caseflow.git
 cd caseflow
 
-# Install frontend dependencies ｜ 安装前端依赖
+# Install frontend dependencies
 npm install
 
-# Install server dependencies ｜ 安装后端依赖
+# Install server dependencies
 cd server
 npm install
 cd ..
 ```
 
-### Database Setup ｜ 数据库配置
+### Database Setup
 
 ```bash
-# Create the database ｜ 创建数据库
-createdb caseflow
-
-# Enable pgvector ｜ 启用 pgvector 扩展
-psql caseflow -c "CREATE EXTENSION IF NOT EXISTS vector;"
-
-# Run migrations ｜ 运行数据库迁移
-psql caseflow -f server/migrations/001_initial.sql
+createdb knowledge_graph
+psql knowledge_graph -c "CREATE EXTENSION IF NOT EXISTS vector;"
+psql knowledge_graph -c "CREATE EXTENSION IF NOT EXISTS age;"
 ```
 
-### Configuration ｜ 环境配置
+**Note:** The database name `knowledge_graph` is currently hardcoded. The database is auto-initialized on first server start — all tables, indexes, and default agents are created by `initializeDatabase()`.
+
+### Configuration
 
 ```bash
 cp server/.env.example server/.env
-# Edit server/.env with your database credentials and API keys
-# 编辑 server/.env，填入数据库连接信息和 API Key
 ```
 
-### Development ｜ 启动开发服务
-
-```bash
-npm run dev
-```
-
-The app runs at 访问地址: `http://localhost:5173`
-
----
-
-## Architecture ｜ 系统架构
-
-```
-┌──────────────────────────────────────────────────────┐
-│  CaseFlow Client (React SPA)                         │
-│  ┌──────────┐  ┌──────────────┐  ┌───────────────┐  │
-│  │ Schema   │  │  Knowledge   │  │  AI Copilot   │  │
-│  │ Architect│  │  Graph Canvas│  │  (3 Agents)   │  │
-│  │ Schema   │  │  知识图谱    │  │   AI 助手     │  │
-│  │ 架构设计  │  │  可视化画布  │  │  (3个Agent)   │  │
-│  └──────────┘  └──────────────┘  └───────────────┘  │
-├──────────────────────────────────────────────────────┤
-│  Express API Server                                  │
-│  ┌──────────┐  ┌──────────────┐  ┌───────────────┐  │
-│  │ REST API │  │  SSE Stream  │  │  GraphRAG     │  │
-│  │          │  │  (AI Calls)  │  │  Hybrid Search│  │
-│  └──────────┘  └──────────────┘  └───────────────┘  │
-├──────────────────────────────────────────────────────┤
-│  PostgreSQL + pgvector                               │
-│  ┌──────────┐  ┌──────────────┐  ┌───────────────┐  │
-│  │ Schemas  │  │  Cases +     │  │  Vector       │  │
-│  │ + Types  │  │  Entities    │  │  Embeddings   │  │
-│  └──────────┘  └──────────────┘  └───────────────┘  │
-└──────────────────────────────────────────────────────┘
-```
-
-## Project Structure ｜ 项目结构
-
-```
-caseflow/
-├── src/
-│   ├── pages/CaseFlow/              # 主应用页面
-│   │   └── components/
-│   │       ├── SchemaArchitect/     # 领域模型设计器 (7 组件)
-│   │       ├── KnowledgeGraphCanvas/ # 知识图谱可视化
-│   │       ├── AICopilot/           # AI 助手 + 提取流水线
-│   │       └── CaseManagement/      # 案例管理与详情
-│   ├── store/                       # Zustand 状态管理
-│   ├── services/                    # API 客户端层
-│   ├── hooks/                       # 共享 React Hooks
-│   ├── utils/                       # 工具函数
-│   └── i18n/                        # 国际化 (中/英)
-├── server/
-│   ├── routes/                      # API 路由
-│   ├── services/                    # 业务逻辑
-│   │   ├── agent.js                 # AI Agent 引擎
-│   │   ├── extractionPipeline.js    # 多轮提取流水线
-│   │   └── graphRag.js              # GraphRAG 混合搜索
-│   ├── middleware/                   # 认证中间件
-│   └── migrations/                  # 数据库迁移
-└── public/                          # 静态资源
-```
-
----
-
-## AI Agent System ｜ AI 智能体系统
-
-CaseFlow includes three built-in AI agents that work with any OpenAI-compatible API:
-CaseFlow 内置三个 AI 智能体，兼容任何 OpenAI 接口的服务：
-
-| Agent 智能体 | Role 职责 |
-|-------|------|
-| **Schema Builder** 架构构建 | Generate urban planning domain models from natural language / 从自然语言生成城市规划领域模型 |
-| **Case Extractor** 案例提取 | Extract entities and relationships from planning documents / 从规划文档中提取实体与关系 |
-| **Analysis Assistant** 分析助手 | Answer questions using GraphRAG over your knowledge base / 基于知识库的 GraphRAG 问答 |
-
-### Extraction Pipeline ｜ 提取流水线
-
-1. **Parse** / **解析** — Segment documents into logical chunks / 将文档切分为逻辑段落
-2. **Plan** / **规划** — Generate extraction plan per entity type / 按实体类型生成提取计划
-3. **Extract** / **提取** — Parallel entity extraction with chunked re-read for long texts / 并行实体提取，长文本自动分块回读
-4. **Check** / **校验** — AI-powered consistency checking and deduplication / AI 一致性校验与去重
-5. **Infer** / **推断** — Relationship inference across extracted entities / 跨实体关系推断
-6. **Finalize** / **入库** — Batch save with automatic embedding generation / 批量保存并自动生成向量嵌入
-
----
-
-## AI Provider Setup ｜ AI 服务配置
-
-CaseFlow works with any OpenAI-compatible API. Tested providers include OpenAI, Anthropic (via proxy), DashScope (Alibaba), ZhipuAI (GLM series), and Ollama with compatible proxy.
-CaseFlow 兼容任何 OpenAI 接口的服务。已测试的提供商包括：OpenAI、Anthropic（通过代理）、阿里云 DashScope、智谱 GLM 系列、Ollama（通过兼容代理）。
-
-Configure in-app or via environment ｜ 在应用设置中配置或通过环境变量：
+Edit `server/.env`:
 
 ```env
 AI_API_KEY=your-api-key
 AI_ENDPOINT=https://api.openai.com/v1/chat/completions
 AI_MODEL=gpt-4o
+AI_EMBEDDING_ENDPOINT=https://api.openai.com/v1/embeddings
+AI_EMBEDDING_MODEL=text-embedding-3-small
+```
+
+The embedding model must produce **1536-dimensional** vectors.
+
+### Start
+
+```bash
+# Terminal 1: Backend (port 3000)
+cd server
+npm run dev
+
+# Terminal 2: Frontend (port 5173)
+npm run dev
+```
+
+Open `http://localhost:5173` and navigate to the CaseFlow application.
+
+---
+
+## Suggested First Run
+
+1. **Create or select a Schema** — Use the Schema Architect in the left panel to define entity types and relations for your research question, or use the AI Schema Builder agent to suggest one.
+2. **Create a Case** — Click the + button in the case panel to create a new case and upload a planning document (PDF, DOCX, or TXT).
+3. **Run entity extraction** — In the AI Copilot (case_extractor agent), start the extraction pipeline. The system will parse the document, generate an extraction plan, and extract candidate entities per type.
+4. **Review entities** — In the Entities tab, review each candidate: approve correct entities, skip or edit incorrect ones, merge duplicates.
+5. **Infer relations** — After approving entities, run relation inference. The system proposes candidate relations based on the schema.
+6. **Review relations** — Examine each candidate relation, check its confidence score and evidence, and approve or reject.
+7. **Explore the graph** — Switch to the Graph view to explore entities and relations visually. Use search, path analysis, and filtering.
+8. **Query the knowledge base** — Use the Analysis Assistant agent to ask questions. The system retrieves relevant entities and relations using GraphRAG and generates a response grounded in your knowledge base.
+9. **Export** — Export cases in GraphML, CSV, or JSON format.
+
+---
+
+## Project Structure
+
+```
+caseflow/
+├── src/
+│   ├── pages/CaseFlow/              # Main application
+│   │   └── components/
+│   │       ├── SchemaArchitect/     # Domain model designer (7 components)
+│   │       ├── KnowledgeGraphCanvas/# Graph visualization + interaction
+│   │       ├── AICopilot/           # AI agents + extraction pipeline
+│   │       └── CaseManagement/      # Case CRUD + detail views
+│   ├── store/                       # Zustand state management
+│   ├── services/                    # API client layer
+│   ├── hooks/                       # Shared React hooks
+│   ├── utils/                       # Utility functions (doc parser, etc.)
+│   └── i18n/                        # Internationalization (EN/ZH)
+├── server/
+│   ├── index.js                     # Server entry point
+│   ├── init.js                      # DB initialization + agent definitions
+│   ├── config.js                    # Configuration
+│   ├── db.js                        # Database connection
+│   ├── routes/                      # 11 API route modules
+│   │   ├── auth.js, schemas.js, cases.js, agents.js
+│   │   ├── extraction.js, rag.js, graphRag.js, chat.js
+│   │   ├── ai.js, graphs.js, health.js
+│   ├── services/                    # Business logic
+│   │   ├── agent.js                 # AI agent engine (callAI, callAIStream, agent loop)
+│   │   ├── extractionPipeline.js    # Multi-round extraction pipeline
+│   │   └── graphRag.js              # GraphRAG hybrid retrieval
+│   ├── middleware/                   # Auth + async handler
+│   └── generate_embeddings.js       # Batch embedding script
+├── testdata/                        # Sample documents (2 files)
+├── docs/                            # Documentation
+└── public/                          # Static assets
 ```
 
 ---
 
-## Contributing ｜ 参与贡献
+## Research Scope and Limitations
 
-Contributions welcome! Areas where we'd especially love help:
-欢迎贡献！以下方向尤其需要帮助：
+This is a **research prototype** developed to support academic investigation of human–AI collaboration in urban planning knowledge work. The following limitations should be understood before using or citing the system:
 
-- 🗺️ GIS data import/export (GeoJSON, Shapefile) / GIS 数据导入导出
-- 🏗️ Additional urban planning domain templates / 更多城市规划领域模板
-- 🌐 More language translations / 更多语言翻译
-- 📊 Timeline and geospatial views / 时间线和地理空间视图
-- 🧩 Plugin system for custom entity extractors / 自定义实体提取器插件系统
+1. **LLM output requires expert review.** AI-generated entities, relations, and analyses may contain errors, omissions, or hallucinations. All AI output is presented as *candidates* that must be reviewed, corrected, and approved by domain experts before being saved to the knowledge graph.
 
-1. Fork the repo / Fork 本仓库
-2. Create a feature branch / 创建功能分支 (`git checkout -b feature/amazing-feature`)
-3. Commit your changes / 提交修改 (`git commit -m 'Add amazing feature'`)
-4. Push to the branch / 推送到分支 (`git push origin feature/amazing-feature`)
-5. Open a Pull Request / 发起 Pull Request
+2. **Graph relations do not equal causal mechanisms.** Relations in the knowledge graph reflect co-occurrence patterns, institutional associations, or implementation linkages identified by AI from text. They do not, by themselves, prove causal mechanisms. Expert interpretation is required to assess whether an observed relational pattern reflects a meaningful planning mechanism.
 
----
+3. **Structural similarity does not imply transferability.** The case recommendation system identifies structurally similar cases based on shared entities and relational patterns. Similarity scores are computed from graph topology, vector proximity, and entity-type distributions. Two cases being structurally similar does not mean that interventions from one can be directly applied to another. Applicability must be assessed against local spatial, institutional, regulatory, governance, and political conditions.
 
-## License ｜ 许可证
+4. **The system does not replace planning expertise.** Urban CaseFlow is designed to make case knowledge more structured, comparable, and retrievable. It does not automate planning decisions, evaluate plan quality, or recommend specific planning actions.
 
-MIT © 2026 CaseFlow Contributors
+5. **Current operational limitations:**
+   - The database connection is hardcoded (database name `knowledge_graph`, user `postgres`, Unix socket `/var/run/postgresql`). See `server/db.js`.
+   - No Docker or containerized deployment is provided.
+   - The embedding dimension is fixed at 1536. Using a model with a different dimension requires code changes.
+   - PDF parsing quality varies with document structure. Scanned documents without OCR will produce empty results.
+   - The system has been tested with Chinese and English planning documents. Performance with other languages is unverified.
+   - No rate limiting or production security hardening is applied. The default JWT secret is unsuitable for production.
 
----
-
-## Acknowledgments ｜ 致谢
-
-- [React Flow](https://reactflow.dev/) for schema visualization / Schema 可视化
-- [react-force-graph](https://github.com/vasturiano/react-force-graph) for graph rendering / 知识图谱渲染
-- [Zustand](https://github.com/pmndrs/zustand) for state management / 状态管理
-- [Framer Motion](https://www.framer.com/motion/) for animations / 动画效果
-- [pgvector](https://github.com/pgvector/pgvector) for vector search / 向量搜索
+6. **Not suitable for production deployment without additional hardening.** Authentication, authorization, rate limiting, and secure configuration management should be reviewed and strengthened before any deployment beyond a controlled research environment.
 
 ---
 
-<p align="center">
-  <sub>Built for urban planners, by urban planners<br>为规划师而生，由规划师打造</sub>
-</p>
+## Reproducibility and Citation
+
+This repository accompanies an academic paper. For detailed information on reproducing the experiments described in the paper — including dataset descriptions, schema definitions, LLM models and parameters, system prompts, extraction procedures, human review protocols, and evaluation methods — see [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md).
+
+The paper is currently under development. Citation information will be added upon publication.
+
+```
+@article{urban-caseflow,
+  title   = {Urban CaseFlow: A Human-AI Framework for Structuring and Mobilizing Urban Planning Case Knowledge},
+  author  = {[Authors]},
+  journal = {[Journal]},
+  year    = {[Year]},
+  doi     = {[DOI]}
+}
+```
+
+---
+
+## Roadmap
+
+Features not yet implemented but planned or under consideration:
+
+- [ ] Docker Compose for one-command setup
+- [ ] CI/CD pipeline and automated testing
+- [ ] Benchmark scripts and evaluation framework
+- [ ] Public dataset with documented provenance
+- [ ] GIS data import/export (GeoJSON, Shapefile)
+- [ ] Timeline and geospatial visualization views
+- [ ] Improved source evidence — span-level text highlighting
+- [ ] Multilingual extraction beyond EN/ZH
+- [ ] Schema versioning and migration management
+- [ ] Plugin interface for custom entity extractors
+- [ ] Authentication hardening and role-based access control
+- [ ] Centralized prompt management (extract prompts from code into versioned files)
+
+---
+
+## Contributing
+
+Contributions are welcome. Areas of particular interest include:
+
+- Domain templates for additional urban planning sub-fields
+- Evaluation datasets and benchmarks
+- Documentation improvements
+- Bug reports and reproducibility testing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes
+4. Push and open a Pull Request
+
+---
+
+## License
+
+MIT License. See [LICENSE](LICENSE) for details.
+
+**Note:** A LICENSE file is in the process of being added. The server `package.json` currently declares ISC; this will be unified to MIT.
+
+---
+
+## Acknowledgments
+
+- [React Flow](https://reactflow.dev/) — schema visualization
+- [react-force-graph](https://github.com/vasturiano/react-force-graph) — knowledge graph rendering
+- [Zustand](https://github.com/pmndrs/zustand) — state management
+- [Apache AGE](https://age.apache.org/) — graph database extension
+- [pgvector](https://github.com/pgvector/pgvector) — vector similarity search
+- [Framer Motion](https://www.framer.com/motion/) — UI animations
+
+---
+
+## Additional Documentation
+
+- [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) — End-to-end user guide
+- [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md) — Paper reproducibility
+- [`docs/case-recommendation-demo.md`](docs/case-recommendation-demo.md) — Case recommendation demo transcript
