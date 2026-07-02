@@ -1,5 +1,5 @@
 # CaseFlow
-![Uploading image.png…]()
+<img width="2155" height="1085" alt="image" src="https://github.com/user-attachments/assets/503e5434-7e54-4b5b-b68a-ef9ace80b73c" />
 
 <p align="center">
   <strong>A human–AI framework for structuring, comparing, and mobilizing urban planning case knowledge</strong><br>
