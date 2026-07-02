@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useI18n } from '../../../../../i18n';
 import { useToastStore } from '@components/Toast/ToastStore';
+import { authHelper } from '../../../../../utils';
 
 /**
  * Hook: Graph data export (GraphML / CSV / JSON)
@@ -10,7 +11,7 @@ export function useGraphExport(currentCaseId) {
   const { t } = useI18n();
   const { error: showError, success: showSuccess } = useToastStore();
 
-  const getToken = () => localStorage.getItem('token');
+  const getToken = () => authHelper.getToken();
 
   const handleExportGraph = useCallback(async (format) => {
     if (!currentCaseId) return;

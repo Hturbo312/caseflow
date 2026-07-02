@@ -44,7 +44,7 @@ router.get('/config', async (req, res) => {
   res.json({
     configured: hasOwnConfig && !!userConfig.endpoint,
     endpoint: hasOwnConfig ? (userConfig.endpoint || '') : '',
-    model: hasOwnConfig ? (userConfig.model || 'glm-4-flash') : 'glm-4-flash',
+    model: hasOwnConfig ? (userConfig.model || 'glm-4.7-flash') : 'glm-4.7-flash',
     temperature: parseFloat(hasOwnConfig ? (userConfig.temperature || 0.7) : 0.7),
     maxTokens: parseInt(hasOwnConfig ? (userConfig.max_tokens || 16384) : 16384),
     useTemperature: hasOwnConfig ? (userConfig.use_temperature !== undefined ? userConfig.use_temperature : true) : true,
@@ -90,7 +90,7 @@ router.post('/config', authMiddleware, async (req, res) => {
         `INSERT INTO user_ai_configs
           (user_id, endpoint, api_key, model, temperature, max_tokens, use_temperature, use_max_tokens, embedding_endpoint, embedding_model)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-        [userId, endpoint || '', apiKey || '', model || 'glm-4-flash', temperature || 0.7, maxTokens || 16384, useTemperature !== false, useMaxTokens !== false, embeddingEndpoint || '', embeddingModel || 'embedding-2']
+        [userId, endpoint || '', apiKey || '', model || 'glm-4.7-flash', temperature || 0.7, maxTokens || 16384, useTemperature !== false, useMaxTokens !== false, embeddingEndpoint || '', embeddingModel || 'embedding-2']
       );
     }
 
@@ -133,7 +133,7 @@ router.post('/proxy', authMiddleware, async (req, res) => {
   // 只用用户自己的配置
   const apiKey = userConfig?.api_key || req.body.apiKey;
   const endpoint = userConfig?.endpoint || req.body.endpoint;
-  const model = userConfig?.model || req.body.model || 'glm-4-flash';
+  const model = userConfig?.model || req.body.model || 'glm-4.7-flash';
   const temperature = req.body.temperature ?? userConfig?.temperature ?? 0.7;
   const maxTokens = req.body.maxTokens ?? userConfig?.max_tokens ?? 4096;
   const useTemperature = req.body.useTemperature ?? userConfig?.use_temperature ?? true;
@@ -150,7 +150,7 @@ router.post('/proxy', authMiddleware, async (req, res) => {
 
   try {
     const requestBody = {
-      model: model || 'glm-4-flash',
+      model: model || 'glm-4.7-flash',
       messages: messages,
     };
 
@@ -183,27 +183,32 @@ router.post('/proxy', authMiddleware, async (req, res) => {
   }
 });
 
-// 嵌入生成API
+// 嵌入生成API（优先使用传入的用户配置，回退全局缓存）
 router.post('/embedding', async (req, res) => {
-  const { texts } = req.body;
+  const { texts, apiKey, endpoint, model } = req.body;
 
   if (!texts || !Array.isArray(texts)) {
     return res.status(400).json({ error: 'texts 数组是必需的' });
   }
 
-  if (!aiConfigCache.apiKey && !aiConfigCache.api_key) {
+  // 优先使用调用方传入的配置（用户自己的），回退全局缓存
+  const resolvedKey = apiKey || aiConfigCache.apiKey || aiConfigCache.api_key;
+  const resolvedEndpoint = endpoint || aiConfigCache.embeddingEndpoint || aiConfigCache.embedding_endpoint;
+  const resolvedModel = model || aiConfigCache.embeddingModel || aiConfigCache.embedding_model || 'text-embedding-v3';
+
+  if (!resolvedKey) {
     return res.status(400).json({ error: '请先配置嵌入模型API' });
   }
 
   try {
-    const response = await fetch(aiConfigCache.embeddingEndpoint || aiConfigCache.embedding_endpoint, {
+    const response = await fetch(resolvedEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${aiConfigCache.apiKey || aiConfigCache.api_key}`,
+        'Authorization': `Bearer ${resolvedKey}`,
       },
       body: JSON.stringify({
-        model: aiConfigCache.embeddingModel || aiConfigCache.embedding_model || 'text-embedding-v3',
+        model: resolvedModel,
         input: texts,
       }),
     });

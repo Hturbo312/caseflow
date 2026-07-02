@@ -38,12 +38,26 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 });
 
-// 删除 Schema
+// 删除 Schema（FK 已改为 ON DELETE SET NULL，案例保留但清除 schema 关联；
+// entity_types / relations / schema_memory 由 DB 层 ON DELETE CASCADE 自动清理）
 router.delete('/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
   try {
-    await pool.query('DELETE FROM schemas WHERE id = $1', [id]);
-    res.json({ message: 'Schema deleted' });
+    // 统计受影响的案例数
+    const caseCount = await pool.query(
+      'SELECT COUNT(*) as count FROM cases WHERE schema_id = $1', [id]
+    );
+    const affectedCases = parseInt(caseCount.rows[0].count);
+
+    const result = await pool.query('DELETE FROM schemas WHERE id = $1 RETURNING id', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Schema 不存在' });
+    }
+
+    res.json({
+      message: 'Schema 已删除',
+      affectedCases, // 受影响的案例数（已自动 set schema_id = NULL）
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

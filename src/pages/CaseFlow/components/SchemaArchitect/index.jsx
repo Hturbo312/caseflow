@@ -127,12 +127,21 @@ const SchemaArchitect = ({ isAuthenticated, onShowLogin }) => {
     }
   };
 
-  const handleDeleteSchema = (schemaId, e) => {
+  const handleDeleteSchema = async (schemaId, e) => {
     e.stopPropagation();
-    if (schemas.length > 1 && confirm(t('schema.confirmDeleteSchema'))) {
-      deleteSchema(schemaId);
-    } else if (schemas.length <= 1) {
+    if (schemas.length <= 1) {
       alert(t('schema.mustKeepOneSchema'));
+      return;
+    }
+    if (!confirm(t('schema.confirmDeleteSchema'))) return;
+
+    try {
+      await deleteSchema(schemaId);
+    } catch (error) {
+      console.error('删除 Schema 失败:', error);
+      alert('删除失败：' + (error.message || '未知错误'));
+      // 重新加载以恢复状态
+      useSchemaStore.getState().loadSchemas();
     }
   };
 

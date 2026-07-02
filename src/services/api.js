@@ -66,7 +66,7 @@ export const schemaApi = {
     body: JSON.stringify(data),
   }),
 
-  // 删除 Schema
+  // 删除 Schema（关联案例的 schema_id 将自动设为 NULL）
   delete: (id) => request(`/schemas/${id}`, {
     method: 'DELETE',
   }),
@@ -256,11 +256,15 @@ export const agentApi = {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        onError(error.error || '请求失败');
+        const error = await response.json().catch(() => ({}));
+        onError?.(error.error || '请求失败');
         return;
       }
 
+      if (!response.body) {
+        onError?.('响应体为空');
+        return;
+      }
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
@@ -290,11 +294,14 @@ export const agentApi = {
               } else if (parsed.type === 'done') {
                 onDone(parsed.full_response, sessionId, parsed.output, parsed.iteration, parsed.totalIterations);
               } else if (parsed.type === 'error') {
-                onError(parsed.error);
+                onError?.(parsed.error);
               } else if (parsed.type === 'thinking_phase') {
-                if (onThinkingPhase) onThinkingPhase(parsed);
+                onThinkingPhase?.(parsed);
               } else if (parsed.type === 'iteration_start') {
-                if (onIterationStart) onIterationStart(parsed);
+                onIterationStart?.(parsed);
+              } else {
+                // 未识别的 SSE 事件类型，记录警告便于排查
+                console.warn('[invokeStream] 未识别的 SSE 事件:', parsed.type);
               }
             } catch (e) {
               // 不完整的JSON，丢弃该行
@@ -303,7 +310,7 @@ export const agentApi = {
         }
       }
     } catch (error) {
-      onError(error.message);
+      onError?.(error.message || 'SSE 流式调用异常');
     }
   },
 

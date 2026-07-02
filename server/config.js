@@ -1,19 +1,32 @@
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '.env') });
 
-export const JWT_SECRET = process.env.JWT_SECRET || 'caseflow-secret-key-change-in-production';
+// JWT_SECRET: 优先使用环境变量，否则生成随机密钥并警告
+const _jwtSecret = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
+if (!process.env.JWT_SECRET) {
+  console.warn('');
+  console.warn('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+  console.warn('!! [安全警告] JWT_SECRET 未设置，已生成临时随机密钥。       !!');
+  console.warn('!! 服务重启后所有用户登录态将失效。                         !!');
+  console.warn('!! 生产环境请在 .env 中设置 JWT_SECRET=<你的密钥>           !!');
+  console.warn('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+  console.warn('');
+}
+export const JWT_SECRET = _jwtSecret;
+
 export const PORT = process.env.PORT || 3000;
 
 // AI 配置存储（从环境变量初始化，可通过API覆盖）
 export let aiConfigCache = {
   endpoint: process.env.AI_ENDPOINT || '',
   apiKey: process.env.AI_API_KEY || '',
-  model: process.env.AI_MODEL || 'glm-4-flash',
+  model: process.env.AI_MODEL || 'glm-4.7-flash',
   temperature: 0.7,
   maxTokens: 16384,
   useTemperature: true,
@@ -38,7 +51,7 @@ export function resetAiConfig() {
   aiConfigCache = {
     endpoint: '',
     apiKey: '',
-    model: 'glm-4-flash',
+    model: 'glm-4.7-flash',
     temperature: 0.7,
     maxTokens: 16384,
     useTemperature: true,

@@ -6,10 +6,10 @@ dotenv.config();
 const { Pool } = pkg;
 
 const pool = new Pool({
-  user: 'postgres',
-  database: 'knowledge_graph',
-  host: '/var/run/postgresql',
-  port: 5432,
+  user: process.env.DB_USER || 'postgres',
+  database: process.env.DB_NAME || 'knowledge_graph',
+  host: process.env.DB_HOST || '/var/run/postgresql',
+  port: parseInt(process.env.DB_PORT, 10) || 5432,
   max: 20,                         // 最大连接数
   idleTimeoutMillis: 30000,        // 空闲连接 30s 后回收
   connectionTimeoutMillis: 10000,  // 连接超时 10s

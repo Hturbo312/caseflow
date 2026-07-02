@@ -4,7 +4,7 @@ import { PORT } from '../config.js';
 import crypto from 'crypto';
 
 // ============================================================
-// 多轮提取流水线服务
+// 深度提取服务
 // 核心原则：全文只读一次构建 Text IR，后续按类型过滤片段提取
 // ============================================================
 
@@ -177,8 +177,8 @@ export async function generateExtractionPlan(caseId, schemaId) {
   }
 
   const plan = output.plan || [];
-  // 补齐未包含的类型
-  const plannedTypes = new Set(plan.map(p => p.entity_type));
+  // 补齐未包含的类型（过滤掉 AI 可能返回的 undefined/null 类型）
+  const plannedTypes = new Set(plan.map(p => p.entity_type).filter(Boolean));
   entityTypesResult.rows.forEach(et => {
     if (!plannedTypes.has(et.name)) {
       plan.push({ entity_type: et.name, priority: plan.length + 1, hint_count: hintCounts[et.name] || 0, reason: '补充' });
@@ -241,7 +241,7 @@ export async function extractEntities(caseId, entityType, schemaId) {
   // 从 Text IR 中过滤该类型的 hints
   const hints = [];
   segments.forEach(s => {
-    (s.entity_hints || []).forEach(h => {
+    (Array.isArray(s.entity_hints) ? s.entity_hints : []).forEach(h => {
       if (h.type === entityType) {
         hints.push({ ...h, segment_index: s.segment_index, segment_content: s.content });
       }
@@ -328,27 +328,35 @@ async function rereadForEntity(caseId, entityType, schemaId, segments) {
   if (chunks.length > 1) {
     console.log(`[rereadForEntity] ${entityType}: ${segments.length} 段落，分 ${chunks.length} 块并行处理`);
 
-    const results = await Promise.allSettled(
-      chunks.map(async (chunkSegments, idx) => {
-        const textContent = chunkSegments.map(s => s.content).join('\n\n');
-        const context = {
-          schema_id: schemaId,
-          case_id: caseId,
-          case_text: `请从以下文本（第${idx + 1}/${chunks.length}块）中提取「${entityType}」类型的实体（属性定义：${props.map(p => `${p.name}(${p.type})`).join(', ')}）：\n\n${textContent}`
-        };
-        const fullContext = await buildAgentContext('case_extractor', context, `请搜索文本中可能包含的${entityType}实体。`);
-        const systemPrompt = buildSystemPrompt(agent, fullContext) + `\n\n## 当前任务\n仔细搜索文本中所有可能的「${entityType}」类型实体。这是回读搜索，宁可多提取，不要漏掉。只输出JSON格式的entities数组。${relContext}`;
-        const aiResponse = await callAI(systemPrompt, [
-          { role: 'user', content: `请搜索文本中所有${entityType}类型的实体，只输出JSON。` }
-        ], agent);
-        const output = parseAgentOutput(aiResponse, agent.output_format);
-        return (output.entities || []).map((e, i) => ({
-          name: e.name,
-          entityType: entityType,
-          properties: e.properties || {},
-        }));
-      })
-    );
+    // 并发限制：最多同时 5 个 LLM 调用，避免触发限流或 OOM
+    const CONCURRENCY = 5;
+    const results = [];
+    for (let i = 0; i < chunks.length; i += CONCURRENCY) {
+      const batch = chunks.slice(i, i + CONCURRENCY);
+      const batchResults = await Promise.allSettled(
+        batch.map(async (chunkSegments, batchIdx) => {
+          const idx = i + batchIdx;
+          const textContent = chunkSegments.map(s => s.content).join('\n\n');
+          const context = {
+            schema_id: schemaId,
+            case_id: caseId,
+            case_text: `请从以下文本（第${idx + 1}/${chunks.length}块）中提取「${entityType}」类型的实体（属性定义：${props.map(p => `${p.name}(${p.type})`).join(', ')}）：\n\n${textContent}`
+          };
+          const fullContext = await buildAgentContext('case_extractor', context, `请搜索文本中可能包含的${entityType}实体。`);
+          const systemPrompt = buildSystemPrompt(agent, fullContext) + `\n\n## 当前任务\n仔细搜索文本中所有可能的「${entityType}」类型实体。这是回读搜索，宁可多提取，不要漏掉。只输出JSON格式的entities数组。${relContext}`;
+          const aiResponse = await callAI(systemPrompt, [
+            { role: 'user', content: `请搜索文本中所有${entityType}类型的实体，只输出JSON。` }
+          ], agent);
+          const output = parseAgentOutput(aiResponse, agent.output_format);
+          return (output.entities || []).map((e, i) => ({
+            name: e.name,
+            entityType: entityType,
+            properties: e.properties || {},
+          }));
+        })
+      );
+      results.push(...batchResults);
+    }
 
     for (const result of results) {
       if (result.status === 'fulfilled') {
@@ -356,6 +364,11 @@ async function rereadForEntity(caseId, entityType, schemaId, segments) {
       } else {
         console.error(`[rereadForEntity] 块处理失败: ${result.reason?.message}`);
       }
+    }
+
+    // 如果所有块都失败了，抛出错误而不是返回空结果
+    if (allEntities.length === 0 && results.length > 0 && results.every(r => r.status === 'rejected')) {
+      throw new Error(`[rereadForEntity] ${entityType}: 所有 ${results.length} 个块处理均失败，无法提取实体`);
     }
 
     // 按名称去重
@@ -429,17 +442,29 @@ export async function extractAllEntities(caseId, schemaId) {
   const entityTypesResult = await pool.query('SELECT name FROM entity_types WHERE schema_id = $1', [schemaId]);
   const entityTypes = entityTypesResult.rows.map(r => r.name);
 
+  if (entityTypes.length === 0) {
+    console.warn('[extractAllEntities] schema 没有定义实体类型，返回空结果');
+    return { candidates: {}, total: 0 };
+  }
+
   console.log(`[extractAllEntities] 开始并行提取 ${entityTypes.length} 个类型`);
 
   // 更新进度
   await updateProgress(caseId, (p) => ({ ...p, types: {}, extraction_mode: 'parallel' }));
 
-  const results = await Promise.allSettled(
-    entityTypes.map(async (entityType) => {
-      const result = await extractEntities(caseId, entityType, schemaId);
-      return { entityType, success: true, entities: result.entities || [], count: result.entities?.length || 0 };
-    })
-  );
+  // 并发限制：最多同时 5 个 LLM 调用
+  const CONCURRENCY = 5;
+  const results = [];
+  for (let i = 0; i < entityTypes.length; i += CONCURRENCY) {
+    const batch = entityTypes.slice(i, i + CONCURRENCY);
+    const batchResults = await Promise.allSettled(
+      batch.map(async (entityType) => {
+        const result = await extractEntities(caseId, entityType, schemaId);
+        return { entityType, success: true, entities: result.entities || [], count: result.entities?.length || 0 };
+      })
+    );
+    results.push(...batchResults);
+  }
 
   const allCandidates = {};
   for (const result of results) {
@@ -465,7 +490,9 @@ export async function checkConsistency(caseId, entityType, candidates) {
   // 先做简单的基于名称的去重
   const byName = {};
   candidates.forEach(c => {
-    const key = c.name.trim().toLowerCase();
+    const name = (c.name || '').trim();
+    if (!name) return; // 跳过空名称实体
+    const key = name.toLowerCase();
     if (!byName[key]) byName[key] = [];
     byName[key].push(c);
   });
@@ -691,19 +718,23 @@ export async function saveRelationsBulk(caseId, relations) {
       }
     }
 
-    // 批量 INSERT：单条查询代替 N 条
+    // 批量 INSERT：分批处理，每批最多 200 条，避免参数爆炸
     if (toInsert.length > 0) {
-      const values = toInsert.map((item, i) => {
-        const base = i * 3;
-        return `($1, $${base + 2}, $${base + 3}, $${base + 4})`;
-      }).join(', ');
-      const insertParams = [caseId, ...toInsert.flatMap(item => [item.sourceId, item.targetId, item.relationType])];
-      const insertResult = await pool.query(
-        `INSERT INTO case_relations (case_id, source_entity_id, target_entity_id, relation_type)
-         VALUES ${values} RETURNING *`,
-        insertParams
-      );
-      savedRelations.push(...insertResult.rows);
+      const BATCH_SIZE = 200;
+      for (let batchStart = 0; batchStart < toInsert.length; batchStart += BATCH_SIZE) {
+        const batch = toInsert.slice(batchStart, batchStart + BATCH_SIZE);
+        const values = batch.map((item, i) => {
+          const base = i * 3;
+          return `($1, $${base + 2}, $${base + 3}, $${base + 4})`;
+        }).join(', ');
+        const insertParams = [caseId, ...batch.flatMap(item => [item.sourceId, item.targetId, item.relationType])];
+        const insertResult = await pool.query(
+          `INSERT INTO case_relations (case_id, source_entity_id, target_entity_id, relation_type)
+           VALUES ${values} RETURNING *`,
+          insertParams
+        );
+        savedRelations.push(...insertResult.rows);
+      }
     }
   }
 
@@ -738,6 +769,105 @@ export async function saveRelationsBulk(caseId, relations) {
 }
 
 // ============================================================
+// 深度提取：基于快速拆解结果进行增量优化
+// ============================================================
+export async function deepExtract(caseId, schemaId, options = {}) {
+  const { existingEntities = [], existingRelations = [] } = options;
+  const result = {
+    stage: 'deep_extract',
+    consistency: null,
+    reread: null,
+    inferredRelations: null,
+  };
+
+  // Step 1: 一致性检查（去重合并）
+  if (existingEntities.length > 0) {
+    console.log(`[deepExtract] Step 1: 一致性检查 (${existingEntities.length} 个实体)`);
+    // 按 entityType 分组做一致性检查
+    const byType = {};
+    for (const e of existingEntities) {
+      const et = e.entityType || e.entity_type || 'unknown';
+      if (!byType[et]) byType[et] = [];
+      byType[et].push({
+        name: e.name,
+        entityType: et,
+        properties: e.properties || {},
+        status: 'approved',
+      });
+    }
+    const checkedByType = {};
+    for (const [et, candidates] of Object.entries(byType)) {
+      const checked = await checkConsistency(caseId, et, candidates);
+      checkedByType[et] = checked.deduplicated || checked.candidates || [];
+    }
+    result.consistency = {
+      before: existingEntities.length,
+      after: Object.values(checkedByType).flat().length,
+      byType: checkedByType,
+    };
+  }
+
+  // Step 2: 回读补充（逐类扫描遗漏的实体）
+  console.log(`[deepExtract] Step 2: 回读补充遗漏`);
+  const entityTypesResult = await pool.query('SELECT name FROM entity_types WHERE schema_id = $1', [schemaId]);
+  const entityTypes = entityTypesResult.rows.map(r => r.name);
+  const existingTypeSet = new Set(existingEntities.map(e => e.entityType || e.entity_type));
+  const missingTypes = entityTypes.filter(et => !existingTypeSet.has(et));
+
+  const allRereadEntities = [];
+  if (missingTypes.length > 0) {
+    console.log(`[deepExtract] 发现 ${missingTypes.length} 个缺失类型: ${missingTypes.join(', ')}`);
+    for (const entityType of missingTypes) {
+      try {
+        const rereadResult = await extractEntities(caseId, entityType, schemaId);
+        if (rereadResult.entities?.length > 0) {
+          allRereadEntities.push(...rereadResult.entities.map(e => ({ ...e, entityType, source: 'reread' })));
+        }
+      } catch (e) {
+        console.error(`[deepExtract] 回读 ${entityType} 失败:`, e.message);
+      }
+    }
+  }
+  result.reread = { missingTypes, found: allRereadEntities.length, entities: allRereadEntities };
+
+  // Step 3: 关系推断（补充遗漏的关系）
+  console.log(`[deepExtract] Step 3: 推断遗漏关系`);
+  const allEntities = [
+    ...(result.consistency?.byType ? Object.values(result.consistency.byType).flat() : existingEntities),
+    ...allRereadEntities,
+  ];
+  try {
+    const inferred = await inferRelations(caseId, schemaId, {}, allEntities);
+    result.inferredRelations = {
+      relations: inferred.relations || [],
+      count: (inferred.relations || []).length,
+    };
+  } catch (e) {
+    console.error('[deepExtract] 关系推断失败:', e.message);
+    result.inferredRelations = { relations: [], count: 0 };
+  }
+
+  // 统计
+  const totalEntities = allEntities.length;
+  const totalRelations = (existingRelations.length + (result.inferredRelations?.count || 0));
+
+  console.log(`[deepExtract] 完成: ${totalEntities} 实体, ${totalRelations} 关系`);
+
+  return {
+    ...result,
+    summary: {
+      entitiesBefore: existingEntities.length,
+      entitiesAfter: totalEntities,
+      relationsBefore: existingRelations.length,
+      relationsAfter: totalRelations,
+      newEntities: allRereadEntities.length,
+      newRelations: result.inferredRelations?.count || 0,
+      mergedCount: existingEntities.length - (result.consistency?.after || existingEntities.length),
+    },
+  };
+}
+
+// ============================================================
 // Step 6b: 完成案例（标记 case_memory 为 completed）
 // ============================================================
 export async function finalizeCase(caseId, options = {}) {
@@ -749,7 +879,10 @@ export async function finalizeCase(caseId, options = {}) {
 
   // 获取 schema_id
   const caseResult = await pool.query('SELECT schema_id FROM cases WHERE id = $1', [caseId]);
-  const schemaId = caseResult.rows[0]?.schema_id;
+  if (caseResult.rows.length === 0) {
+    throw new Error(`案例 ${caseId} 不存在或已被删除`);
+  }
+  const schemaId = caseResult.rows[0].schema_id;
 
   // 保存审核通过的关系候选（复用共享函数）
   // 如果前端已通过 batch-save-relations 预保存，跳过冗余 DB 操作
@@ -782,19 +915,21 @@ export async function finalizeCase(caseId, options = {}) {
 
   // 自动为本案实体生成嵌入（异步，不阻塞响应）
   if (autoEmbed) {
-    triggerAutoEmbed(caseId, 'finalizeCase').catch(e => console.error('[finalizeCase] 自动嵌入失败:', e));
+    triggerAutoEmbed(caseId, 'finalizeCase', options.userId).catch(e => console.error('[finalizeCase] 自动嵌入失败:', e));
   }
 
   return { success: true, schema_id: schemaId, saved_relations: savedRelations, skipped_relations: relationSkipped, already_existing_relations: relationAlreadyExisting };
 }
 
 // 异步触发嵌入生成（统一函数，供 extraction.js 和 finalizeCase 共用）
-export async function triggerAutoEmbed(caseId, source = 'auto') {
+export async function triggerAutoEmbed(caseId, source = 'auto', userId = null) {
   try {
+    const body = { caseId, force: false };
+    if (userId) body.userId = userId;
     const response = await fetch(`http://localhost:${PORT}/api/rag/embed-entities`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ caseId, force: false }),
+      body: JSON.stringify(body),
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));

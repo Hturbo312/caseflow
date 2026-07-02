@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import * as d3Force from 'd3-force';
-import { Share2, Globe, Focus } from 'lucide-react';
+import { Share2, Globe, Focus, LogIn } from 'lucide-react';
 import { useCaseStore, useSchemaStore } from '@store';
 import { useGraphData } from './hooks';
 import { useGraphExport } from './hooks/useGraphExport';
@@ -884,8 +884,25 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
           ))}
         </div>
 
-        {/* 空状态 */}
-        {filteredNodes.length === 0 ? (
+        {/* 未登录状态 */}
+        {!isAuthenticated ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-50/80">
+            <div className="text-center p-8">
+              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                <LogIn className="w-10 h-10 text-gray-400" />
+              </div>
+              <p className="text-lg font-medium text-gray-600 mb-2">{t('empty.loginToView')}</p>
+              <p className="text-sm text-gray-400 mb-5">{t('empty.loginHint')}</p>
+              <button
+                onClick={onShowLogin}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-all shadow-lg shadow-indigo-200"
+              >
+                <LogIn className="w-4 h-4" />
+                {t('app.login')}
+              </button>
+            </div>
+          </div>
+        ) : filteredNodes.length === 0 ? (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center p-8">
               <Share2 className="w-16 h-16 mx-auto mb-4 opacity-50 text-gray-400" />

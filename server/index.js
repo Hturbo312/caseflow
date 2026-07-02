@@ -51,14 +51,19 @@ server.timeout = 0;
 server.keepAliveTimeout = 660000;
 server.headersTimeout = 670000;
 
-// 优雅关闭：释放数据库连接池，防止连接残留
-process.on('SIGTERM', async () => {
-  console.log('[server] SIGTERM 收到，正在关闭...');
-  await pool.end();
-  server.close(() => process.exit(0));
-});
-process.on('SIGINT', async () => {
-  console.log('[server] SIGINT 收到，正在关闭...');
-  await pool.end();
-  server.close(() => process.exit(0));
-});
+// 优雅关闭：释放数据库连接池，5秒强杀防止僵尸进程
+let isShuttingDown = false;
+const gracefulShutdown = (signal) => {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  console.log(`[server] ${signal} 收到，正在关闭...`);
+  // 5秒后强制退出，防止 keepalive 连接阻止进程退出
+  setTimeout(() => { console.log('[server] 强制退出'); process.exit(1); }, 5000);
+  pool.end().then(() => {
+    server.close(() => process.exit(0));
+  }).catch(() => {
+    process.exit(0);
+  });
+};
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

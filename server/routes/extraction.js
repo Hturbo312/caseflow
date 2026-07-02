@@ -24,7 +24,7 @@ router.post('/:caseId/schema-analyze', authMiddleware, async (req, res) => {
     const { schemaId } = req.body;
     if (!schemaId) return res.status(400).json({ error: 'schemaId 是必需的' });
 
-    req.socket.setTimeout(660000);
+    req.socket?.setTimeout?.(660000);
     res.setTimeout(660000);
 
     const result = await pipeline.runSchemaAnalysis(schemaId);
@@ -57,7 +57,7 @@ router.post('/:caseId/plan', authMiddleware, async (req, res) => {
     const { schemaId } = req.body;
     if (!schemaId) return res.status(400).json({ error: 'schemaId 是必需的' });
 
-    req.socket.setTimeout(660000);
+    req.socket?.setTimeout?.(660000);
     res.setTimeout(660000);
 
     const result = await pipeline.generateExtractionPlan(caseId, schemaId);
@@ -88,7 +88,7 @@ router.post('/:caseId/extract-all', authMiddleware, async (req, res) => {
     const { schemaId } = req.body;
     if (!schemaId) return res.status(400).json({ error: 'schemaId 是必需的' });
 
-    req.socket.setTimeout(660000);
+    req.socket?.setTimeout?.(660000);
     res.setTimeout(660000);
 
     const result = await pipeline.extractAllEntities(caseId, schemaId);
@@ -106,7 +106,7 @@ router.post('/:caseId/extract/:entityType', authMiddleware, async (req, res) => 
     const { schemaId } = req.body;
     if (!schemaId) return res.status(400).json({ error: 'schemaId 是必需的' });
 
-    req.socket.setTimeout(660000);
+    req.socket?.setTimeout?.(660000);
     res.setTimeout(660000);
 
     const result = await pipeline.extractEntities(caseId, entityType, schemaId);
@@ -124,7 +124,7 @@ router.post('/:caseId/check-consistency/:entityType', authMiddleware, async (req
     const { candidates } = req.body;
     if (!candidates) return res.status(400).json({ error: 'candidates 是必需的' });
 
-    req.socket.setTimeout(660000);
+    req.socket?.setTimeout?.(660000);
     res.setTimeout(660000);
 
     const result = await pipeline.checkConsistency(caseId, entityType, candidates);
@@ -142,7 +142,7 @@ router.post('/:caseId/infer-relations', authMiddleware, async (req, res) => {
     const { schemaId, candidates } = req.body;
     if (!schemaId) return res.status(400).json({ error: 'schemaId 是必需的' });
 
-    req.socket.setTimeout(660000);
+    req.socket?.setTimeout?.(660000);
     res.setTimeout(660000);
 
     const result = await pipeline.inferRelations(caseId, schemaId, candidates);
@@ -169,7 +169,7 @@ router.post('/:caseId/save-entity', authMiddleware, async (req, res) => {
       // 返回已有实体，标记为 duplicated
       // 注意：重复实体也触发 autoEmbed（可能之前保存时 autoEmbed=false 或未触发）
       if (autoEmbed) {
-        pipeline.triggerAutoEmbed(caseId, 'save-entity-duplicate').catch(e => console.error('[save-entity-duplicate] 自动嵌入失败:', e));
+        pipeline.triggerAutoEmbed(caseId, 'save-entity-duplicate', req.user?.id).catch(e => console.error('[save-entity-duplicate] 自动嵌入失败:', e));
       }
       return res.json({ success: true, entity: existing.rows[0], duplicated: true });
     }
@@ -181,7 +181,7 @@ router.post('/:caseId/save-entity', authMiddleware, async (req, res) => {
 
     // 实体保存完成后，自动触发嵌入生成（异步，不阻塞响应）
     if (autoEmbed) {
-      pipeline.triggerAutoEmbed(caseId, 'save-entity').catch(e => console.error('[save-entity] 自动嵌入失败:', e));
+      pipeline.triggerAutoEmbed(caseId, 'save-entity', req.user?.id).catch(e => console.error('[save-entity] 自动嵌入失败:', e));
     }
 
     res.json({ success: true, entity: result.rows[0], duplicated: false });
@@ -238,26 +238,30 @@ router.post('/:caseId/batch-save-entities', authMiddleware, async (req, res) => 
 
     let savedEntities = [];
     if (toInsert.length > 0) {
-      // 优化：使用单条批量 INSERT 代替 N 次独立查询
-      const values = toInsert.map((e, i) => {
-        const base = i * 4;
-        return `($1, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5})`;
-      }).join(', ');
-      const params = [caseId];
-      toInsert.forEach(e => {
-        params.push(e.name, e.entityType, JSON.stringify(e.properties || {}), e.color || null);
-      });
+      // 分批 INSERT，每批最多 100 条，避免超过 PostgreSQL 参数上限 (65535)
+      const BATCH_SIZE = 100;
+      for (let batchStart = 0; batchStart < toInsert.length; batchStart += BATCH_SIZE) {
+        const batch = toInsert.slice(batchStart, batchStart + BATCH_SIZE);
+        const values = batch.map((e, i) => {
+          const base = i * 4;
+          return `($1, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5})`;
+        }).join(', ');
+        const params = [caseId];
+        batch.forEach(e => {
+          params.push(e.name, e.entityType, JSON.stringify(e.properties || {}), e.color || null);
+        });
 
-      const result = await pool.query(
-        `INSERT INTO case_entities (case_id, name, entity_type, properties, color) VALUES ${values} RETURNING *`,
-        params
-      );
-      savedEntities = result.rows;
+        const result = await pool.query(
+          `INSERT INTO case_entities (case_id, name, entity_type, properties, color) VALUES ${values} RETURNING *`,
+          params
+        );
+        savedEntities.push(...result.rows);
+      }
     }
 
     // 实体保存完成后，自动触发嵌入生成（异步，不阻塞响应）
     if (autoEmbed && savedEntities.length > 0) {
-      pipeline.triggerAutoEmbed(caseId, 'batch-save-entities').catch(e => console.error('[batch-save-entities] 自动嵌入失败:', e));
+      pipeline.triggerAutoEmbed(caseId, 'batch-save-entities', req.user?.id).catch(e => console.error('[batch-save-entities] 自动嵌入失败:', e));
     }
 
     res.json({
@@ -299,7 +303,7 @@ router.post('/:caseId/save-relation', authMiddleware, async (req, res) => {
 
     // 关系保存完成后，自动触发嵌入生成（异步，不阻塞响应）
     if (autoEmbed) {
-      pipeline.triggerAutoEmbed(caseId, 'save-relation').catch(e => console.error('[save-relation] 自动嵌入失败:', e));
+      pipeline.triggerAutoEmbed(caseId, 'save-relation', req.user?.id).catch(e => console.error('[save-relation] 自动嵌入失败:', e));
     }
 
     res.json({ success: true, relation: result.rows[0], duplicated: false });
@@ -314,10 +318,26 @@ router.post('/:caseId/finalize', authMiddleware, async (req, res) => {
   try {
     const { caseId } = req.params;
     const { relations = [], autoEmbed = true, preSaved = false } = req.body;
-    const result = await pipeline.finalizeCase(caseId, { relations, autoEmbed, preSaved });
+    const result = await pipeline.finalizeCase(caseId, { relations, autoEmbed, preSaved, userId: req.user?.id });
     res.json({ success: true, data: result });
   } catch (error) {
     console.error(`[extraction/:caseId/finalize] 错误:`, error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 深度提取：基于快速拆解结果进行增量优化
+router.post('/:caseId/deep-extract', authMiddleware, async (req, res) => {
+  try {
+    const { caseId } = req.params;
+    const { existingEntities = [], existingRelations = [], schemaId } = req.body;
+    if (!schemaId) {
+      return res.status(400).json({ error: 'schemaId 是必需的' });
+    }
+    const result = await pipeline.deepExtract(caseId, schemaId, { existingEntities, existingRelations });
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error(`[extraction/:caseId/deep-extract] 错误:`, error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -337,7 +357,7 @@ router.post('/:caseId/batch-save-relations', authMiddleware, async (req, res) =>
     // 关系保存完成后，按需自动触发嵌入生成（异步，不阻塞响应）
     // 注意：尊重前端传入的 autoEmbed 参数，避免在 finalize 流程中重复触发
     if (autoEmbed && result.savedCount > 0) {
-      pipeline.triggerAutoEmbed(caseId, 'batch-save-relations').catch(e => console.error('[batch-save-relations] 自动嵌入失败:', e));
+      pipeline.triggerAutoEmbed(caseId, 'batch-save-relations', req.user?.id).catch(e => console.error('[batch-save-relations] 自动嵌入失败:', e));
     }
 
     res.json({ success: true, saved: result.savedCount, skipped: result.skipped, alreadyExisting: result.alreadyExistingCount || 0, relations: result.savedRelations });

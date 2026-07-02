@@ -4,32 +4,43 @@
 
 import { TOKEN_KEY } from './constants';
 
+// 认证过期回调列表（store 注册监听）
+let authExpiredListeners = [];
+
 /**
  * Authentication helper object for token management
  */
 export const authHelper = {
   /**
    * Get authentication token from localStorage
-   * @returns {string|null} Token string or null
    */
   getToken: () => localStorage.getItem(TOKEN_KEY),
 
   /**
    * Set authentication token in localStorage
-   * @param {string} token - Token string
    */
   setToken: (token) => localStorage.setItem(TOKEN_KEY, token),
 
   /**
-   * Remove authentication token from localStorage
+   * Remove authentication token from localStorage，并通知所有监听者
    */
-  removeToken: () => localStorage.removeItem(TOKEN_KEY),
+  removeToken: () => {
+    localStorage.removeItem(TOKEN_KEY);
+    authExpiredListeners.forEach(fn => { try { fn(); } catch {} });
+  },
 
   /**
    * Check if user is authenticated
-   * @returns {boolean} True if token exists
    */
   isAuthenticated: () => !!localStorage.getItem(TOKEN_KEY),
+
+  /**
+   * 注册认证过期回调（store 用它来同步清除状态）
+   */
+  onAuthExpired: (fn) => {
+    authExpiredListeners.push(fn);
+    return () => { authExpiredListeners = authExpiredListeners.filter(f => f !== fn); };
+  },
 };
 
 /**

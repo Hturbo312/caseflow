@@ -35,7 +35,23 @@ router.get('/stats', async (req, res) => {
 
 // 为实体生成嵌入
 router.post('/embed-entities', async (req, res) => {
-  const { caseId, force = false } = req.body;
+  const { caseId, force = false, userId } = req.body;
+
+  // 查找用户的嵌入配置（优先用户配置，回退全局缓存）
+  let embedConfig = null;
+  if (userId) {
+    try {
+      const userCfg = await pool.query(
+        'SELECT api_key, embedding_endpoint, embedding_model FROM user_ai_configs WHERE user_id = $1',
+        [userId]
+      );
+      if (userCfg.rows.length > 0 && userCfg.rows[0].api_key && userCfg.rows[0].embedding_endpoint) {
+        embedConfig = userCfg.rows[0];
+      }
+    } catch (e) {
+      console.error('[embed-entities] 获取用户嵌入配置失败:', e.message);
+    }
+  }
 
   try {
     let query = `SELECT id, name, entity_type, properties FROM case_entities WHERE 1=1`;
@@ -61,10 +77,17 @@ router.post('/embed-entities', async (req, res) => {
       return `${e.name} (${e.entity_type})${propText ? '. ' + propText : ''}`;
     });
 
+    // 如果有用户配置，传给 embedding 端点
+    const embedBody = { texts };
+    if (embedConfig) {
+      embedBody.apiKey = embedConfig.api_key;
+      embedBody.endpoint = embedConfig.embedding_endpoint;
+      embedBody.model = embedConfig.embedding_model;
+    }
     const embedResponse = await fetch(`http://localhost:${PORT}/api/ai/embedding`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ texts }),
+      body: JSON.stringify(embedBody),
     });
 
     const embedData = await embedResponse.json();

@@ -36,7 +36,7 @@ function buildAiConfig({ apiKey, endpoint, model, temperature, maxTokens, useTem
   return {
     apiKey: apiKey || null,
     endpoint: endpoint || null,
-    model: model || 'glm-4-flash',
+    model: model || 'glm-4.7-flash',
     temperature: temperature != null ? parseFloat(temperature) : 0.7,
     maxTokens: maxTokens != null ? parseInt(maxTokens) : 16384,
     useTemperature: useTemperature ?? true,
@@ -450,7 +450,7 @@ export function buildSystemPrompt(agent, context, options = {}) {
  */
 function buildAiRequestBody(systemPrompt, messages, agent, cfg, extra = {}) {
   const requestBody = {
-    model: cfg.model || 'glm-4-flash',
+    model: cfg.model || 'glm-4.7-flash',
     messages: [
       { role: 'system', content: systemPrompt },
       ...messages
@@ -466,7 +466,7 @@ function buildAiRequestBody(systemPrompt, messages, agent, cfg, extra = {}) {
   }
 
   // case_extractor 使用低温度以保证提取一致性
-  if (agent.name === 'case_extractor') {
+  if (agent?.name === 'case_extractor') {
     requestBody.temperature = 0.3;
   }
 
@@ -543,23 +543,24 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
   const { url, client, agent: httpAgentInstance } = resolveHttpClient(cfg.endpoint);
 
   const IDLE_TIMEOUT_MS = 120000; // 2分钟空闲超时（无数据到达时）
-  let idleTimeout;
+  const MAX_BUFFER_SIZE = 10 * 1024 * 1024; // 10MB buffer 上限，防止 OOM
   let totalChunks = 0;
   let req;
-  let settled = false; // 防止重复 reject（idle timeout 和 error/close 事件可能同时触发）
-
-  function resetIdleTimeout() {
-    clearTimeout(idleTimeout);
-    idleTimeout = setTimeout(() => {
-      if (req && !settled) {
-        settled = true;
-        req.destroy();
-        reject(new Error(`AI 流式响应空闲超时（${IDLE_TIMEOUT_MS / 1000}s 无数据，已接收 ${totalChunks} 个 chunk），请稍后重试`));
-      }
-    }, IDLE_TIMEOUT_MS);
-  }
 
   return new Promise((resolve, reject) => {
+    let idleTimeout;
+    let settled = false; // 防止重复 reject（idle timeout 和 error/close 事件可能同时触发）
+
+    function resetIdleTimeout() {
+      clearTimeout(idleTimeout);
+      idleTimeout = setTimeout(() => {
+        if (req && !settled) {
+          settled = true;
+          req.destroy();
+          reject(new Error(`AI 流式响应空闲超时（${IDLE_TIMEOUT_MS / 1000}s 无数据，已接收 ${totalChunks} 个 chunk），请稍后重试`));
+        }
+      }, IDLE_TIMEOUT_MS);
+    }
     req = client.request(url, {
       method: 'POST',
       agent: httpAgentInstance,
@@ -591,6 +592,11 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
         totalChunks++;
 
         buffer += decoder.decode(chunk, { stream: true });
+        // 防止内存溢出：buffer 超过上限时截断并记录
+        if (buffer.length > MAX_BUFFER_SIZE) {
+          console.error(`[callAIStream] buffer 超过 ${MAX_BUFFER_SIZE / 1024 / 1024}MB 上限，截断旧数据`);
+          buffer = buffer.slice(-MAX_BUFFER_SIZE / 2); // 保留后半部分
+        }
         const lines = buffer.split('\n');
         buffer = lines.pop() || ''; // 保留最后一行（可能跨 chunk 不完整）
 
@@ -698,6 +704,10 @@ export async function callAIStream(systemPrompt, messages, agent, onChunk, userC
 
 // 解析 Agent 输出
 export function parseAgentOutput(rawResponse, outputFormat) {
+  if (!rawResponse) {
+    console.warn('[parseAgentOutput] rawResponse 为空');
+    return { raw: '', parse_error: true };
+  }
   if (outputFormat === 'json') {
     // 尝试多种方式提取 JSON
     // 1. 从 markdown 代码块中提取

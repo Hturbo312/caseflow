@@ -34,9 +34,9 @@ import { useI18n } from '../../../../i18n';
 
 // 子组件
 import HistorySidebar from './HistorySidebar';
-import ExtractResultPanel from './ExtractResultPanel';
+import ExtractionResult from './ExtractionResult';
 import SettingsModal from './SettingsModal';
-import ExtractionPipeline from './ExtractionPipeline';
+import DeepExtraction from './DeepExtraction';
 import SchemaResultPanel from './SchemaResultPanel';
 import AdjustmentModal from './panels/AdjustmentModal';
 
@@ -100,11 +100,25 @@ const AICopilot = ({ onShowLogin }) => {
   // 案例拆解模式状态
   const [caseText, setCaseText] = useState('');
   const [extractionPrompt, setExtractionPrompt] = useState('');
+
+  // 点击案例时自动加载案例文本到输入框
+  useEffect(() => {
+    if (!currentCaseId || !cases?.length) return;
+    const selectedCase = cases.find(c => String(c.id) === String(currentCaseId));
+    if (selectedCase?.description) {
+      setCaseText(selectedCase.description);
+    }
+  }, [currentCaseId]);
   const [isSaving, setIsSaving] = useState(false);
   const [extractionMode, setExtractionMode] = useState('chat'); // 'chat' | 'pipeline'
   const [isCreatingSchema, setIsCreatingSchema] = useState(false);
   const [isParsingFile, setIsParsingFile] = useState(false);
   const fileInputRef = useRef(null);
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
 
   // 展开的旧版本消息
   const [expandedOldMessages, setExpandedOldMessages] = useState(new Set());
@@ -199,10 +213,15 @@ const AICopilot = ({ onShowLogin }) => {
     }
   }, [handleSend]);
 
-  // 案例拆解：保存提取结果（优化：批量 API 代替 N 次独立调用）
-  const handleConfirmSave = useCallback(async () => {
-    const result = currentSession.extractResult;
-    if (!result) return;
+  // 快速拆解：保存提取结果（支持逐条确认后的结果）
+  const handleConfirmSave = useCallback(async (confirmedResult) => {
+    // confirmedResult 来自 ExtractionResult 的逐条确认，包含 { entities, relations }
+    const entities = confirmedResult?.entities || [];
+    const relations = confirmedResult?.relations || [];
+    if (entities.length === 0 && relations.length === 0) {
+      toast.error(t('extraction.nothingToSave'));
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -215,6 +234,9 @@ const AICopilot = ({ onShowLogin }) => {
           description: caseText,
           schemaId: currentSchemaId
         });
+        if (!response?.case?.id) {
+          throw new Error(t('ai.caseCreateFailed'));
+        }
         targetCaseId = response.case.id?.toString();
       }
 
@@ -224,11 +246,11 @@ const AICopilot = ({ onShowLogin }) => {
         ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       };
 
-      // 1. 批量保存实体（代替 N 次独立 addEntity 调用）
-      const entitiesToSave = (result.entities || []).map(entity => ({
-        name: entity.name,
-        entityType: entity.entityType,
-        properties: entity.properties || {},
+      // 1. 批量保存实体
+      const entitiesToSave = entities.map(e => ({
+        name: e.name,
+        entityType: e.entityType,
+        properties: e.properties || {},
       }));
 
       let addedEntities = [];
@@ -241,9 +263,6 @@ const AICopilot = ({ onShowLogin }) => {
         if (!entRes.ok) throw new Error(t('ai.entitySaveFailed', { status: entRes.status }));
         const entData = await entRes.json();
         addedEntities = entData.entities || [];
-        if (entData.skipped?.length > 0) {
-          console.error(`[handleConfirmSave] 跳过了 ${entData.skipped.length} 个重复实体`);
-        }
       }
 
       // 将保存的实体添加到图谱
@@ -252,13 +271,11 @@ const AICopilot = ({ onShowLogin }) => {
         addNodeToGraph(graphNode);
       }
 
-      // 2. 批量保存关系（代替 N 次独立 addRelation 调用）
-      // 优化：使用 (name, entityType) 复合键 + name-only 回退 Map，O(1) 查找
+      // 2. 批量保存关系
       const entityByKey = new Map(addedEntities.map(e => [`${e.name}::${e.entity_type}`, e]));
       const entityByName = new Map(addedEntities.map(e => [e.name, e]));
-      const relationsToSave = (result.relations || [])
+      const relationsToSave = relations
         .map(rel => {
-          // 优先精确匹配 (name + type)，回退到仅 name 匹配（AI 可能猜错类型）
           const sourceEntity = entityByKey.get(`${rel.sourceName}::${rel.sourceType || ''}`)
             || entityByKey.get(`${rel.sourceName}::`)
             || entityByName.get(rel.sourceName);
@@ -320,10 +337,9 @@ const AICopilot = ({ onShowLogin }) => {
         }),
       });
       if (!finalizeRes.ok) {
+        const errMsg = t('ai.finalizeFailed');
         console.error(`[handleConfirmSave] finalize 失败: HTTP ${finalizeRes.status}`);
-        toast.error(t('ai.finalizeFailed'));
-        // 关键修复：finalize 失败时阻止后续的"成功"提示和状态清理
-        return;
+        throw new Error(errMsg);
       }
 
       // 检查 finalize 返回的实际保存/跳过数量
@@ -348,10 +364,11 @@ const AICopilot = ({ onShowLogin }) => {
       }
     } catch (error) {
       console.error('保存失败:', error);
-      toast.error(t('common.saveFailed') + ': ' + error.message);
+      toast.error(t('common.saveFailed') + ': ' + (error.message || ''));
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
-  }, [currentSession.extractResult, currentCaseId, caseText, currentSchemaId, addNodeToGraph, addLinkToGraph, loadAllCasesToGraph, setExtractResult, toast, t]);
+  }, [currentCaseId, caseText, currentSchemaId, addNodeToGraph, addLinkToGraph, loadAllCasesToGraph, setExtractResult, toast, t]);
 
   // 案例拆解：开始调整
   const handleRequestAdjustment = useCallback(() => {
@@ -440,21 +457,26 @@ const AICopilot = ({ onShowLogin }) => {
     setIsParsingFile(true);
     try {
       const text = await parseDocument(file);
+      // 防止组件卸载后设置状态
+      if (!isMountedRef.current) return;
       setCaseText(text);
       const preview = file.name.length > 20 ? file.name.slice(0, 20) + '…' : file.name;
       toast.success(t('ai.fileParsed', { name: preview, count: text.length.toLocaleString() }));
     } catch (err) {
+      if (!isMountedRef.current) return;
       toast.error(err.message || t('common.fileParseFailed'));
     } finally {
-      setIsParsingFile(false);
-      // 清空 input 以便重复选择同一文件
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (isMountedRef.current) {
+        setIsParsingFile(false);
+        // 清空 input 以便重复选择同一文件
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
     }
   }, [toast]);
 
-  // 多轮提取：进入 Pipeline 模式
-  const handleStartPipeline = useCallback(async () => {
-    if (!caseText.trim() || !currentSchemaId) return;
+  // 深度提取：基于快速拆解结果进入深度提取流程
+  const handleStartDeepExtract = useCallback(async () => {
+    if (!caseText?.trim() || !currentSchemaId) return;
 
     // 从 store 获取最新的 currentCaseId（避免闭包 stale）
     let targetCaseId = useCaseStore.getState().currentCaseId;
@@ -469,7 +491,7 @@ const AICopilot = ({ onShowLogin }) => {
         // 设置当前案例
         setCurrentCase(targetCaseId);
         // 刷新案例列表
-        useCaseStore.getState().loadCases();
+        useCaseStore.getState().loadCases().catch(e => console.error('[handleStartPipeline] loadCases 失败:', e));
       } catch (error) {
         toast.error(t('common.createCaseFailed') + ': ' + error.message);
         return;
@@ -641,8 +663,8 @@ const AICopilot = ({ onShowLogin }) => {
         )}
       </div>
 
-      {/* 案例拆解模式：输入表单 + 对话区 */}
-      {currentAgentName === 'case_extractor' && extractionMode === 'chat' && (
+      {/* 案例拆解模式：输入表单（仅在未出结果时显示，结果出来后由 ExtractionResult 接管） */}
+      {currentAgentName === 'case_extractor' && extractionMode === 'chat' && !currentSession.extractResult && (
         <div className={`${
           (currentSession.messages || []).length === 0
             ? 'flex-1 flex flex-col p-6'
@@ -735,15 +757,15 @@ const AICopilot = ({ onShowLogin }) => {
         </div>
       )}
 
-      {/* 消息列表 / Pipeline 区域 */}
+      {/* 结果 / 消息 / Pipeline 区域 */}
       <div className={`${
-        currentAgentName === 'case_extractor' && extractionMode === 'chat' && (currentSession.messages || []).length === 0
+        currentAgentName === 'case_extractor' && extractionMode === 'chat' && !currentSession.extractResult && (currentSession.messages || []).length === 0
           ? 'flex-none'
           : 'flex-1'
       } overflow-y-auto`}>
         {currentAgentName === 'case_extractor' && extractionMode === 'pipeline' && currentCaseId ? (
           /* Pipeline 模式：全屏提取流程 */
-          <ExtractionPipeline
+          <DeepExtraction
             caseId={currentCaseId}
             caseText={caseText}
             onComplete={handlePipelineComplete}
@@ -784,8 +806,8 @@ const AICopilot = ({ onShowLogin }) => {
               )
             ) : (
               <>
-                {/* 对话消息列表 */}
-                {(currentSession.messages || []).map((message) => {
+                {/* 对话消息列表（有提取结果时隐藏，由 ExtractionResult 接管） */}
+                {!currentSession.extractResult && (currentSession.messages || []).map((message) => {
                   const isOldVersion = message.isLatest === false;
                   const isExpanded = expandedOldMessages.has(message.id);
 
@@ -866,14 +888,14 @@ const AICopilot = ({ onShowLogin }) => {
                 {/* 案例拆解模式：提取结果面板（仅聊天模式） */}
                 {currentAgentName === 'case_extractor' && extractionMode === 'chat' && (
                   <div className="pt-2">
-                    <ExtractResultPanel
+                    <ExtractionResult
                       extractResult={currentSession.extractResult}
                       isThinking={currentSession.isThinking}
                       isSaving={isSaving}
                       selectedCaseId={currentCaseId}
                       onConfirmSave={handleConfirmSave}
                       onRequestAdjustment={handleRequestAdjustment}
-                      onStartPipeline={currentSchemaId ? handleStartPipeline : null}
+                      onStartDeepExtract={currentSchemaId ? handleStartDeepExtract : null}
                     />
                   </div>
                 )}

@@ -60,7 +60,7 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+    const result = await pool.query('SELECT id, username, password_hash, email, role, created_at FROM users WHERE username = $1', [username]);
     if (result.rows.length === 0) {
       return res.status(401).json({ error: '用户名或密码错误' });
     }

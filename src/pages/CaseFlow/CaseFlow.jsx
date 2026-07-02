@@ -18,7 +18,7 @@ import { useAuth, useCaseData } from '../../hooks';
 import { useMobileDetect } from '../../hooks/useMobileDetect';
 import SchemaArchitect from './components/SchemaArchitect/index';
 import KnowledgeGraphCanvas from './components/KnowledgeGraphCanvas';
-import AICopilot from './components/AICopilot';
+import CaseExtractor from './components/CaseExtractor';
 import LoginModal from './components/LoginModal';
 import { CaseListPanel, CreateCaseModal } from './components/CaseManagement';
 import { useI18n } from '../../i18n';
@@ -36,7 +36,7 @@ const CaseFlow = () => {
   const [mobileDrawer, setMobileDrawer] = useState(null); // null | 'left' | 'right'
 
   // Use extracted hooks
-  const { isAuthenticated, user, logout, verifyAuth } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const { initializeGraph, focusCaseId, focusMode, loadAllCasesToGraph } = useGraphStore();
   const { t, locale, setLocale } = useI18n();
   const {
@@ -63,25 +63,17 @@ const CaseFlow = () => {
   // 登录弹窗状态
   const [showLoginModal, setShowLoginModal] = useState(false);
 
-  // 初始化：验证登录状态并加载数据
+  // 初始化：加载数据（verifyAuth 由 useAuth hook 负责，这里只加载业务数据）
   useEffect(() => {
     const initData = async () => {
-      await verifyAuth();
       await loadSchemas();
       await loadCases();
       initializeGraph();
     };
-    initData();
-  }, [verifyAuth, loadSchemas, loadCases, initializeGraph]);
-
-  // 登录成功后重新加载数据（修复 LoginModal 登录后数据不刷新的问题）
-  useEffect(() => {
     if (isAuthenticated) {
-      loadSchemas();
-      loadCases();
-      // 注意：不在这里调用 loadAllCasesToGraph，等 cases 加载完成后再调用
+      initData();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, loadSchemas, loadCases, initializeGraph]);
 
   // cases 加载完成后加载图谱
   useEffect(() => {
@@ -329,7 +321,7 @@ const CaseFlow = () => {
                 transition={{ duration: 0.25 }}
                 className="h-full"
               >
-                <AICopilot onShowLogin={() => setShowLoginModal(true)} />
+                <CaseExtractor onShowLogin={() => setShowLoginModal(true)} />
               </motion.div>
             )}
           </AnimatePresence>

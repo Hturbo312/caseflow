@@ -28,7 +28,7 @@ function mergeEntities(candidates, dbEntities) {
   return Array.from(byName.values());
 }
 
-const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
+const DeepExtraction = memo(({ caseId, caseText, onComplete, existingEntities = [], existingRelations = [] }) => {
   const { t } = useI18n();
   const toast = useToastStore();
   const {
@@ -45,10 +45,10 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
 
   // 初始化
   useEffect(() => {
-    if (caseId && caseText) {
+    if (caseId && caseText && currentSchemaId) {
       setContext(caseId, currentSchemaId, caseText);
     }
-  }, [caseId, caseText]);
+  }, [caseId, caseText, currentSchemaId, setContext]);
 
   // 已提取的类型
   const extractedTypes = Object.keys(candidates);
@@ -111,7 +111,7 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
       const token = authHelper.getToken();
 
       // 1. 保存已审核的实体（直接调用 API，不经过 store 的 finalize）
-      const approvedEntities = Object.values(candidates).flat().filter(c => c.status === 'approved');
+      const approvedEntities = Object.values(candidates || {}).flat().filter(c => c.status === 'approved');
       if (approvedEntities.length > 0) {
         // 从 schema 的 entityTypes 中获取颜色，补充到实体数据中
         const schemaEntityTypes = currentSchema?.entityTypes || [];
@@ -202,11 +202,11 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
       }
 
       setPhase('completed', t('ai.caseBreakdownComplete'));
-      // 重置提取状态，避免重新打开时显示旧数据
-      useExtractionStore.getState().reset();
+      // 先通知完成（刷新图谱等），再重置提取状态
       if (onComplete) {
         onComplete();
       }
+      useExtractionStore.getState().reset();
     } catch (e) {
       console.error('[handleFinalize] 保存失败:', e);
       setPhase('error', `${t('common.saveFailed')}: ${e.message}`);
@@ -409,6 +409,6 @@ const ExtractionPipeline = memo(({ caseId, caseText, onComplete }) => {
   );
 });
 
-ExtractionPipeline.displayName = 'ExtractionPipeline';
+DeepExtraction.displayName = 'DeepExtraction';
 
-export default ExtractionPipeline;
+export default DeepExtraction;

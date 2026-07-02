@@ -175,6 +175,11 @@ const DEFAULT_CASES = [
   },
 ];
 
+// 注册认证过期回调：API 返回 401 清除 token 时，同步清除 auth store
+authHelper.onAuthExpired(() => {
+  useAuthStore.setState({ isAuthenticated: false, user: null });
+});
+
 // ============ Schema Store ============
 export const useSchemaStore = create((set, get) => ({
   currentSchemaId: null,
@@ -254,7 +259,11 @@ export const useSchemaStore = create((set, get) => ({
   },
 
   deleteSchema: async (id) => {
-    // 先更新本地状态
+    // 保存旧状态以便回滚
+    const prevState = useSchemaStore.getState();
+    const deletedSchema = prevState.schemas.find(s => s.id === id);
+
+    // 乐观更新：先更新本地
     set((state) => {
       const newSchemas = state.schemas.filter(s => s.id !== id);
       return {
@@ -263,11 +272,18 @@ export const useSchemaStore = create((set, get) => ({
       };
     });
 
-    // 调用 API 删除
     try {
       await schemaApi.delete(id);
     } catch (error) {
       console.error('删除 Schema 失败:', error);
+      // 回滚本地状态
+      if (deletedSchema) {
+        set((state) => ({
+          schemas: [...state.schemas, deletedSchema].sort((a, b) => a.id - b.id),
+          currentSchemaId: state.currentSchemaId || deletedSchema.id,
+        }));
+      }
+      throw error; // 向上传播以便 UI 提示用户
     }
   },
   updateSchema: async (id, updates) => {
@@ -1590,7 +1606,7 @@ export const useExtractionStore = create((set, get) => ({
     )
   })),
 
-  // 注意：finalize 已迁移至组件层（ExtractionPipeline.executeFinalize / AICopilot.handleConfirmSave）
+  // 注意：finalize 已迁移至组件层（ExtractionPipeline.executeFinalize / CaseExtractor.handleConfirmSave）
   // 此函数保留仅作向后兼容，建议使用组件层的最终保存逻辑
   finalize: async () => {
     const { currentCaseId, candidates, relationCandidates } = get();
