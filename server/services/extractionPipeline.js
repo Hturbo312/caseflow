@@ -663,6 +663,7 @@ export async function saveRelationsBulk(caseId, relations) {
     .filter(Boolean);
 
   // 查询已存在的关系，避免重复插入
+  let alreadyExistingCount = 0;
   if (relTuples.length > 0) {
     const existingQuery = `
       SELECT source_entity_id, target_entity_id, relation_type
@@ -680,7 +681,7 @@ export async function saveRelationsBulk(caseId, relations) {
 
     // 分离待插入和已存在的关系（已存在不算错误，单独计数）
     const toInsert = [];
-    let alreadyExistingCount = 0;
+    alreadyExistingCount = 0;
     for (const item of relTuples) {
       const key = `${item.sourceId}-${item.targetId}-${item.relationType}`;
       if (existingSet.has(key)) {
@@ -693,7 +694,7 @@ export async function saveRelationsBulk(caseId, relations) {
     // 批量 INSERT：单条查询代替 N 条
     if (toInsert.length > 0) {
       const values = toInsert.map((item, i) => {
-        const base = i * 4;
+        const base = i * 3;
         return `($1, $${base + 2}, $${base + 3}, $${base + 4})`;
       }).join(', ');
       const insertParams = [caseId, ...toInsert.flatMap(item => [item.sourceId, item.targetId, item.relationType])];

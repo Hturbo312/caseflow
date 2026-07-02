@@ -521,6 +521,17 @@ export async function initializeDatabase() {
       `);
     }
 
+    // 为 case_entities 添加 color 列（迁移已有表）
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                       WHERE table_name = 'case_entities' AND column_name = 'color') THEN
+          ALTER TABLE case_entities ADD COLUMN color VARCHAR(50);
+        END IF;
+      END $$;
+    `);
+
     // 为 case_entities 添加溯源字段（迁移已有表）
     await pool.query(`
       DO $$

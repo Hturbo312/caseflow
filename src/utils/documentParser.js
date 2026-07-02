@@ -3,17 +3,29 @@
  * PDF 使用 pdfjs-dist（Mozilla 官方），DOCX 使用 mammoth
  */
 
+// Promise.withResolvers polyfill（pdfjs-dist v5 依赖此 ES2024 API）
+if (!Promise.withResolvers) {
+  Promise.withResolvers = function () {
+    let resolve, reject;
+    const promise = new Promise((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    return { promise, resolve, reject };
+  };
+}
+
 // Vite 会将 worker 文件打包到 assets 目录并返回其 URL
 import PdfjsWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 
-import * as pdfjsLib from 'pdfjs-dist';
+import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 
 // 配置 worker 路径
-pdfjsLib.GlobalWorkerOptions.workerSrc = PdfjsWorker;
+GlobalWorkerOptions.workerSrc = PdfjsWorker;
 
 export async function parsePDF(file) {
   const buffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
+  const pdf = await getDocument({ data: new Uint8Array(buffer) }).promise;
 
   let fullText = '';
   for (let i = 1; i <= pdf.numPages; i++) {

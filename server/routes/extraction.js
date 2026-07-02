@@ -240,7 +240,7 @@ router.post('/:caseId/batch-save-entities', authMiddleware, async (req, res) => 
     if (toInsert.length > 0) {
       // 优化：使用单条批量 INSERT 代替 N 次独立查询
       const values = toInsert.map((e, i) => {
-        const base = i * 5;
+        const base = i * 4;
         return `($1, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5})`;
       }).join(', ');
       const params = [caseId];

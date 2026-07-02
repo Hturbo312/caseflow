@@ -302,7 +302,7 @@ const AICopilot = ({ onShowLogin }) => {
           relationsSaved = true;
         } else {
           console.error('[handleConfirmSave] relation save failed, HTTP ' + relRes.status);
-          toast.warn(t('ai.relationSaveFailed'));
+          toast.warning(t('ai.relationSaveFailed'));
           // 关键修复：批量保存失败时不标记 preSaved，让 finalize 安全网尝试直接保存
         }
       }
@@ -342,7 +342,7 @@ const AICopilot = ({ onShowLogin }) => {
       // 根据实际保存结果展示不同的提示
       if (skippedRels.length > 0) {
         console.warn(`[handleConfirmSave] ${skippedRels.length} 条关系被跳过:`, skippedRels);
-        toast.warn(t('ai.relationSaveIncomplete', { approved: relationsToSave.length, saved: actualSavedRels }));
+        toast.warning(t('ai.relationSaveIncomplete', { approved: relationsToSave.length, saved: actualSavedRels }));
       } else {
         toast.success(t('ai.saveSuccess', { entities: addedEntities.length, relations: actualSavedRels }));
       }
