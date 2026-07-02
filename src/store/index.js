@@ -262,18 +262,26 @@ export const useSchemaStore = create((set, get) => ({
     // 保存旧状态以便回滚
     const prevState = useSchemaStore.getState();
     const deletedSchema = prevState.schemas.find(s => s.id === id);
+    // 使用 String() 比较避免类型不一致（currentSchemaId 可能是字符串或数字）
+    const wasCurrentSchema = String(prevState.currentSchemaId) === String(id);
 
     // 乐观更新：先更新本地
     set((state) => {
       const newSchemas = state.schemas.filter(s => s.id !== id);
       return {
         schemas: newSchemas,
-        currentSchemaId: state.currentSchemaId === id ? (newSchemas[0]?.id || null) : state.currentSchemaId
+        currentSchemaId: String(state.currentSchemaId) === String(id) ? (newSchemas[0]?.id || null) : state.currentSchemaId
       };
     });
 
     try {
       await schemaApi.delete(id);
+      // 删除成功后刷新案例列表和图谱（确保 schema 切换后数据一致）
+      if (wasCurrentSchema) {
+        useCaseStore.getState().loadCases().catch(e => console.error('[deleteSchema] loadCases 失败:', e));
+      }
+      // 始终重载图谱，防止 currentSchemaId 未变但 cases 的 schema_id 被 SET NULL 导致图谱空白
+      useGraphStore.getState().loadAllCasesToGraph();
     } catch (error) {
       console.error('删除 Schema 失败:', error);
       // 回滚本地状态
@@ -846,12 +854,13 @@ export const useGraphStore = create((set, get) => ({
     // 守卫：数据未就绪时跳过，防止清空图谱
     if (!currentSchemaId || !allCases || allCases.length === 0) return;
 
-    // 过滤当前 schema 下的所有案例（兼容字符串和数字类型）
-    const schemaCases = allCases.filter(c =>
-      c.schemaId === currentSchemaId ||
-      c.schemaId === parseInt(currentSchemaId) ||
-      parseInt(c.schemaId) === parseInt(currentSchemaId)
-    );
+    // 过滤当前 schema 下的所有案例（兼容字符串/数字类型，排除 schemaId 为 null 的孤儿案例）
+    const schemaCases = allCases.filter(c => {
+      if (c.schemaId == null) return false; // FK SET NULL 产生的孤儿案例，跳过
+      const cId = String(c.schemaId);
+      const sId = String(currentSchemaId);
+      return cId === sId;
+    });
 
     const allNodes = [];
     const allLinks = [];
