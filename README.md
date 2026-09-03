@@ -1,4 +1,4 @@
-# Urban CaseFlow
+# CaseFlow
 
 <p align="center">
   <strong>A human–AI framework for structuring, comparing, and mobilizing urban planning case knowledge</strong><br>
@@ -15,12 +15,13 @@
 ---
 
 ## Overview
+<img width="2155" height="1085" alt="image" src="https://github.com/user-attachments/assets/503e5434-7e54-4b5b-b68a-ef9ace80b73c" />
 
 Urban planning routinely confronts complex, context-dependent problems. Planning knowledge includes not only formal rules, standards, and procedures, but also experiential insights accumulated through prior projects, policies, and local practices. This case-based knowledge typically resides in unstructured narrative forms — planning reports, policy documents, research papers, and project descriptions — making systematic comparison, retrieval, and reuse difficult.
 
-Urban CaseFlow is a **research prototype** that supports the knowledge-mobilization process through which prior planning experience is structured, reviewed, retrieved, compared, and brought to bear on current analysis. It is neither an automated planning system nor a decision-making tool. The system assists rather than replaces expert judgment.
+CaseFlow is a **research prototype** that supports the knowledge-mobilization process through which prior planning experience is structured, reviewed, retrieved, compared, and brought to bear on current analysis. It is neither an automated planning system nor a decision-making tool. The system assists rather than replaces expert judgment.
 
-Urban CaseFlow 是一个面向城市规划案例知识结构化与调用的研究原型系统，重点支持规划经验从非结构化文本到可比较、可检索、可追溯知识图谱的转化过程。
+CaseFlow 是一个面向城市规划案例知识结构化与调用的研究原型系统，重点支持规划经验从非结构化文本到可比较、可检索、可追溯知识图谱的转化过程。
 
 ---
 
@@ -28,7 +29,7 @@ Urban CaseFlow 是一个面向城市规划案例知识结构化与调用的研�
 
 In planning reasoning, **rule-based knowledge** (regulations, codes, formal procedures) and **case-based knowledge** (contextual experience, stakeholder interactions, implementation adaptations, outcomes) are complementary. While formal rules are relatively straightforward to encode, the contextual richness of planning cases — actors, strategies, institutional conditions, spatial settings, and outcomes — remains embedded in narrative descriptions. This asymmetry limits systematic learning from prior planning experience.
 
-Urban CaseFlow concentrates on a specific step in the knowledge lifecycle: **making implicit experiential knowledge embedded in planning narratives structurally explicit, comparable, and retrievable**, while preserving the institutional and regulatory context within which each case is situated. The system does not attempt to unify or replace rule-based and case-based reasoning paradigms; it provides infrastructure for case knowledge mobilization that must always be interpreted by domain experts.
+CaseFlow concentrates on a specific step in the knowledge lifecycle: **making implicit experiential knowledge embedded in planning narratives structurally explicit, comparable, and retrievable**, while preserving the institutional and regulatory context within which each case is situated. The system does not attempt to unify or replace rule-based and case-based reasoning paradigms; it provides infrastructure for case knowledge mobilization that must always be interpreted by domain experts.
 
 ---
 
@@ -283,7 +284,7 @@ This is a **research prototype** developed to support academic investigation of 
 
 3. **Structural similarity does not imply transferability.** The case recommendation system identifies structurally similar cases based on shared entities and relational patterns. Similarity scores are computed from graph topology, vector proximity, and entity-type distributions. Two cases being structurally similar does not mean that interventions from one can be directly applied to another. Applicability must be assessed against local spatial, institutional, regulatory, governance, and political conditions.
 
-4. **The system does not replace planning expertise.** Urban CaseFlow is designed to make case knowledge more structured, comparable, and retrievable. It does not automate planning decisions, evaluate plan quality, or recommend specific planning actions.
+4. **The system does not replace planning expertise.** CaseFlow is designed to make case knowledge more structured, comparable, and retrievable. It does not automate planning decisions, evaluate plan quality, or recommend specific planning actions.
 
 5. **Current operational limitations:**
    - The database connection is hardcoded (database name `knowledge_graph`, user `postgres`, Unix socket `/var/run/postgresql`). See `server/db.js`.
@@ -305,7 +306,7 @@ The paper is currently under development. Citation information will be added upo
 
 ```
 @article{urban-caseflow,
-  title   = {Urban CaseFlow: A Human-AI Framework for Structuring and Mobilizing Urban Planning Case Knowledge},
+  title   = {CaseFlow: A Human-AI Framework for Structuring and Mobilizing Urban Planning Case Knowledge},
   author  = {[Authors]},
   journal = {[Journal]},
   year    = {[Year]},
