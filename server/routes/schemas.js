@@ -4,6 +4,29 @@ import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// 稳定键：发布后不可变；未提供时从名称自动生成（与 migration 003 规则一致）
+const toStableKey = (name) => name
+  ? String(name).split('（')[0].trim().toLowerCase()
+      .replace(/ \/ /g, '_').replace(/[\s-]+/g, '_').replace(/[^a-z0-9_]/g, '')
+  : null;
+
+// frozen / archived 版本不可直接修改（Spec §5.2 操作权限、§9.1）
+// 该 schema 行若被冻结/归档版本引用，则其类型与关系定义只读
+async function guardVersionWritable(schemaId, res) {
+  const { rows } = await pool.query(
+    `SELECT v.id, v.version_key, v.status FROM schema_versions v
+     WHERE v.legacy_schema_id = $1 AND v.status IN ('frozen','archived') LIMIT 1`,
+    [schemaId]);
+  if (rows.length > 0) {
+    res.status(409).json({
+      error: `Schema 属于${rows[0].status === 'frozen' ? '已冻结' : '已归档'}版本 ${rows[0].version_key}，不可修改。如需调整请创建新草案版本。`,
+      version_id: rows[0].id, status: rows[0].status,
+    });
+    return false;
+  }
+  return true;
+}
+
 // Health Check
 router.get('/health', async (req, res) => {
   try {
@@ -102,11 +125,12 @@ router.get('/:id', async (req, res) => {
 // 添加实体类型
 router.post('/:schemaId/entity-types', authMiddleware, async (req, res) => {
   const { schemaId } = req.params;
+  if (!(await guardVersionWritable(schemaId, res))) return;
   const { name, color, properties } = req.body;
   try {
     const result = await pool.query(
-      'INSERT INTO entity_types (schema_id, name, color, properties) VALUES ($1, $2, $3, $4) RETURNING *',
-      [schemaId, name, color, JSON.stringify(properties || [])]
+      'INSERT INTO entity_types (schema_id, name, color, properties, stable_key) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [schemaId, name, color, JSON.stringify(properties || []), toStableKey(name)]
     );
     res.json({ entityType: result.rows[0] });
   } catch (error) {
@@ -117,6 +141,7 @@ router.post('/:schemaId/entity-types', authMiddleware, async (req, res) => {
 // 更新实体类型
 router.put('/:schemaId/entity-types/:entityTypeId', authMiddleware, async (req, res) => {
   const { schemaId, entityTypeId } = req.params;
+  if (!(await guardVersionWritable(schemaId, res))) return;
   const { name, color, properties } = req.body;
   try {
     const result = await pool.query(
@@ -135,6 +160,7 @@ router.put('/:schemaId/entity-types/:entityTypeId', authMiddleware, async (req, 
 // 删除实体类型
 router.delete('/:schemaId/entity-types/:entityTypeId', authMiddleware, async (req, res) => {
   const { schemaId, entityTypeId } = req.params;
+  if (!(await guardVersionWritable(schemaId, res))) return;
   try {
     await pool.query('DELETE FROM entity_types WHERE id = $1 AND schema_id = $2', [entityTypeId, schemaId]);
     res.json({ message: 'Entity type deleted' });
@@ -146,11 +172,12 @@ router.delete('/:schemaId/entity-types/:entityTypeId', authMiddleware, async (re
 // 添加关系定义
 router.post('/:schemaId/relations', authMiddleware, async (req, res) => {
   const { schemaId } = req.params;
+  if (!(await guardVersionWritable(schemaId, res))) return;
   const { name, fromEntityType, toEntityType, description, direction, color, style, properties } = req.body;
   try {
     const result = await pool.query(
-      'INSERT INTO relations (schema_id, name, from_entity_type, to_entity_type, description, direction, color, style, properties) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
-      [schemaId, name, fromEntityType, toEntityType, description, direction || 'directed', color || '#9ca3af', style || 'solid', JSON.stringify(properties || [])]
+      'INSERT INTO relations (schema_id, name, from_entity_type, to_entity_type, description, direction, color, style, properties, stable_key) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
+      [schemaId, name, fromEntityType, toEntityType, description, direction || 'directed', color || '#9ca3af', style || 'solid', JSON.stringify(properties || []), toStableKey(name)]
     );
     res.json({ relation: result.rows[0] });
   } catch (error) {
@@ -161,6 +188,7 @@ router.post('/:schemaId/relations', authMiddleware, async (req, res) => {
 // 更新关系定义
 router.put('/:schemaId/relations/:relationId', authMiddleware, async (req, res) => {
   const { schemaId, relationId } = req.params;
+  if (!(await guardVersionWritable(schemaId, res))) return;
   const { name, fromEntityType, toEntityType, description, direction, color, style, properties } = req.body;
   try {
     const result = await pool.query(
@@ -188,6 +216,7 @@ router.put('/:schemaId/relations/:relationId', authMiddleware, async (req, res) 
 // 删除关系定义
 router.delete('/:schemaId/relations/:relationId', authMiddleware, async (req, res) => {
   const { schemaId, relationId } = req.params;
+  if (!(await guardVersionWritable(schemaId, res))) return;
   try {
     await pool.query('DELETE FROM relations WHERE id = $1 AND schema_id = $2', [relationId, schemaId]);
     res.json({ message: 'Relation deleted' });

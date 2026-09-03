@@ -346,6 +346,50 @@
 .ws-schema-banner span { font-size: 11px; color: #64748b; }
 .ws-schema-body { flex: 1; min-height: 0; overflow: auto; padding: 10px 16px 20px; }
 .ws-schema-body > * { max-width: 100%; }
+.ws-schema-versions { padding: 10px 16px 0; }
+
+/* ---------- Schema 版本栏 ---------- */
+.ws-versionbar {
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+  padding: 9px 13px; font-size: 12px;
+}
+.ws-versionbar-row { display: flex; align-items: center; gap: 9px; color: #374151; }
+.ws-versionbar-title { font-weight: 800; }
+.ws-versionbar-toggle { border: none; background: transparent; color: #0891b2; cursor: pointer; font-size: 12px; padding: 2px 4px; }
+.ws-versionbar-new {
+  display: inline-flex; align-items: center; gap: 3px; margin-left: auto;
+  border: 1px solid #a5f3fc; background: #ecfeff; color: #0e7490;
+  border-radius: 7px; padding: 4px 9px; cursor: pointer; font-size: 11.5px; font-weight: 600;
+}
+.ws-versionbar-form { display: flex; gap: 7px; margin-top: 9px; flex-wrap: wrap; }
+.ws-versionbar-form input {
+  flex: 1; min-width: 140px; border: 1px solid #e5e7eb; border-radius: 7px;
+  padding: 6px 10px; font-size: 12px;
+}
+.ws-versionbar-error {
+  margin-top: 8px; color: #b91c1c; background: #fef2f2; border-radius: 7px;
+  padding: 6px 9px; font-size: 11.5px; display: flex; align-items: center; gap: 5px;
+}
+.ws-versionbar-body { margin-top: 10px; display: flex; flex-direction: column; gap: 7px; }
+.ws-version-item {
+  display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+  background: #f8fafc; border: 1px solid #eef2f7; border-radius: 8px; padding: 7px 11px;
+}
+.ws-version-rq { color: #94a3b8; font-size: 11px; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ws-version-actions { margin-left: auto; display: flex; gap: 5px; }
+.ws-version-panel { border: 1px solid #e5e7eb; border-radius: 9px; background: #fff; }
+.ws-version-panel-head {
+  display: flex; align-items: center; gap: 7px; font-weight: 700; font-size: 12px;
+  padding: 8px 12px; border-bottom: 1px solid #eef2f7; color: #0e7490;
+}
+.ws-version-panel-head button { margin-left: auto; border: none; background: transparent; cursor: pointer; color: #94a3b8; }
+.ws-version-panel-body { padding: 10px 12px; }
+.ws-version-note { font-size: 11px; color: #94a3b8; margin: 9px 0 0; }
+.ws-version-log-row { display: flex; gap: 9px; align-items: center; font-size: 11.5px; padding: 4px 0; color: #374151; }
+.ws-version-log-type { font-weight: 700; color: #0e7490; }
+.ws-version-log-meta { margin-left: auto; color: #cbd5e1; font-size: 10.5px; }
+.ws-diff-row { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; padding: 4px 0; }
+.ws-diff-item { font-size: 11.5px; color: #374151; background: #f1f5f9; border-radius: 5px; padding: 2px 7px; }
 
 /* ============================================================
    中栏：Analysis 工作区

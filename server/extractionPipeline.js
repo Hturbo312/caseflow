@@ -1005,9 +1005,9 @@ export async function persistEvidenceAndFacts(caseId, items = []) {
     evidenceCount++;
 
     // 同步写 L1 原子事实（独立于 Schema，schema 改版不重拆）
-    await pool.query(
+    const factRes = await pool.query(
       `INSERT INTO atomic_facts (case_id, segment_id, fact_text, fact_type, status, metadata)
-       VALUES ($1, $2, $3, $4, 'confirmed', $5)`,
+       VALUES ($1, $2, $3, $4, 'confirmed', $5) RETURNING id`,
       [caseId, segmentId, quote,
        item.targetType === 'entity' ? 'entity_evidence' : 'relation_evidence',
        JSON.stringify({
@@ -1016,6 +1016,20 @@ export async function persistEvidenceAndFacts(caseId, items = []) {
        })]
     );
     factCount++;
+
+    // 写事实断言（版本化关联，Spec §4.5）
+    const versionId = item.schemaVersionId || null;
+    if (item.targetType === 'entity') {
+      await pool.query(
+        `INSERT INTO fact_entity_assertions (fact_id, entity_id, schema_version_id, assertion_status)
+         VALUES ($1, $2, $3, 'confirmed') ON CONFLICT DO NOTHING`,
+        [factRes.rows[0].id, item.targetId, versionId]);
+    } else {
+      await pool.query(
+        `INSERT INTO fact_relation_assertions (fact_id, relation_id, schema_version_id, assertion_status)
+         VALUES ($1, $2, $3, 'confirmed') ON CONFLICT DO NOTHING`,
+        [factRes.rows[0].id, item.targetId, versionId]);
+    }
   }
   if (evidenceCount > 0) {
     console.log(`[persistEvidenceAndFacts] case ${caseId}: ${evidenceCount} 条证据 / ${factCount} 条原子事实`);

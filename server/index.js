@@ -22,6 +22,7 @@ import extractionRoutes from './routes/extraction.js';
 import evidenceRoutes from './routes/evidence.js';
 import compareRoutes from './routes/compare.js';
 import reviewRoutes from './routes/review.js';
+import schemaVersionsRoutes from './routes/schemaVersions.js';
 
 dotenv.config();
 
@@ -53,6 +54,7 @@ app.use('/api/extraction', extractionRoutes);
 app.use('/api/evidence', evidenceRoutes);
 app.use('/api/compare', compareRoutes);
 app.use('/api/review', reviewRoutes);
+app.use('/api', schemaVersionsRoutes);
 
 // 启动服务器 - 设置较长超时（LLM 调用较慢）
 const server = app.listen(PORT, '0.0.0.0', async () => {

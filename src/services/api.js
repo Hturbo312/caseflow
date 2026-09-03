@@ -508,3 +508,20 @@ export const analysisApi = {
   actionChain: (caseId) =>
     request('/compare/action-chain', { method: 'POST', body: JSON.stringify({ case_id: caseId }) }),
 };
+
+// ============================================
+// Schema Version API（2.0 Dynamic Schema 版本控制，Spec §6.1）
+// ============================================
+export const schemaVersionApi = {
+  families: () => request('/schema-families'),
+  versions: (familyId) => request(`/schema-families/${familyId}/versions`),
+  createDraft: (data) =>
+    request('/schema-versions/draft', { method: 'POST', body: JSON.stringify(data) }),
+  detail: (id) => request(`/schema-versions/${id}`),
+  diff: (id) => request(`/schema-versions/${id}/diff`),
+  impact: (id) => request(`/schema-versions/${id}/impact`),
+  approve: (id) => request(`/schema-versions/${id}/approve`, { method: 'POST' }),
+  freeze: (id) => request(`/schema-versions/${id}/freeze`, { method: 'POST' }),
+  archive: (id) => request(`/schema-versions/${id}/archive`, { method: 'POST' }),
+  changeLog: (id) => request(`/schema-versions/${id}/change-log`),
+};
