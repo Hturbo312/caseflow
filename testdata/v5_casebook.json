@@ -1,0 +1,4074 @@
+{
+  "source": "C:\\Users\\Jial\\AppData\\Local\\Temp\\codex-file-preview-GpNlrF\\数字与智能技术嵌入社区更新_第五章实证案例库_V5_可追溯证据版.docx",
+  "paragraphs": [
+    {
+      "style": "Normal",
+      "text": "数字与智能技术嵌入社区更新",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "第五章实证案例库 V5",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "17例核心案例 · 可追溯证据版",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "用途：支撑第5章“数字与智能技术嵌入社区更新的跨案例比较”完整撰写",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "证据链：案例事实 → 明确来源ID → 原始/官方/同行评议材料 → 研究解释",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 1",
+      "text": "0. 本轮结论：案例搜集已达到“第五章可写”门槛",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "结论：经过70例广泛候选池、真实性清洗、31例证据密度筛查及进一步定向取证，本轮形成17个可支撑第五章实证分析的核心案例。其中16例为已发生真实部署/运行过程的案例，1例（Havukoski）作为真实市政规划中的生成式AI前沿案例，明确不用于证明建成效果。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "停止继续无差别扩容的理由：当前5.2—5.4的核心论点均能由来自不同国家、时期和社区形态的3—8个案例交叉支撑。继续增加同质案例（尤其欧洲智慧能源灯塔项目）对解释力提升有限，反而会扩大材料处理成本和样本偏差。后续只在章节论证出现证据空档时定向补证。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "案例池收缩路径",
+      "links": []
+    },
+    {
+      "style": "Heading 1",
+      "text": "1. 证据标准与写作纪律",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "真实性门槛：至少有一条能直接证明“具体地点/社区 + 时间 + 技术或数字工具 + 实际任务/过程”的来源。纯概念、论文模拟、未落地原型不进入成熟部署池。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "交叉核验门槛：核心案例原则上同时使用官方/项目原始材料、同行评议论文、研究机构或可靠报道中的至少两类；只有单一项目宣传来源的结果不用于强因果结论。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "来源属性分层：政府/项目方报告的成效写作时必须标注“官方报告/项目方报告”；同行评议研究可用于居民接受度、过程解释与批判；可靠报道用于同期背景和争议补充。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "事实与解释分开：文档中的“关键事实—来源映射”只放可由来源直接支持的表述；“第五章用途”才是跨案例研究解释。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "空间因果纪律：楼层高度、密度、户数等首先作为Context。除非有直接证据，不把数字技术写成提高容积率、楼层或入住人口的原因。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "时间状态纪律：明确区分计划、试验、部署、使用、调整、扩散、退出与规划中状态，不预设统一发展阶段。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 1",
+      "text": "2. 17例核心案例总表",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 1",
+      "text": "3. 17例可追溯深度案例卡",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "说明：每例只保留当前能够被明确来源支撑的事实。案例卡中的“第五章用途”属于研究者后续比较的解释入口，不作为原始事实。",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "C003  Virtual Slaithwaite / Shaping Slaithwaite",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "地点 / 时间：英国西约克郡 Slaithwaite｜1998年前后",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "社区情境：小城镇/村庄尺度的社区规划参与。当地原本已有 Planning for Real（PFR）线下参与活动，并制作覆盖约2 km²的实体模型，居民通过现场活动表达对村庄未来的意见。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术介入前的主要问题 / 任务：传统参与依赖现场活动与实体模型；意见需要人工整理，且参与时间与地点受到线下活动约束。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术及其能力：Web-GIS：地图浏览、缩放、空间对象查询、将意见定位到具体地点并在线写入数据库。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "主要主体 / 服务对象：Colne Valley Trust、地方政府/规划参与者、利兹大学研究团队、当地居民与学生。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "时间过程：",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "1998年6月：社区原有PFR活动开展，学生参与制作实体模型。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "研究团队将Web-GIS并行嵌入该真实参与过程，并在现场布置联网电脑供居民使用。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "居民可在数字地图上定位空间对象并提交更长的规划意见，数据直接进入数据库。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "数字意见与线下PFR材料共同进入后续反馈和村庄规划过程。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "组织响应：数字系统没有替代既有社区组织，而是嵌入原有PFR流程；研究团队、现场电脑和技术支持成为数字参与能够发生的重要中介。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "空间 / 行为响应：直接变化首先发生在“意见—空间对象”的关联方式，而不是建成空间；数字意见用于后续村庄规划讨论。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "局限、调整或证据边界：早期互联网接入与数字素养存在明显代表性问题；研究者明确将Web-GIS定位为增强而非替代线下参与。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "第五章用途：5.2早期技术进入既有规划任务；5.3能力—任务关系与人工补位；5.4数字参与的边界。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "关键事实—来源映射",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "核心来源",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C003-S1] Virtual Slaithwaite: A Web Based Public Participation Planning for Real System｜University of Leeds｜学术案例报告  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.geog.leeds.ac.uk/papers/99-8/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C003-S2] Web Based GIS for Public Participation Decision Making in the UK｜University of Leeds｜学术案例报告  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.geog.leeds.ac.uk/papers/98-5/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C003-S3] Online public participation GIS for spatial planning｜Computers, Environment and Urban Systems｜同行评议论文  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.sciencedirect.com/science/article/pii/S0198971599000496"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "C005  Arabianranta / Helsinki Virtual Village",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "地点 / 时间：芬兰赫尔辛基 Arabianranta｜1997—2005+",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "社区情境：原陶瓷/工业用地向住宅、教育和创新产业混合社区转型，实体建设与数字基础设施同步推进。2004年前后社区仍处建设过程中。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术介入前的主要问题 / 任务：新社区需要形成基础设施、住宅公司治理、居民交流与地方服务体系，同时项目早期存在大量超前数字服务愿景。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术及其能力：1 Gbps本地网络、Helsinki Virtual Village门户、住宅公司网站/Extranet讨论区、公共WLAN；部分更高级服务处于概念或原型阶段。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "主要主体 / 服务对象：赫尔辛基市、Arabianranta Development Corporation、Arabia Service、住宅公司、志愿e-Moderator、居民、企业与高校。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "时间过程：",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "1997年前后：城市将Arabianranta作为新型开发/试验区域推进。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "1998年前后：光纤/本地网络基础设施形成；居民通过住宅公司间接拥有“最后一公里”服务公司。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2001年前后：Helsinki Virtual Village门户进入公众视野，媒体同时描述大量未来服务愿景。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2004：官方研究确认1 Gbps网络、住宅Extranet、e-Moderator与公共WLAN等实际存在，并对约500户开展问卷。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "后续：需要持续区分“愿景—原型—基础设施—居民真实使用”的不同状态。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "组织响应：住宅公司与志愿e-Moderator承担数字讨论区的日常管理，表明数字社区运行嵌入了既有住宅组织和居民志愿劳动。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "空间 / 行为响应：数字基础设施与新社区建设同步，但现有证据更能证明网络/治理组织变化，不能把社区空间形态直接归因于数字技术。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "局限、调整或证据边界：媒体所述位置感知、自动画像等能力并非当时全部成熟部署；高互联网渗透率也不意味着地方门户自然高频使用。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "第五章用途：5.2实体开发与数字基础设施并行；5.3组织中介；5.4“技术愿景≠实际部署/使用”的证据纪律。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "关键事实—来源映射",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "核心来源",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C005-S1] IntelCities / Local ICT solutions in Arabianranta（Intelcity报告）｜City of Helsinki Urban Facts / IntelCities｜官方研究报告  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.hel.fi/hel2/tietokeskus/julkaisut/pdf/intelcity.pdf"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C005-S2] Helsinki: The Virtual Village｜WIRED｜同期可靠报道  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.wired.com/2001/03/helsinki"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "C008  Eastserve / New East Manchester",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "地点 / 时间：英国曼彻斯特 East Manchester｜2000—2008+",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "社区情境：制造业衰退、人口流失和贫困背景下的大规模城市更新区域；数字排斥明显。2001年前后居民电脑接入率很低。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术介入前的主要问题 / 任务：居民获得公共信息、就业/培训与在线公共服务的渠道有限，互联网接入成本和设备可得性是障碍。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术及其能力：社区门户、补贴PC、ICT培训、社区在线中心、无线宽带和在线公共服务。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "主要主体 / 服务对象：New East Manchester、Manchester City Council、Eastserve运营方、社区组织、居民、Wired Up Communities计划。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "时间过程：",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2000：Eastserve最初作为本地社区门户建设。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2001前后：当地电脑接入率低，项目通过再利用/补贴PC和培训扩大接入。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2003前后：因不少家庭缺乏固定电话线路，发展无线宽带服务。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2008：影响评估对现用户、流失用户和从未使用者共626人进行调查，显示接入收益与持续不使用并存。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "组织响应：Eastserve从信息门户扩展为本地IT服务/培训和网络提供主体，与更新机构和公共服务体系连接。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "空间 / 行为响应：主要改变服务与信息可达性，直接空间改变证据较弱；其价值更多体现为更新区域中的数字基础设施与服务组织。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "局限、调整或证据边界：成本、缺乏兴趣和不使用持续存在；数字接入并不自动转化为持续使用。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "第五章用途：5.2更新区数字服务的嵌入；5.3服务组织变化；5.4采用不足与数字排斥。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "关键事实—来源映射",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "核心来源",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C008-S1] Eastserve Impact Evaluation – Executive Summary｜Manchester City Council / evaluation｜地方政府评估  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.manchester.gov.uk/egov_downloads/5._Digital_Strategy_appendix.pdf"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C008-S2] Manchester Digital Strategy（含Eastserve发展回顾）｜Manchester City Council｜地方政府文件  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.manchester.gov.uk/egov_downloads/5._Digital_Strategy.pdf"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C008-S3] Urban regeneration in the intelligent city｜学术研究｜学术论文/章节  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.researchgate.net/publication/228659685_Urban_regeneration_in_the_intelligent_city"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "C007  Carpenters Estate / Carpenters Connect",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "地点 / 时间：英国伦敦 Newham｜2001—2005+",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "社区情境：约750户目标家庭的公共住房社区，包含三栋高层住宅和低层住宅；贫困程度高，住房维护与更新问题突出。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术介入前的主要问题 / 任务：Wired Up Communities试图通过电视+机顶盒等方案改善数字接入；同时社区存在高层住宅质量、维护与总体规划参与需求。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术及其能力：PC-on-TV/数字电视、宽带、邮件/互联网、视频点播（VOD）、社区本地视频与在线信息。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "主要主体 / 服务对象：DfES/Wired Up Communities、Newham Council、TMO/Home 2 Home、Newham.net、居民、规划/设计团队、本地视频团队。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "时间过程：",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2001前后：Carpenters被纳入Wired Up Communities。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2002年10月：RR389记录750个目标家庭中设备交付数仍为0；创新PC-on-TV方案与入户布线问题造成明显实施滑期。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2003起：Estate进入Masterplanning/更新讨论。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2003—2005：规划师选择、会议、现场访问等过程被录像并通过VOD供居民查看，数字系统进入更新参与任务。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2005议会材料同时承认，部分录像传播功能亦可由社区大厅等线下方式实现。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "组织响应：TMO、地方政府、本地媒体团队与居民共同维持数字参与；技术不是独立运行，而是嵌入社区组织与规划咨询。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "空间 / 行为响应：数字能力主要改变居民获取规划过程信息的时间与渠道；社区住房/总体规划本身属于更大的更新过程，不能归因于数字系统。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "局限、调整或证据边界：部署严重延期；技术与参与改善之间不能简单作因果推断；官方材料本身承认存在可替代的线下方式。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "第五章用途：5.2非线性部署及任务再嵌入；5.3技术—社区组织关系；5.4失败/调整与因果边界。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "关键事实—来源映射",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "核心来源",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C007-S1] Connecting communities to the Internet: evaluation of the Wired Up Communities Programme (RR389)｜UK Department for Education and Skills / DERA｜政府评估报告  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://dera.ioe.ac.uk/id/eprint/4715/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C007-S2] Written Evidence: Newham / Home 2 Home – Carpenters Estate｜UK House of Commons｜议会书面证据  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://publications.parliament.uk/pa/cm200405/cmselect/cmodpm/316/316we10.htm"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "C010  上海五里桥街道社区信息化试点",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "地点 / 时间：中国上海卢湾（今黄浦）五里桥街道｜2001—2008+",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "社区情境：上海早期社区信息化试点之一，街道基层管理与公共服务信息分散，需要面向居民整合政务、社区事务与服务资源。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术介入前的主要问题 / 任务：街道不同业务系统和居民服务渠道分散，在线福利、就业等服务尚未形成统一社区入口。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术及其能力：社区信息系统、数据库、网站、热线与后续“一系统一网站一热线”式服务整合。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "主要主体 / 服务对象：上海市/卢湾区、五里桥街道、社区服务机构、居民与相关政府部门。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "时间过程：",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2001年7月前后：五里桥被纳入上海社区信息化试点。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2002：试点完成验收，上海开始推广相关经验。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2003—2007规划文件确认将政务、事务和服务功能整合进社区管理与公共服务系统。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2008回顾报道显示热线/系统持续处理居民服务诉求，形成线上线下结合的服务网络。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "组织响应：技术推动街道服务从分散业务向跨部门、热线/网站/系统协同组织；社区服务机构与政府部门形成信息连接。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "空间 / 行为响应：直接建成空间响应证据较弱；主要是服务组织和社区公共服务可达性变化。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "局限、调整或证据边界：现有资料以政府规划和回顾报道为主，居民独立评价与长期使用差异证据不足；不宜宣称“显著改善社区生活质量”的强因果结论。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "第五章用途：5.2中国早期社区服务信息化；5.3服务组织关系；5.4证据来源属性与空间效应边界。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "关键事实—来源映射",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "核心来源",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C010-S1] 卢湾区2003—2007年信息化发展主要目标和任务｜上海市黄浦区（原卢湾区）｜政府规划文件  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.shhuangpu.gov.cn/zw/009006/009006001/009006001003/009006001003008/009006001003008001/20050907/97651.html"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C010-S2] 卢湾区信息化建设相关年鉴/试点回顾（2001—2002）｜上海市黄浦区｜政府年鉴资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.shhuangpu.gov.cn/zw/009006/009006002/009006002022/009006002022003/009006002022003001/009006002022003001005/20051013/101551.html"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C010-S3] 上海社区信息化发展回顾（五里桥试点与全市推广）｜中共上海市委党校相关资料｜研究/政策回顾  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.sdx.sh.cn/info/2141/324521.htm"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C010-S4] 五里桥社区信息化运行回顾报道｜文汇/东方网转载｜可靠报道  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://news.sina.com.cn/o/2008-07-06/091914122951s.shtml"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "C062  Red Hook WiFi / Digital Stewards",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "地点 / 时间：美国纽约布鲁克林 Red Hook｜2011—2018+",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "社区情境：低洼、洪水风险高且长期资源不足的公共住房社区；Red Hook Houses约6500名居民。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术介入前的主要问题 / 任务：数字接入和社区通信韧性不足；灾害时传统通信基础设施容易中断。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术及其能力：社区无线Mesh网络、公共WiFi、Tidepools/SMS地图工具及本地网络维护培训。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "主要主体 / 服务对象：Red Hook Initiative、Digital Stewards（社区年轻居民）、Red Hook Houses居民、志愿者/救援组织、FEMA等。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "时间过程：",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2011前后：社区无线网络与Digital Stewards培训逐步建设。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2012 Hurricane Sandy：社区受淹，RHI所在建筑与网络保持部分运行，成为救援和信息协调节点。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "灾后：Digital Stewards继续负责建设、维护和推广网络；项目发展为社区技术培训/就业能力的一部分。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "后续研究强调，社区无线网络若缺乏本地维护技能和组织支持，容易失效。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "组织响应：居民不只是“用户”，部分年轻居民成为网络建设者和维护者；技术能力转化为社区基础设施管理角色。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "空间 / 行为响应：主要改变灾害期间通信与救援信息的空间可达性，直接物质空间改造有限。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "局限、调整或证据边界：社区网络持续性依赖维护、培训和组织资源；灾害中的应急价值不能等同于日常数字公平问题已解决。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "第五章用途：5.2灾害韧性任务；5.3居民从服务对象转为技术维护主体；5.4组织能力决定技术持续性。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "关键事实—来源映射",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "核心来源",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C062-S1] Wireless Mesh Networks as Community Hubs: Analysis of Small-Scale Wireless Mesh Networks and Community-Centered Technology Training｜Journal of Information Policy｜同行评议论文  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://doi.org/10.5325/JINFOPOLI.8.2018.0232"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C062-S2] Case Study: Red Hook Initiative WiFi / Tidepools｜New America｜研究机构案例  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.newamerica.org/insights/case-study-red-hook-initiative-wifi-tidepools/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C062-S3] Red Hook WiFi｜Urban Omnibus｜专业媒体/城市研究报道  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://urbanomnibus.net/2013/09/red-hook-wifi/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "C024  Detroit Motor City Mapping",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "地点 / 时间：美国底特律｜2013—2015+",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "社区情境：长期人口流失、空置和建筑衰败背景下，城市需要快速掌握宗地/建筑条件并确定拆除、修复和政策优先级。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术介入前的主要问题 / 任务：缺少覆盖全市且及时更新的统一衰败数据；旧的2009调查逐渐不能代表现状。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术及其能力：移动端“Blexting”宗地调查、照片、实时上传、数据库/GIS整合与在线地图；结合30多个数据集。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "主要主体 / 服务对象：Detroit Blight Removal Task Force、Data Driven Detroit、Michigan Nonprofit Association、LOVELAND、200名左右居民调查员/司机/质控人员、政策与社区组织。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "时间过程：",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2013年秋：Blight Removal Task Force委托开展全市宗地调查。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2013-12-04至2014-02-16：居民调查团队在短时间内采集37万—38万宗地的状态、占用和用途数据。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2014：质控与数据整合持续完成，结果成为Blight Removal Task Force报告的重要基础。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "项目高速推进也使部分社区组织提出的附加调查问题被推迟。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "组织响应：居民被组织为大规模数据生产者；数据平台将现场观察、质控、政策分析和社区行动连接起来。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "空间 / 行为响应：数据直接对应具体宗地和建筑条件，用于识别衰败、空置及干预优先级；但拆除/修复等实际物质结果还需另行追踪。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "局限、调整或证据边界：城市尺度较大；项目速度与标准化问卷限制了社区自定义问题的纳入；数据可见性不等于治理结果。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "第五章用途：5.2数据技术进入衰败识别；5.3居民数据劳动与政策主体；5.4数据驱动干预的尺度与边界。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "关键事实—来源映射",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "核心来源",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C024-S1] Motor City Mapping, Certified Results, Winter 2013-14｜Data.gov / Data Driven Detroit｜政府开放数据目录  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://catalog.data.gov/dataset/motor-city-mapping-certified-results-winter-2013-14-census-tract-aggregation"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C024-S2] Motor City Mapping Certified Results – Technical Documentation｜Data Driven Detroit｜项目技术文档  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://datadrivendetroit.org/web_ftp/motorcitymapping/Metadata/MCM_CertifiedResults_Winter2014/MCM_CertifiedResults_Documentation_12082014.pdf"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C024-S3] The Historic Resource Survey: Community Data Collection in Action｜Data Driven Detroit｜项目过程回顾  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://datadrivendetroit.org/blog/2014/07/09/2613/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C024-S4] Detroit Blight Removal Task Force Releases Blight Plan and Recommendations｜Data Driven Detroit / Blight Removal Task Force｜任务成果说明  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://datadrivendetroit.org/blog/2014/05/27/detroit-blight-removal-task-force-releases-report/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "C036  Ramani Huria",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "地点 / 时间：坦桑尼亚达累斯萨拉姆｜2015—2020+",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "社区情境：快速城市化、非正规住区与严重洪涝风险并存，许多高风险社区缺乏精细排水、道路和建筑数据。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术介入前的主要问题 / 任务：政府与社区难以获得可用于洪水风险识别、排水维护和应急响应的细尺度基础数据。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术及其能力：OpenStreetMap、ODK移动数据采集、GIS、无人机/街景等；社区参与式测绘与洪水/排水数据生产。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "主要主体 / 服务对象：World Bank/GFDRR、Humanitarian OpenStreetMap Team、大学生、社区居民/社区领导、地方政府和红十字等。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "时间过程：",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2015—2016：首轮试点在高洪涝风险ward开展社区驱动测绘，并扩展至65个ward的基础地图。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "社区居民、学生和技术人员共同采集道路、建筑、排水及风险数据。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "后续阶段将地图用于排水沟清理、政府减灾规划和洪水应急响应。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "项目继续通过培训和开放数据机制扩展本地能力。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "组织响应：社区居民从“风险承受者”转为地图与风险数据生产者；地方领导、学生、政府与技术组织形成协作网络。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "空间 / 行为响应：数字地图直接刻画道路、建筑、排水沟与洪水风险空间，并支持排水清理和风险治理；但具体工程成效需按措施单独核验。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "局限、调整或证据边界：数据质量依赖培训、现场更新和持续维护；项目范围扩展不等于所有社区治理结果一致。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "第五章用途：5.2非正规/高风险社区中的数据嵌入；5.3社区共同生产；5.4空间识别到治理行动的关系。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "关键事实—来源映射",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "核心来源",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C036-S1] Ramani Huria: The Atlas of Flood Resilience in Dar es Salaam｜World Bank / GFDRR｜国际机构报告  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://documents1.worldbank.org/curated/en/200421524092301920/pdf/Ramani-Huria-the-atlas-of-flood-resilience-in-Dar-es-Salaam.pdf"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C036-S2] Tanzania Urban Resilience Program – Ramani Huria｜World Bank｜国际机构项目资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.worldbank.org/en/programs/tanzania-urban-resilience-program"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C036-S3] Flood Mapping / Ramani Huria｜Ramani Huria｜项目过程记录  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://ramanihuria.org/en/2018/03/22/flood-mapping/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "C060  Yuhua Smart HDB Estate",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "地点 / 时间：新加坡 Yuhua｜2014—2018",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "社区情境：成熟高层HDB公共住房社区，约3194套住房、约9000名居民；既有绿色改造基础上进一步测试“Smart Living”。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术介入前的主要问题 / 任务：高层公共住房面临老人照护、住宅能源/用水以及公共设施维护等日常管理任务。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术及其能力：智能老人监测、家庭能源/水管理、公共区域传感、垃圾输送系统监测、远程水电表、光伏监测。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "主要主体 / 服务对象：HDB、IDA/MDDI、卫生/环境/能源/水务机构、Jurong Town Council、商业公司、居民家庭。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "时间过程：",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2014：HDB在Yuhua推进智能家庭能源等试点准备。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2015：政府宣布Yuhua成为首个既有HDB Smart Estate，计划逐步实施至2018。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "住宅内“Smart Home”初始实际测试仅10户、最长约6个月；居民反馈用于细化产品。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "社区层面传感用于公共设施运行监测、故障预警和维护调度。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "组织响应：Town Council与多政府机构成为传感数据的使用主体；居民则在家庭试点中承担反馈与适配角色。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "空间 / 行为响应：技术直接进入高层住宅与公共设施运行，但没有证据证明其导致楼层高度、容积率或人口增加。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "局限、调整或证据边界：“约9000居民的智慧社区”不等于所有家庭都安装智能家居；住宅内试点早期只有10户，必须严格区分社区基础设施尺度与家庭试验尺度。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "第五章用途：5.2高层成熟社区任务由既有形态塑造；5.3技术数据连接Town Council维护；5.4试点尺度与推广边界。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "关键事实—来源映射",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "核心来源",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C060-S1] Yuhua the First Existing HDB Estate to Go Smart｜Singapore Ministry of Digital Development and Information / HDB｜政府发布  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.mddi.gov.sg/newsroom/yuhua-the-first-existing-hdb-estate-to-go-smart/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C060-S2] Smart HDB Homes of the Future｜Singapore Government / HDB｜政府项目资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.mddi.gov.sg/newsroom/smart-hdb-homes-of-the-future/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "C061  Bukchon IoT Village",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "地点 / 时间：韩国首尔 Bukchon Hanok Village｜2015—2018+",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "社区情境：低层传统韩屋历史街区，同时承受大量游客带来的噪声、垃圾、违停与居民隐私冲突；木构建筑存在火灾风险。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术介入前的主要问题 / 任务：传统街区需要在遗产保护、居民生活、游客管理与消防安全之间协调。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术及其能力：IoT火灾/环境传感器、自动报警，以及其他面向游客流、停车、垃圾和环境的物联网试验。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "主要主体 / 服务对象：Seoul Metropolitan Government、消防/管理部门、传统建筑/商户、居民、游客、IoT企业。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "时间过程：",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2015前后：Bukchon被作为首尔IoT示范区域推进多个试验。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2016：首尔官方确认在8处建筑/设施部署温度、湿度、气体等火灾监测，可自动向119报警。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "后续部分IoT项目退出；同时居民—游客冲突仍持续。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2018：首尔进一步实施游客访问时段、导览、停车执法、垃圾收集和清扫人员等非数字措施。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "组织响应：IoT并未替代消防、街区管理和旅游治理人员；实际治理仍依赖政府行政规则和人工执行。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "空间 / 行为响应：技术用途受传统木构、窄街巷与旅游压力影响，重点是火灾/环境/秩序监测，而非高层社区的物业运维。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "局限、调整或证据边界：部分IoT试验退出；居民—游客冲突最终需要访问时段和人工管理等综合措施。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "第五章用途：5.2社区形态塑造技术任务；5.3数字+行政/人工协同；5.4试点退出和技术作用有限。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "关键事实—来源映射",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "核心来源",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C061-S1] IoT system for fire prevention and emergency services introduced in Bukchon｜Seoul Metropolitan Government｜政府发布  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://world.seoul.go.kr/iot-system-fire-prevention-emergency-services-introduced-bukchon/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C061-S2] Seoul Implements Visiting Hours for Tourists at Bukchon Hanok Village｜Seoul Metropolitan Government｜政府治理措施  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://english.seoul.go.kr/seoul-implements-the-visiting-hours-for-tourists-at-the-bukchon-hanok-village/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C061-S3] IoT projects in Bukchon / Seoul smart-city experiment coverage｜Korea JoongAng Daily｜可靠报道  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://koreajoongangdaily.joins.com/news/article/article.aspx?aid=3034351"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "C033  SmartEnCity – Tartu",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "地点 / 时间：爱沙尼亚 Tartu｜2016—2022",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "社区情境：以1950—1960年代苏联时期Khrushchyovka公寓为主的既有住宅区，面临保温、通风和能源性能不足。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术介入前的主要问题 / 任务：老旧公寓能源效率低、室内舒适度不足，需要在居民协会层面协调大规模住宅改造。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术及其能力：近零能耗改造、智能家居系统、能源监测/管理及配套城市基础设施。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "主要主体 / 服务对象：Tartu City、住宅/公寓协会、住户、SmartEnCity项目联盟、研究机构与工程实施方。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "时间过程：",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2016后：SmartEnCity在Tartu启动既有公寓智慧节能改造。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "18栋左右公寓楼完成接近零能耗改造，每套住宅配置智能家居系统。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "项目通过居民问卷/访谈评估接受度、便利、成本、审美和环境等因素。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "后续学术研究显示高兴趣与低调查参与率等复杂情况并存。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "组织响应：公寓协会成为项目实施和居民协调的核心组织单元；技术部署必须通过集体住宅治理结构完成。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "空间 / 行为响应：建筑围护、通风/供热等实体改造与智能家居共同发生，属于“数字+建筑”捆绑更新，不能把能源效果完全归因于智能系统。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "局限、调整或证据边界：居民调查响应率与参与不足构成证据局限；技术接受度受到成本、舒适、审美和环境等多重因素影响。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "第五章用途：5.2既有住宅节能更新；5.3公寓协会中介；5.4数字与实体改造捆绑及居民接受度。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "关键事实—来源映射",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "核心来源",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C033-S1] SmartEnCity Tartu resident survey / retrofit project information｜University of Tartu｜大学项目/调查资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://survey.ut.ee/index.php/411513?lang=en"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C033-S2] Residents’ Perceptions of a Smart Technology Retrofit Towards Nearly Zero-Energy Performance｜Urban Planning｜同行评议论文  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.cogitatiopress.com/urbanplanning/article/view/5020"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C033-S3] Tartu smart retrofit resident research（SmartEnCity相关学术章节）｜Springer｜学术章节  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://link.springer.com/chapter/10.1007/978-3-030-23392-1_17"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "C034  SmartEnCity – Coronación, Vitoria-Gasteiz",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "地点 / 时间：西班牙 Vitoria-Gasteiz Coronación｜2016—2022",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "社区情境：既有住宅社区综合更新，涉及住宅节能、区域供热和公共空间改善，居民社区需逐栋/逐社区决定是否加入。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术介入前的主要问题 / 任务：老旧住宅能耗较高，同时存在公共空间更新需求；项目必须获得住宅共同体/居民的集体同意。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术及其能力：建筑节能改造、区域供热、能源管理/监测与信息技术，并与公共空间和可持续交通措施结合。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "主要主体 / 服务对象：Vitoria-Gasteiz市、Visesa、EVE、Giroa-Veolia、108个住宅共同体、居民及公共设施。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "时间过程：",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2016：启动公共空间参与式设计。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2017年9月：108个范围内住宅共同体中仅3个明确加入，项目加强入户沟通、补贴与计费方案调整。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2017年底：加入数量上升并延长/扩大项目范围。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2020：市政府称区域供热网络合同使项目“重新启动/恢复推进”。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2022：住宅改造完成，供热网络接近完成，并推进街道/广场公共空间工程。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "组织响应：项目能否落地高度依赖住宅共同体投票、入户沟通、金融补贴与计费制度；技术方案被居民反馈迫使调整。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "空间 / 行为响应：住宅围护/能源系统与街道、广场半步行化等公共空间改造同步；属于综合更新而非纯数字项目。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "局限、调整或证据边界：早期加入率很低；后期节能/减排数据主要为政府/项目方报告，应表述为“项目方报告结果”。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "第五章用途：5.2从低加入到调整再推进的非线性过程；5.3制度/居民组织中介；5.4空间更新与项目自报结果。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "关键事实—来源映射",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "核心来源",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C034-S1] La facturación del suministro del calor… para favorecer la adhesión de las comunidades｜Vitoria-Gasteiz / CEA｜市政府同期发布  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://blogs.vitoria-gasteiz.org/medios/2017/09/27/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C034-S2] Las instituciones promotoras… acuerdan ampliar el plazo y el ámbito de actuación｜Vitoria-Gasteiz / CEA｜市政府同期发布  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://cea.vitoria-gasteiz.org/portal/es/w/las-instituciones-promotoras-rehabilitacion-barrio-coronacion-acuerdan-ampliar-plazo-y-ambito-actuacion"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C034-S3] El proceso participativo para definir las intervenciones en el Espacio Público…｜Vitoria-Gasteiz｜市政府参与资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://blogs.vitoria-gasteiz.org/medios/2016/06/15/el-proceso-participativo-para-definir-las-intervenciones-en-el-espacio-publico-del-proyecto-smartencity-arranca-el-proximo-21-de-junio-en-aldabe/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C034-S4] SmartEnCity Coronación final results / final conference｜Vitoria-Gasteiz｜政府/项目总结  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://blogs.vitoria-gasteiz.org/medios/2022/06/14/vitoria-gasteiz-pone-a-examen-de-especialistas-internacionales-el-proyecto-de-rehabilitacion-en-clave-de-eficiencia-energetica-del-barrio-de-coronacion/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "C039  上海田林十二村智慧社区",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "地点 / 时间：中国上海徐汇区田林十二村｜2016—2019+",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "社区情境：成熟高密度住宅社区，官方资料记录41栋住宅、85个出入口、近5000名居民。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术介入前的主要问题 / 任务：传统治安、消防、群租、垃圾分类和老年照护等社区治理主要依赖人工发现与事后响应。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术及其能力：人脸/门禁识别、IoT传感、行为/异常预警、智慧垃圾房/投放追溯、数据平台。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "主要主体 / 服务对象：田林街道/居委、公安、物业、居民、区级治理平台与技术企业。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "时间过程：",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2016前后：田林十二村开始智慧安防试点。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "系统逐步连接门禁、传感与预警，并将信息推送到公安、居委、物业等主体。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "后续扩展到电气火灾、群租、老人、垃圾分类等多种社区治理场景。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "区级资料显示相关经验向更多社区复制。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "组织响应：技术把问题发现与公安、居委、物业的协同处理连接起来，形成“发现—预警—分派/协作”的新信息流。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "空间 / 行为响应：门禁、垃圾投放点、消防/用电等微观设施成为数字感知节点；主要改变入口、垃圾、消防等空间使用和管理，而不是建筑体量。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "局限、调整或证据边界：治安案件下降等效果主要来自政府/媒体口径，不能作为独立因果评估；需区分技术与同期治理加强的共同作用。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "第五章用途：5.2高密度社区日常治理；5.3多主体协同；5.4微观空间响应与自报成效边界。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "关键事实—来源映射",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "核心来源",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C039-S1] 田林十二村智慧社区/智慧安防相关报道｜上海市徐汇区人民政府｜区政府官方资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.xuhui.gov.cn/xwzx_bmlf/20191009/132345.html"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C039-S2] 田林智慧社区数字化治理案例｜上海市城市数字化转型应用促进中心｜官方案例资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://dt.sheitc.sh.gov.cn/cms/gqdt/1504.jhtml"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C039-S3] 田林十二村智慧垃圾分类相关报道｜中央广播电视总台/央广等｜可靠报道  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://china.cnr.cn/gdgg/20190605/t20190605_524641177.shtml"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "C064  Damp Busters / The Bristol Approach – Knowle West",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "地点 / 时间：英国Bristol Knowle West｜2016前后",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "社区情境：社会经济条件较弱的成熟社区，部分私人租赁住房存在长期潮湿/霉变问题。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术介入前的主要问题 / 任务：住户知道潮湿问题却缺乏可用于和房东/服务机构沟通的连续环境数据。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术及其能力：社区共同设计的温湿度传感器（包括3D打印“青蛙”外壳）、居民数据采集、可视化与共同解释。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "主要主体 / 服务对象：Knowle West Media Centre、当地居民/租户、艺术家、技术人员、房东和相关服务组织。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "时间过程：",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "社区先从居民提出的“潮湿”问题出发，而非从技术方案出发。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "居民、艺术家和技术人员共同设计温湿度传感器并接受使用培训。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "住户收集家庭环境数据，用于理解/证明长期潮湿问题。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "后续同行评议综述记录，若干长期拖延的房东维修因此被推动。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "组织响应：居民从被动投诉者转为数据生产/解释参与者；技术过程由社区媒体中心组织并与房东/服务关系连接。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "空间 / 行为响应：传感器直接进入住宅室内环境问题，但并未产生大尺度社区空间形态变化；更像微观住宅维修触发器。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "局限、调整或证据边界：规模较小，成效证据主要来自项目方与综述型论文；不宜外推为整个社区住房改善。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "第五章用途：5.2问题驱动而非技术驱动；5.3居民数据能力；5.4小尺度空间维修与证据边界。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "关键事实—来源映射",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "核心来源",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C064-S1] The Bristol Approach / Damp Busters｜Knowle West Media Centre｜社区项目原始资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://kwmc.org.uk/blog/bristolapproach/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C064-S2] State of smart cities in UK and beyond｜IET Smart Cities｜同行评议论文  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://ietresearch.onlinelibrary.wiley.com/doi/10.1049/iet-smc.2019.0024"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "C043  上海复元坊智能非机动车车棚",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "地点 / 时间：中国上海静安区复元坊｜2018—2019+",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "社区情境：老旧住宅小区，非机动车停车空间小、人工看守条件差、私拉电线充电和消防隐患突出。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术介入前的主要问题 / 任务：原车棚容量/管理不足，存在看守人居住、充电线混乱、晚归锁门等问题；改造初期部分居民反对。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术及其能力：电子门禁、视频监控、人脸识别、智能充电/远程管理、大数据/物联网平台。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "主要主体 / 服务对象：芷江西路街道、复元坊居委、党建网格/党员与志愿者、居民、中国联通等第三方、物业/管理人员。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "时间过程：",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "改造前：车棚和停车/充电问题长期存在。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "街道提出智能车棚方案后出现居民疑虑，通过3个微网格、党员/志愿者逐户沟通。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "最终92.94%居民同意，2018年10月车棚建成启用。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "启用后形成无人值守刷卡、监控与智能充电；150个车位满租。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "后续经验向街道49个老旧小区/车棚扩散。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "组织响应：技术部署的前提是强烈的社区协商与网格动员；“无人值守”并不意味着无人治理，前期和持续管理需要社区组织。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "空间 / 行为响应：非机动车从楼道/无序空间集中到改造后的车棚，停车、充电和出入方式发生微观空间重组。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "局限、调整或证据边界：安全/零事故等结果主要来自政府/项目自报；改造同时包含新车棚与管理制度，不能把结果只归因于IoT。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "第五章用途：5.2老旧社区具体任务；5.3共识形成与人工中介；5.4最清楚的“数字+设施”微空间响应。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "关键事实—来源映射",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "核心来源",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C043-S1] “高大上”智能车棚让居民安心舒心｜上海市静安区人民政府｜区政府官方资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.jingan.gov.cn/rmtzx/003001/20190522/52bc319c-8ad7-45a5-86d6-61e544cd6cc1.html"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C043-S2] 上海治理｜复元坊智能车库改造｜上海市静安区人民政府转载｜官方/可靠报道  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.jingan.gov.cn/rmtzx/003008/003008005/20191217/e793857e-3f34-4c02-acd9-4badb8865446.html"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C043-S3] 复元坊智能非机动车车棚扩散与平台运行回顾｜上海市静安区人民政府｜政府回顾  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.jingan.gov.cn/rmtzx/003008/003008002/20201030/2b2f26db-be55-40d4-ade5-a7b8bf8c2737.html"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "C066  北京劲松北社区老旧小区改造 / “劲松模式”",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "地点 / 时间：中国北京朝阳区劲松北｜2018—2021+",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "社区情境：1978年建成，0.26 km²、43栋、4199户、常住人口9494；老年住户39.6%，老年住户中独居老人约52%。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术介入前的主要问题 / 任务：设施不足、生活服务不便、公共空间混乱，居民对电梯、无障碍、食堂和环境提升需求突出；传统老旧小区物业与长期运营机制不足。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术及其能力：智慧门禁/人脸识别、社区服务/治理平台、老人异常行为提示等数字能力，与停车、公共空间、无障碍、物业和商业服务更新同步推进。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "主要主体 / 服务对象：朝阳区/劲松街道、居委、居民、社会资本/运营企业、专业物业、规划设计与服务机构。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "时间过程：",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2018：朝阳区以劲松北作为老旧小区综合改造试点。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "改造不仅更新空间，还引入社会资本、专业物业和长期运营机制。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "门禁、智慧平台、老人关怀等数字能力嵌入改造后的日常管理。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "后续“劲松模式”被作为老旧小区可持续更新机制进行总结。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "组织响应：最重要变化之一是专业物业和多方协同机制进入社区；数字平台建立在新的运营组织基础上。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "空间 / 行为响应：公共空间、停车、无障碍和社区设施确有实体更新，但与数字系统同时发生，不能把空间改善单独归因于数字技术。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "局限、调整或证据边界：属于综合更新，数字措施是组合中的一部分；对运营绩效和老人照护等需避免使用未经独立评估的强因果表述。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "第五章用途：5.2既有老旧社区综合更新；5.3组织重构先于/伴随数字化；5.4数字与物理空间捆绑、因果边界。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "关键事实—来源映射",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "核心来源",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C066-S1] 规划解读：坚持民意导向，系统化有机更新，让老旧小区换新颜｜北京市规划和自然资源委员会｜政府规划解读  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://ghzrzyw.beijing.gov.cn/zhengwuxinxi/zxzt/wsghs/2021dyj/d4j/202102/t20210210_2281725.html"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C066-S2] 老旧小区综合治理“劲松模式”相关官方总结｜北京市规划和自然资源委员会｜政府案例资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://ghzrzyw.beijing.gov.cn/zhengwuxinxi/zxzt/zysj/msycc/ljxqzhzz/202006/t20200601_1912500.html"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C066-S3] 劲松北智慧养老/社区服务案例｜北京市卫生健康委员会｜政府案例资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://wjw.beijing.gov.cn/wjwh/ztzl/lnr/lljkgzjl/202102/t20210204_2272745.html"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "C049  Havukoski / Koivukylä GenAI participatory planning",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "地点 / 时间：芬兰 Vantaa Havukoski｜2023—2026（规划进行中）",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "社区情境：既有居住区的框架规划/更新讨论，城市需要在未来建设量、绿地、慢行等问题上汇集居民与利益相关者观点。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术介入前的主要问题 / 任务：传统规划参与中，非专业居民对未来空间方案的视觉化表达门槛较高。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "技术及其能力：UrbanistAI生成式AI视觉化：基于居民现场讨论快速生成熟悉场所的未来情景图，用于激发和具体化讨论。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "主要主体 / 服务对象：Vantaa City、Tampere University、居民和地区利益相关者、规划师、UrbanistAI。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "时间过程：",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "2023年10月2—3日：在Koivukylä居民空间举行参与式Charette。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "居民进行未来步行/故事讨论，并使用UrbanistAI将想法快速可视化。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "市政府明确表示工作坊成果将用于Havukoski框架规划。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "截至2026年，框架规划仍处公开展示/决策过程中，尚不存在可归因于GenAI的建成空间结果。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "组织响应：AI成为居民—规划师共同讨论的表达媒介，但规划判断、议题组织和后续法定程序仍由人和政府机构承担。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "空间 / 行为响应：目前只有“规划想象/表达层”的空间响应，没有建成结果；这是本案例最重要的证据边界。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "局限、调整或证据边界：属于真实市政规划过程，但不是成熟部署效果案例；不能用来证明GenAI改善了最终空间质量或居民满意度。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "第五章用途：作为5.2/5.3的技术前沿延伸，展示生成能力进入规划参与；在5.4中明确“尚无建成结果”。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "关键事实—来源映射",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "核心来源",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C049-S1] Miltä Havukoski näyttää tulevaisuudessa?｜City of Vantaa｜市政府同期报道  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.vantaa.fi/fi/ajankohtaista/uutinen/milta-havukoski-nayttaa-tulevaisuudessa"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C049-S2] Havukoski participatory development workshop invitation / AI-assisted visioning｜City of Vantaa｜市政府参与资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.vantaa.fi/fi/ajankohtaista/uutinen/tule-mukaan-kehittamistyopajaan-2-310-visioimaan-havukosken-tulevaisuutta"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C049-S3] Havukoski planning framework / participation history｜City of Vantaa｜当前法定规划资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.vantaa.fi/en/node/4833"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 1",
+      "text": "4. 第五章“论点—案例—证据”矩阵",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "符号：● = 有直接事实/过程证据，可作为主要支撑；○ = 可作辅助或边界证据；— = 不承担该论点。",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "4.1 支撑5.2：技术嵌入过程与社区情境",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "4.2 支撑5.3：技术能力、社区任务与主体关系",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "4.3 支撑5.4：组织、空间与行为响应及其边界",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 1",
+      "text": "5. 第五章可直接展开的实证论证链",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "5.1 案例样本与分析设计",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "可以完整交代“70例广泛检索 → 真实性清洗 → 31例高可信候选 → 25例中度深挖 → 17例核心证据池”的选择过程。该过程体现的不是按技术时期抽样，而是依据真实性、证据密度、社区尺度、过程可重建性与样本差异进行理论—证据筛选。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "17例覆盖欧洲、中国、北美、东亚、非洲；既包含公共住房、历史街区、老旧小区、棕地/新开发社区、非正规高风险住区，也包含社区规划与街道服务场景。案例之间通过第三章共同知识对象建立可比性，同时保留原生概念和不同过程。",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "5.2 数字与智能技术嵌入社区更新的过程差异",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "论证1：技术进入的任务受到既有社区条件塑造。Yuhua的高层HDB和老龄化使技术进入老人照护与公共设施运维；Bukchon的低层木构历史街区和旅游压力使IoT进入消防、噪声与游客治理；Ramani Huria的洪涝/非正规住区背景使技术首先进入风险测绘；Detroit的空置/衰败背景使数据首先进入宗地状况识别。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "论证2：技术嵌入常呈非线性。Carpenters先经历严重部署延期，之后既有数字基础设施才进入Masterplanning；Coronación早期仅3/108住宅共同体明确加入，随后通过沟通、计费和补贴调整推进；复元坊先出现居民反对，再通过网格动员获得92.94%同意；Eastserve长期存在成本和无兴趣导致的非使用。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "论证3：技术初始目标可能在社区过程推进中被重新定义。Carpenters由数字接入转入更新参与，Arabianranta需要区分宏大数字愿景与实际基础设施/居民使用。",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "5.3 技术能力、社区任务与主体关系的跨案例比较",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "论证1：真正可比较的是“技术提供何种能力并进入何种任务”，而非Internet、GIS、IoT、AI等标签本身。例如Web-GIS提供空间化表达，Motor City Mapping提供宗地级可见性，Ramani Huria提供社区共同生产风险地图，Yuhua传感器提供设施异常监测，UrbanistAI提供快速视觉化。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "论证2：几乎所有高证据案例都存在组织中介。Slaithwaite需要研究团队与现场电脑；Arabianranta依赖e-Moderator与住宅公司；Red Hook依赖Digital Stewards；Tartu依赖公寓协会；复元坊依赖党建网格与居民动员；劲松北依赖专业物业与多方协调。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "论证3：数字技术通常重组人与人之间的信息流和行动关系，而非直接替代人。居民可以成为数据生产者、网络维护者、共同设计者和规划表达主体；政府/物业/社区组织仍承担解释、决策、维修和责任。",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "5.4 技术作用的组织、空间与行为响应及其条件",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "论证1：组织响应比大尺度空间形态变化更普遍。跨案例最稳定的变化是信息获得、责任分派、协同处理、参与和维护角色的变化。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "论证2：可识别的空间响应多发生在微观设施和使用层面。复元坊重新组织非机动车停车与充电空间；田林把入口、垃圾房、消防节点数字化；Knowle West传感器进入室内潮湿问题；Coronación与劲松北则体现数字措施与公共空间/建筑实体改造捆绑。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "论证3：不能把楼层高度、密度或入住人数作为数字技术的默认结果。更稳妥的逻辑是“社区形态/人口规模 → 产生任务复杂性 → 技术能力进入 → 组织/空间使用响应”。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "论证4：效果必须保留来源属性。田林、复元坊、Coronación等效果数字多为政府/项目方报告；应作为“报告结果”而非无条件因果事实。Havukoski则只有真实规划参与过程，尚无建成结果。",
+      "links": []
+    },
+    {
+      "style": "Heading 2",
+      "text": "5.5 跨案例发现与讨论",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "可以从案例中归纳而非预设以下解释方向：情境嵌入性、能力—任务匹配、组织中介、技术作用的尺度差异、数字—实体捆绑、非线性实施与时间状态。",
+      "links": []
+    },
+    {
+      "style": "List Bullet",
+      "text": "应避免把1995—2026写成固定“阶段史”。时间在第五章更适合作为比较维度：不同案例中相似能力可能在不同时间出现，同一技术也可能在部署、运行、调整、扩散或退出过程中改变用途。",
+      "links": []
+    },
+    {
+      "style": "Heading 1",
+      "text": "6. 哪些内容可以放心写，哪些仍需谨慎",
+      "links": []
+    },
+    {
+      "style": "Heading 1",
+      "text": "7. 替补案例与后续只需定向补证的缺口",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "替补案例：NEO CANDO（邻里数据/稳定化）、Seongdaegol（居民主导能源Living Lab）、Vienna Simmering/Nottingham Sneinton（欧盟智慧能源改造）、上海灵新（老龄化与智慧养老）。这些案例真实且资料较好，但当前核心池已覆盖相近机制，暂不扩容。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "仅需继续补的证据：（1）五里桥更独立的居民使用评价；（2）Arabianranta 2005年后的长期居民使用；（3）田林/复元坊等中国案例的独立学术评估；（4）Havukoski规划最终决策及未来建成后追踪。上述缺口不会阻止第五章主体撰写，只影响某些效果结论的强度。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "建议下一步：停止继续广泛搜索案例，直接进入第五章写作与CaseFlow结构化。写作过程中若某一论点只有单一来源或出现因果跳跃，再针对该论点补证。",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "links": []
+    },
+    {
+      "style": "Heading 1",
+      "text": "附录A  核心来源索引",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "按案例列出全部本轮实际用于事实核验的来源。正文引用时可直接使用对应Source ID回溯。",
+      "links": []
+    },
+    {
+      "style": "Heading 3",
+      "text": "C003 Virtual Slaithwaite / Shaping Slaithwaite",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C003-S1] Virtual Slaithwaite: A Web Based Public Participation Planning for Real System｜University of Leeds｜学术案例报告  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.geog.leeds.ac.uk/papers/99-8/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C003-S2] Web Based GIS for Public Participation Decision Making in the UK｜University of Leeds｜学术案例报告  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.geog.leeds.ac.uk/papers/98-5/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C003-S3] Online public participation GIS for spatial planning｜Computers, Environment and Urban Systems｜同行评议论文  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.sciencedirect.com/science/article/pii/S0198971599000496"
+        }
+      ]
+    },
+    {
+      "style": "Heading 3",
+      "text": "C005 Arabianranta / Helsinki Virtual Village",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C005-S1] IntelCities / Local ICT solutions in Arabianranta（Intelcity报告）｜City of Helsinki Urban Facts / IntelCities｜官方研究报告  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.hel.fi/hel2/tietokeskus/julkaisut/pdf/intelcity.pdf"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C005-S2] Helsinki: The Virtual Village｜WIRED｜同期可靠报道  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.wired.com/2001/03/helsinki"
+        }
+      ]
+    },
+    {
+      "style": "Heading 3",
+      "text": "C008 Eastserve / New East Manchester",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C008-S1] Eastserve Impact Evaluation – Executive Summary｜Manchester City Council / evaluation｜地方政府评估  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.manchester.gov.uk/egov_downloads/5._Digital_Strategy_appendix.pdf"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C008-S2] Manchester Digital Strategy（含Eastserve发展回顾）｜Manchester City Council｜地方政府文件  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.manchester.gov.uk/egov_downloads/5._Digital_Strategy.pdf"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C008-S3] Urban regeneration in the intelligent city｜学术研究｜学术论文/章节  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.researchgate.net/publication/228659685_Urban_regeneration_in_the_intelligent_city"
+        }
+      ]
+    },
+    {
+      "style": "Heading 3",
+      "text": "C007 Carpenters Estate / Carpenters Connect",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C007-S1] Connecting communities to the Internet: evaluation of the Wired Up Communities Programme (RR389)｜UK Department for Education and Skills / DERA｜政府评估报告  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://dera.ioe.ac.uk/id/eprint/4715/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C007-S2] Written Evidence: Newham / Home 2 Home – Carpenters Estate｜UK House of Commons｜议会书面证据  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://publications.parliament.uk/pa/cm200405/cmselect/cmodpm/316/316we10.htm"
+        }
+      ]
+    },
+    {
+      "style": "Heading 3",
+      "text": "C010 上海五里桥街道社区信息化试点",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C010-S1] 卢湾区2003—2007年信息化发展主要目标和任务｜上海市黄浦区（原卢湾区）｜政府规划文件  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.shhuangpu.gov.cn/zw/009006/009006001/009006001003/009006001003008/009006001003008001/20050907/97651.html"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C010-S2] 卢湾区信息化建设相关年鉴/试点回顾（2001—2002）｜上海市黄浦区｜政府年鉴资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.shhuangpu.gov.cn/zw/009006/009006002/009006002022/009006002022003/009006002022003001/009006002022003001005/20051013/101551.html"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C010-S3] 上海社区信息化发展回顾（五里桥试点与全市推广）｜中共上海市委党校相关资料｜研究/政策回顾  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.sdx.sh.cn/info/2141/324521.htm"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C010-S4] 五里桥社区信息化运行回顾报道｜文汇/东方网转载｜可靠报道  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://news.sina.com.cn/o/2008-07-06/091914122951s.shtml"
+        }
+      ]
+    },
+    {
+      "style": "Heading 3",
+      "text": "C062 Red Hook WiFi / Digital Stewards",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C062-S1] Wireless Mesh Networks as Community Hubs: Analysis of Small-Scale Wireless Mesh Networks and Community-Centered Technology Training｜Journal of Information Policy｜同行评议论文  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://doi.org/10.5325/JINFOPOLI.8.2018.0232"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C062-S2] Case Study: Red Hook Initiative WiFi / Tidepools｜New America｜研究机构案例  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.newamerica.org/insights/case-study-red-hook-initiative-wifi-tidepools/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C062-S3] Red Hook WiFi｜Urban Omnibus｜专业媒体/城市研究报道  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://urbanomnibus.net/2013/09/red-hook-wifi/"
+        }
+      ]
+    },
+    {
+      "style": "Heading 3",
+      "text": "C024 Detroit Motor City Mapping",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C024-S1] Motor City Mapping, Certified Results, Winter 2013-14｜Data.gov / Data Driven Detroit｜政府开放数据目录  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://catalog.data.gov/dataset/motor-city-mapping-certified-results-winter-2013-14-census-tract-aggregation"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C024-S2] Motor City Mapping Certified Results – Technical Documentation｜Data Driven Detroit｜项目技术文档  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://datadrivendetroit.org/web_ftp/motorcitymapping/Metadata/MCM_CertifiedResults_Winter2014/MCM_CertifiedResults_Documentation_12082014.pdf"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C024-S3] The Historic Resource Survey: Community Data Collection in Action｜Data Driven Detroit｜项目过程回顾  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://datadrivendetroit.org/blog/2014/07/09/2613/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C024-S4] Detroit Blight Removal Task Force Releases Blight Plan and Recommendations｜Data Driven Detroit / Blight Removal Task Force｜任务成果说明  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://datadrivendetroit.org/blog/2014/05/27/detroit-blight-removal-task-force-releases-report/"
+        }
+      ]
+    },
+    {
+      "style": "Heading 3",
+      "text": "C036 Ramani Huria",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C036-S1] Ramani Huria: The Atlas of Flood Resilience in Dar es Salaam｜World Bank / GFDRR｜国际机构报告  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://documents1.worldbank.org/curated/en/200421524092301920/pdf/Ramani-Huria-the-atlas-of-flood-resilience-in-Dar-es-Salaam.pdf"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C036-S2] Tanzania Urban Resilience Program – Ramani Huria｜World Bank｜国际机构项目资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.worldbank.org/en/programs/tanzania-urban-resilience-program"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C036-S3] Flood Mapping / Ramani Huria｜Ramani Huria｜项目过程记录  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://ramanihuria.org/en/2018/03/22/flood-mapping/"
+        }
+      ]
+    },
+    {
+      "style": "Heading 3",
+      "text": "C060 Yuhua Smart HDB Estate",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C060-S1] Yuhua the First Existing HDB Estate to Go Smart｜Singapore Ministry of Digital Development and Information / HDB｜政府发布  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.mddi.gov.sg/newsroom/yuhua-the-first-existing-hdb-estate-to-go-smart/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C060-S2] Smart HDB Homes of the Future｜Singapore Government / HDB｜政府项目资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.mddi.gov.sg/newsroom/smart-hdb-homes-of-the-future/"
+        }
+      ]
+    },
+    {
+      "style": "Heading 3",
+      "text": "C061 Bukchon IoT Village",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C061-S1] IoT system for fire prevention and emergency services introduced in Bukchon｜Seoul Metropolitan Government｜政府发布  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://world.seoul.go.kr/iot-system-fire-prevention-emergency-services-introduced-bukchon/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C061-S2] Seoul Implements Visiting Hours for Tourists at Bukchon Hanok Village｜Seoul Metropolitan Government｜政府治理措施  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://english.seoul.go.kr/seoul-implements-the-visiting-hours-for-tourists-at-the-bukchon-hanok-village/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C061-S3] IoT projects in Bukchon / Seoul smart-city experiment coverage｜Korea JoongAng Daily｜可靠报道  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://koreajoongangdaily.joins.com/news/article/article.aspx?aid=3034351"
+        }
+      ]
+    },
+    {
+      "style": "Heading 3",
+      "text": "C033 SmartEnCity – Tartu",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C033-S1] SmartEnCity Tartu resident survey / retrofit project information｜University of Tartu｜大学项目/调查资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://survey.ut.ee/index.php/411513?lang=en"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C033-S2] Residents’ Perceptions of a Smart Technology Retrofit Towards Nearly Zero-Energy Performance｜Urban Planning｜同行评议论文  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.cogitatiopress.com/urbanplanning/article/view/5020"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C033-S3] Tartu smart retrofit resident research（SmartEnCity相关学术章节）｜Springer｜学术章节  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://link.springer.com/chapter/10.1007/978-3-030-23392-1_17"
+        }
+      ]
+    },
+    {
+      "style": "Heading 3",
+      "text": "C034 SmartEnCity – Coronación, Vitoria-Gasteiz",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C034-S1] La facturación del suministro del calor… para favorecer la adhesión de las comunidades｜Vitoria-Gasteiz / CEA｜市政府同期发布  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://blogs.vitoria-gasteiz.org/medios/2017/09/27/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C034-S2] Las instituciones promotoras… acuerdan ampliar el plazo y el ámbito de actuación｜Vitoria-Gasteiz / CEA｜市政府同期发布  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://cea.vitoria-gasteiz.org/portal/es/w/las-instituciones-promotoras-rehabilitacion-barrio-coronacion-acuerdan-ampliar-plazo-y-ambito-actuacion"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C034-S3] El proceso participativo para definir las intervenciones en el Espacio Público…｜Vitoria-Gasteiz｜市政府参与资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://blogs.vitoria-gasteiz.org/medios/2016/06/15/el-proceso-participativo-para-definir-las-intervenciones-en-el-espacio-publico-del-proyecto-smartencity-arranca-el-proximo-21-de-junio-en-aldabe/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C034-S4] SmartEnCity Coronación final results / final conference｜Vitoria-Gasteiz｜政府/项目总结  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://blogs.vitoria-gasteiz.org/medios/2022/06/14/vitoria-gasteiz-pone-a-examen-de-especialistas-internacionales-el-proyecto-de-rehabilitacion-en-clave-de-eficiencia-energetica-del-barrio-de-coronacion/"
+        }
+      ]
+    },
+    {
+      "style": "Heading 3",
+      "text": "C039 上海田林十二村智慧社区",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C039-S1] 田林十二村智慧社区/智慧安防相关报道｜上海市徐汇区人民政府｜区政府官方资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.xuhui.gov.cn/xwzx_bmlf/20191009/132345.html"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C039-S2] 田林智慧社区数字化治理案例｜上海市城市数字化转型应用促进中心｜官方案例资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://dt.sheitc.sh.gov.cn/cms/gqdt/1504.jhtml"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C039-S3] 田林十二村智慧垃圾分类相关报道｜中央广播电视总台/央广等｜可靠报道  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://china.cnr.cn/gdgg/20190605/t20190605_524641177.shtml"
+        }
+      ]
+    },
+    {
+      "style": "Heading 3",
+      "text": "C064 Damp Busters / The Bristol Approach – Knowle West",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C064-S1] The Bristol Approach / Damp Busters｜Knowle West Media Centre｜社区项目原始资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://kwmc.org.uk/blog/bristolapproach/"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C064-S2] State of smart cities in UK and beyond｜IET Smart Cities｜同行评议论文  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://ietresearch.onlinelibrary.wiley.com/doi/10.1049/iet-smc.2019.0024"
+        }
+      ]
+    },
+    {
+      "style": "Heading 3",
+      "text": "C043 上海复元坊智能非机动车车棚",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C043-S1] “高大上”智能车棚让居民安心舒心｜上海市静安区人民政府｜区政府官方资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.jingan.gov.cn/rmtzx/003001/20190522/52bc319c-8ad7-45a5-86d6-61e544cd6cc1.html"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C043-S2] 上海治理｜复元坊智能车库改造｜上海市静安区人民政府转载｜官方/可靠报道  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.jingan.gov.cn/rmtzx/003008/003008005/20191217/e793857e-3f34-4c02-acd9-4badb8865446.html"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C043-S3] 复元坊智能非机动车车棚扩散与平台运行回顾｜上海市静安区人民政府｜政府回顾  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.jingan.gov.cn/rmtzx/003008/003008002/20201030/2b2f26db-be55-40d4-ade5-a7b8bf8c2737.html"
+        }
+      ]
+    },
+    {
+      "style": "Heading 3",
+      "text": "C066 北京劲松北社区老旧小区改造 / “劲松模式”",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C066-S1] 规划解读：坚持民意导向，系统化有机更新，让老旧小区换新颜｜北京市规划和自然资源委员会｜政府规划解读  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://ghzrzyw.beijing.gov.cn/zhengwuxinxi/zxzt/wsghs/2021dyj/d4j/202102/t20210210_2281725.html"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C066-S2] 老旧小区综合治理“劲松模式”相关官方总结｜北京市规划和自然资源委员会｜政府案例资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://ghzrzyw.beijing.gov.cn/zhengwuxinxi/zxzt/zysj/msycc/ljxqzhzz/202006/t20200601_1912500.html"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C066-S3] 劲松北智慧养老/社区服务案例｜北京市卫生健康委员会｜政府案例资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://wjw.beijing.gov.cn/wjwh/ztzl/lnr/lljkgzjl/202102/t20210204_2272745.html"
+        }
+      ]
+    },
+    {
+      "style": "Heading 3",
+      "text": "C049 Havukoski / Koivukylä GenAI participatory planning",
+      "links": []
+    },
+    {
+      "style": "Normal",
+      "text": "[C049-S1] Miltä Havukoski näyttää tulevaisuudessa?｜City of Vantaa｜市政府同期报道  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.vantaa.fi/fi/ajankohtaista/uutinen/milta-havukoski-nayttaa-tulevaisuudessa"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C049-S2] Havukoski participatory development workshop invitation / AI-assisted visioning｜City of Vantaa｜市政府参与资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.vantaa.fi/fi/ajankohtaista/uutinen/tule-mukaan-kehittamistyopajaan-2-310-visioimaan-havukosken-tulevaisuutta"
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "[C049-S3] Havukoski planning framework / participation history｜City of Vantaa｜当前法定规划资料  访问来源",
+      "links": [
+        {
+          "text": "访问来源",
+          "target": "https://www.vantaa.fi/en/node/4833"
+        }
+      ]
+    }
+  ],
+  "tables": [
+    [
+      [
+        "阶段",
+        "案例数",
+        "筛查问题",
+        "结果"
+      ],
+      [
+        "广泛候选池",
+        "70",
+        "案例是否真实存在、是否可能与社区更新/治理相关",
+        "保留真实项目并识别模拟/边界"
+      ],
+      [
+        "真实性核验",
+        "31（A类）",
+        "地点、时间、技术、任务是否有明确来源连接",
+        "进入证据密度筛查"
+      ],
+      [
+        "中度深挖池",
+        "25",
+        "是否能重建过程、是否有Context/结果/局限证据",
+        "控制同质案例重复"
+      ],
+      [
+        "本轮核心证据池",
+        "17",
+        "是否足以支撑5.2—5.4多个论点并可逐条溯源",
+        "达到第五章可写门槛"
+      ]
+    ],
+    [
+      [
+        "ID",
+        "案例",
+        "地点/时期",
+        "社区情境",
+        "技术能力",
+        "主要任务",
+        "关键非线性/局限",
+        "第五章角色"
+      ],
+      [
+        "C003",
+        "Virtual Slaithwaite / Shaping Slaithwaite",
+        "英国西约克郡 Slaithwaite｜1998年前后",
+        "小城镇/社区规划",
+        "Web-GIS空间化表达",
+        "居民规划参与",
+        "数字排斥；需现场电脑",
+        "早期参与/人工补位"
+      ],
+      [
+        "C005",
+        "Arabianranta / Helsinki Virtual Village",
+        "芬兰赫尔辛基 Arabianranta｜1997—2005+",
+        "棕地转型+新社区",
+        "1Gbps/Portal/Extranet",
+        "社区交流/服务",
+        "愿景≠部署；e-Moderator",
+        "基础设施+组织中介"
+      ],
+      [
+        "C008",
+        "Eastserve / New East Manchester",
+        "英国曼彻斯特 East Manchester｜2000—2008+",
+        "衰退更新区域",
+        "门户/补贴PC/无线宽带",
+        "公共服务/数字包容",
+        "成本/兴趣导致不使用",
+        "服务组织/采用差异"
+      ],
+      [
+        "C007",
+        "Carpenters Estate / Carpenters Connect",
+        "英国伦敦 Newham｜2001—2005+",
+        "公共住房/高层",
+        "数字电视/VOD",
+        "更新规划参与",
+        "部署严重延期；线下可替代",
+        "非线性过程"
+      ],
+      [
+        "C010",
+        "上海五里桥街道社区信息化试点",
+        "中国上海卢湾（今黄浦）五里桥街道｜2001—2008+",
+        "成熟街道社区",
+        "社区信息系统/热线/网站",
+        "公共服务整合",
+        "独立居民评价不足",
+        "中国早期服务信息化"
+      ],
+      [
+        "C062",
+        "Red Hook WiFi / Digital Stewards",
+        "美国纽约布鲁克林 Red Hook｜2011—2018+",
+        "公共住房/灾害风险",
+        "社区Mesh网络",
+        "通信韧性/应急",
+        "依赖本地维护",
+        "居民技术主体"
+      ],
+      [
+        "C024",
+        "Detroit Motor City Mapping",
+        "美国底特律｜2013—2015+",
+        "城市衰败/空置",
+        "移动宗地调查/GIS",
+        "衰败识别/优先级",
+        "城市尺度；社区问题受标准化限制",
+        "数据可见性/居民数据劳动"
+      ],
+      [
+        "C036",
+        "Ramani Huria",
+        "坦桑尼亚达累斯萨拉姆｜2015—2020+",
+        "非正规/洪涝高风险",
+        "OSM/ODK/GIS",
+        "风险测绘/排水治理",
+        "依赖持续更新",
+        "社区共同生产"
+      ],
+      [
+        "C060",
+        "Yuhua Smart HDB Estate",
+        "新加坡 Yuhua｜2014—2018",
+        "高层HDB/老龄化",
+        "传感/智能家居",
+        "养老/能水/运维",
+        "智能家居初期仅10户",
+        "形态→任务/尺度边界"
+      ],
+      [
+        "C061",
+        "Bukchon IoT Village",
+        "韩国首尔 Bukchon Hanok Village｜2015—2018+",
+        "低层历史街区/旅游",
+        "IoT火灾/环境感知",
+        "消防/游客冲突",
+        "部分试验退出；需行政措施",
+        "历史街区对照"
+      ],
+      [
+        "C033",
+        "SmartEnCity – Tartu",
+        "爱沙尼亚 Tartu｜2016—2022",
+        "苏联时期老旧公寓",
+        "智能家居+节能改造",
+        "住宅节能/舒适",
+        "实体+数字捆绑；居民响应有限",
+        "综合改造"
+      ],
+      [
+        "C034",
+        "SmartEnCity – Coronación, Vitoria-Gasteiz",
+        "西班牙 Vitoria-Gasteiz Coronación｜2016—2022",
+        "既有住宅社区",
+        "区域供热/能源管理",
+        "节能+公共空间",
+        "早期仅3/108社区加入",
+        "居民同意/调整"
+      ],
+      [
+        "C039",
+        "上海田林十二村智慧社区",
+        "中国上海徐汇区田林十二村｜2016—2019+",
+        "高密度成熟社区",
+        "门禁/传感/预警",
+        "治安/消防/垃圾",
+        "效果多为官方自报",
+        "日常治理协同"
+      ],
+      [
+        "C064",
+        "Damp Busters / The Bristol Approach – Knowle West",
+        "英国Bristol Knowle West｜2016前后",
+        "低收入成熟社区",
+        "家庭温湿度传感",
+        "住房潮湿/维修",
+        "规模小",
+        "居民数据能力"
+      ],
+      [
+        "C043",
+        "上海复元坊智能非机动车车棚",
+        "中国上海静安区复元坊｜2018—2019+",
+        "老旧小区",
+        "门禁/监控/智能充电",
+        "停车/消防",
+        "先反对后92.94%同意",
+        "微空间重组"
+      ],
+      [
+        "C066",
+        "北京劲松北社区老旧小区改造 / “劲松模式”",
+        "中国北京朝阳区劲松北｜2018—2021+",
+        "老旧高密社区",
+        "智慧平台/门禁",
+        "综合更新/养老/物业",
+        "数字+实体+运营捆绑",
+        "组织重构/因果边界"
+      ],
+      [
+        "C049",
+        "Havukoski / Koivukylä GenAI participatory planning",
+        "芬兰 Vantaa Havukoski｜2023—2026（规划进行中）",
+        "既有居住区/规划中",
+        "生成式AI可视化",
+        "规划参与/愿景表达",
+        "尚无建成效果",
+        "技术前沿延伸"
+      ]
+    ],
+    [
+      [
+        "可写入的事实性表述",
+        "来源ID",
+        "证据属性",
+        "写作边界"
+      ],
+      [
+        "1998年Web-GIS被嵌入真实的Planning for Real社区规划活动，而非独立技术演示。",
+        "C003-S1, C003-S2",
+        "学术原始案例",
+        "可作为事实"
+      ],
+      [
+        "现场配置多台联网电脑，说明数字参与依赖线下设备和技术组织支持。",
+        "C003-S2, C003-S3",
+        "学术原始案例",
+        "可作为事实"
+      ],
+      [
+        "数字地图使居民意见能够与具体空间对象绑定并直接进入数据库。",
+        "C003-S1",
+        "学术原始案例",
+        "可作为能力变化"
+      ],
+      [
+        "数字工具扩大表达方式，但不能据此断言其提高了参与代表性。",
+        "C003-S1, C003-S3",
+        "研究者讨论",
+        "需表述为局限/判断"
+      ]
+    ],
+    [
+      [
+        "可写入的事实性表述",
+        "来源ID",
+        "证据属性",
+        "写作边界"
+      ],
+      [
+        "2004年前后Arabianranta已存在1 Gbps本地网络、住宅公司Extranet和公共WLAN。",
+        "C005-S1",
+        "官方研究报告",
+        "可作为部署事实"
+      ],
+      [
+        "住宅讨论区由居住在相应住宅公司的志愿e-Moderator管理。",
+        "C005-S1",
+        "官方研究报告",
+        "可作为组织关系事实"
+      ],
+      [
+        "2004年调查覆盖约500户，样本显示互联网和移动通信普及率已经很高。",
+        "C005-S1",
+        "官方问卷研究",
+        "仅限调查样本/报告口径"
+      ],
+      [
+        "2001年媒体所描绘的部分高级数字服务仍属于未来愿景。",
+        "C005-S2",
+        "同期可靠报道",
+        "与已部署能力分开写"
+      ]
+    ],
+    [
+      [
+        "可写入的事实性表述",
+        "来源ID",
+        "证据属性",
+        "写作边界"
+      ],
+      [
+        "Eastserve于2000年前后形成，并从社区门户扩展到补贴PC、培训和无线互联网服务。",
+        "C008-S1, C008-S2",
+        "地方政府评估",
+        "可作为过程事实"
+      ],
+      [
+        "2008年评估对626名现用户/流失用户/非用户进行调查。",
+        "C008-S1",
+        "地方政府委托评估",
+        "调查口径需注明"
+      ],
+      [
+        "成本与“没有兴趣”等因素仍是部分居民不使用的重要原因。",
+        "C008-S1",
+        "调查结果",
+        "不能推及所有居民"
+      ],
+      [
+        "Eastserve被学术研究明确放在New East Manchester城市更新背景下讨论。",
+        "C008-S3",
+        "学术研究",
+        "可作研究定位"
+      ]
+    ],
+    [
+      [
+        "可写入的事实性表述",
+        "来源ID",
+        "证据属性",
+        "写作边界"
+      ],
+      [
+        "2002年10月，Carpenters 750个目标家庭中设备交付数为0。",
+        "C007-S1",
+        "政府项目评估",
+        "可作为直接事实"
+      ],
+      [
+        "PC-on-TV创新方案和布线承包问题导致实施明显滑期。",
+        "C007-S1",
+        "政府项目评估",
+        "可作为直接原因说明"
+      ],
+      [
+        "随后数字视频/VOD被用于Masterplanning的会议、考察和参与信息传播。",
+        "C007-S2",
+        "地方政府/社区向议会书面证据",
+        "可作为实际任务嵌入"
+      ],
+      [
+        "部分参与方式可用线下录像播放替代。",
+        "C007-S2",
+        "同期一手材料自我反思",
+        "用于限制技术决定论"
+      ]
+    ],
+    [
+      [
+        "可写入的事实性表述",
+        "来源ID",
+        "证据属性",
+        "写作边界"
+      ],
+      [
+        "五里桥在2001—2002年完成社区信息化试点并被上海推广。",
+        "C010-S1, C010-S2",
+        "地方政府/官方回顾",
+        "可作为制度过程事实"
+      ],
+      [
+        "系统目标包括整合政务、社区事务和公共服务功能。",
+        "C010-S1",
+        "政府规划文件",
+        "可作为任务定位"
+      ],
+      [
+        "后续运行形成系统、网站、热线等多渠道居民服务。",
+        "C010-S3, C010-S4",
+        "官方回顾/报道",
+        "运行规模为机构口径"
+      ],
+      [
+        "独立居民效果评价目前不足。",
+        "C010-S1, C010-S4",
+        "证据缺口判断",
+        "应在论文中主动说明"
+      ]
+    ],
+    [
+      [
+        "可写入的事实性表述",
+        "来源ID",
+        "证据属性",
+        "写作边界"
+      ],
+      [
+        "Digital Stewards由Red Hook Houses年轻居民组成，并参与建设和维护社区网络。",
+        "C062-S1",
+        "同行评议研究",
+        "可作为主体关系事实"
+      ],
+      [
+        "Hurricane Sandy期间Red Hook WiFi继续发挥通信和救援协调作用，并一度被FEMA使用。",
+        "C062-S1, C062-S2",
+        "学术+研究机构案例",
+        "可作为灾害过程事实"
+      ],
+      [
+        "网络维护需要本地技能与持续组织支持。",
+        "C062-S1, C062-S3",
+        "学术/案例反思",
+        "用于解释持续性条件"
+      ],
+      [
+        "项目不能被简化为“免费WiFi”，其核心还包括付费/系统化培训和社区技术角色。",
+        "C062-S1",
+        "同行评议研究",
+        "可作为组织变化"
+      ]
+    ],
+    [
+      [
+        "可写入的事实性表述",
+        "来源ID",
+        "证据属性",
+        "写作边界"
+      ],
+      [
+        "2013—2014年项目调查了底特律超过37万宗地，并使用200名左右居民调查员/司机/质控人员。",
+        "C024-S1, C024-S2",
+        "政府数据目录+项目技术文档",
+        "可作为规模事实"
+      ],
+      [
+        "调查记录结构状况、占用、空置/倾倒等信息，数据成为Blight Removal Task Force报告基础。",
+        "C024-S2, C024-S4",
+        "项目技术文档/任务组材料",
+        "可作为任务嵌入事实"
+      ],
+      [
+        "居民并非仅为被调查对象，而是大规模参与现场数据生产。",
+        "C024-S1, C024-S3",
+        "政府数据目录+项目回顾",
+        "可作为主体变化"
+      ],
+      [
+        "由于进度和复杂度，社区团体提出的部分附加问题被推迟。",
+        "C024-S3",
+        "项目方公开反思",
+        "用于写技术/项目约束"
+      ]
+    ],
+    [
+      [
+        "可写入的事实性表述",
+        "来源ID",
+        "证据属性",
+        "写作边界"
+      ],
+      [
+        "2015—2016年Ramani Huria通过社区驱动方式对高洪涝风险区域开展基础与风险测绘。",
+        "C036-S1, C036-S2",
+        "世界银行/项目资料",
+        "可作为过程事实"
+      ],
+      [
+        "社区居民、大学生和技术人员共同采集并数字化道路、建筑、排水等空间数据。",
+        "C036-S1, C036-S3",
+        "国际机构+项目资料",
+        "可作为主体关系事实"
+      ],
+      [
+        "后续地图被用于排水沟清理和政府洪涝减缓/应急规划。",
+        "C036-S2, C036-S3",
+        "机构/项目记录",
+        "可写“被用于”，不直接等同于减灾效果"
+      ],
+      [
+        "项目价值建立在持续培训和本地更新能力上。",
+        "C036-S1, C036-S2",
+        "项目设计/回顾",
+        "可作为条件判断"
+      ]
+    ],
+    [
+      [
+        "可写入的事实性表述",
+        "来源ID",
+        "证据属性",
+        "写作边界"
+      ],
+      [
+        "Yuhua约有9000居民和3194套住房，并被定位为首个既有HDB智慧化试点社区。",
+        "C060-S1",
+        "新加坡政府发布",
+        "可作为社区背景"
+      ],
+      [
+        "住宅内Smart Home初始实际测试仅10户、最长6个月。",
+        "C060-S1",
+        "政府发布",
+        "必须用于限制“全社区部署”表述"
+      ],
+      [
+        "社区公共设施传感数据用于垃圾、能源、水务和光伏等维护预警与资源调度。",
+        "C060-S1",
+        "政府发布",
+        "为计划/实施功能说明"
+      ],
+      [
+        "Yuhua案例更能证明“既有高层社区任务塑造技术用途”，不能证明数字技术改变建筑高度。",
+        "C060-S1, C060-S2",
+        "跨事实研究解释",
+        "第五章分析结论"
+      ]
+    ],
+    [
+      [
+        "可写入的事实性表述",
+        "来源ID",
+        "证据属性",
+        "写作边界"
+      ],
+      [
+        "首尔在Bukchon的8处建筑/设施部署IoT火灾监测并可自动向119报警。",
+        "C061-S1",
+        "首尔市政府发布",
+        "可作为部署事实"
+      ],
+      [
+        "物联网试验同时试图回应噪声、违停、垃圾和游客引发的居民生活问题。",
+        "C061-S1",
+        "首尔市政府发布",
+        "作为项目任务范围"
+      ],
+      [
+        "到2018年，首尔仍需通过游客访问时段、停车执法和清扫等非数字措施缓解冲突。",
+        "C061-S2",
+        "首尔市政府治理措施",
+        "说明技术不是唯一机制"
+      ],
+      [
+        "同期报道指出部分IoT项目退出。",
+        "C061-S3",
+        "可靠媒体报道",
+        "可写为“部分试验退出”，不泛化全部项目"
+      ]
+    ],
+    [
+      [
+        "可写入的事实性表述",
+        "来源ID",
+        "证据属性",
+        "写作边界"
+      ],
+      [
+        "Tartu项目改造约18栋既有公寓楼并在住宅内配置智能家居系统。",
+        "C033-S1, C033-S2",
+        "大学/同行评议研究",
+        "可作为实施事实"
+      ],
+      [
+        "改造对象包括苏联时期老旧住宅，其保温、通风和供热性能较弱。",
+        "C033-S2, C033-S3",
+        "同行评议/学术研究",
+        "可作为Context"
+      ],
+      [
+        "居民接受度受便利、成本、审美、环境等多因素影响。",
+        "C033-S2, C033-S3",
+        "居民研究",
+        "限于调查样本"
+      ],
+      [
+        "建筑节能结果来自物理改造与智能技术组合，不宜只归因于数字系统。",
+        "C033-S1, C033-S2",
+        "方案结构+研究解释",
+        "用于因果边界"
+      ]
+    ],
+    [
+      [
+        "可写入的事实性表述",
+        "来源ID",
+        "证据属性",
+        "写作边界"
+      ],
+      [
+        "2017年9月，108个范围内住宅共同体中仅3个明确加入SmartEnCity。",
+        "C034-S1",
+        "市政府同期发布",
+        "可作为直接过程事实"
+      ],
+      [
+        "项目随后调整计费、沟通和补贴措施，并延长/扩大加入窗口。",
+        "C034-S1, C034-S2",
+        "市政府同期发布",
+        "可作为调整过程"
+      ],
+      [
+        "公共空间改造通过居民参与过程确定优先事项。",
+        "C034-S3",
+        "市政府发布",
+        "可作为参与事实"
+      ],
+      [
+        "2022年市政府报告住宅改造完成，并报告约50%能耗、90%温室气体排放下降等结果。",
+        "C034-S4",
+        "项目方/政府自报结果",
+        "必须标注“官方报告”而非独立因果评估"
+      ]
+    ],
+    [
+      [
+        "可写入的事实性表述",
+        "来源ID",
+        "证据属性",
+        "写作边界"
+      ],
+      [
+        "田林十二村有41栋住宅、85个出入口、近5000居民，并开展智慧安防/社区治理试点。",
+        "C039-S1",
+        "区政府官方资料",
+        "可作为Context和部署事实"
+      ],
+      [
+        "系统将预警信息连接公安、居委、物业等主体。",
+        "C039-S1, C039-S2",
+        "政府/官方平台资料",
+        "可作为组织关系变化"
+      ],
+      [
+        "数字能力后续延伸至电气火灾、老人、群租、垃圾等治理场景。",
+        "C039-S2, C039-S3",
+        "官方资料/报道",
+        "可作为任务扩展"
+      ],
+      [
+        "案件下降/“零发案”等结果为官方自报，不作为独立因果效果。",
+        "C039-S1",
+        "政府自报",
+        "必须注明来源属性"
+      ]
+    ],
+    [
+      [
+        "可写入的事实性表述",
+        "来源ID",
+        "证据属性",
+        "写作边界"
+      ],
+      [
+        "Damp Busters从Knowle West居民提出的潮湿问题出发，以共同设计方式开发温湿度传感。",
+        "C064-S1, C064-S2",
+        "项目方+同行评议综述",
+        "可作为过程事实"
+      ],
+      [
+        "居民接受培训并使用数据理解/证明住房潮湿状况。",
+        "C064-S1, C064-S2",
+        "项目过程+学术综述",
+        "可作为主体能力变化"
+      ],
+      [
+        "同行评议综述记录若干房东最终修复长期潮湿问题。",
+        "C064-S2",
+        "同行评议综述",
+        "表述为“若干/项目报告结果”，不量化外推"
+      ],
+      [
+        "该案例主要是室内微观空间响应，不代表数字技术改变社区物理形态。",
+        "C064-S1, C064-S2",
+        "跨事实解释",
+        "第五章分析结论"
+      ]
+    ],
+    [
+      [
+        "可写入的事实性表述",
+        "来源ID",
+        "证据属性",
+        "写作边界"
+      ],
+      [
+        "改造前存在停车空间小、私拉充电线和消防隐患等问题。",
+        "C043-S1, C043-S2",
+        "区政府同期资料",
+        "可作为Context"
+      ],
+      [
+        "通过网格化走访后，92.94%居民同意，车棚于2018年10月建成。",
+        "C043-S1",
+        "区政府同期资料",
+        "可作为协商过程事实"
+      ],
+      [
+        "改造后使用门禁、视频、人脸识别和智能充电，并实现无人值守。",
+        "C043-S1, C043-S2",
+        "政府/可靠报道",
+        "可作为技术能力事实"
+      ],
+      [
+        "经验随后向49个老旧小区相关车棚扩散。",
+        "C043-S1, C043-S3",
+        "政府回顾",
+        "扩散规模为官方口径"
+      ]
+    ],
+    [
+      [
+        "可写入的事实性表述",
+        "来源ID",
+        "证据属性",
+        "写作边界"
+      ],
+      [
+        "劲松北1978年建成，0.26 km²、43栋、4199户、9494人，且老龄化/独居老人比例较高。",
+        "C066-S1",
+        "北京市规划部门官方资料",
+        "可作为Context"
+      ],
+      [
+        "改造前主要问题包括设施不足、公共空间无序、无障碍和生活服务需求。",
+        "C066-S1",
+        "官方规划解读",
+        "可作为更新前任务"
+      ],
+      [
+        "2018后改造同时引入社会资本、专业物业、公共空间与智慧化管理。",
+        "C066-S1, C066-S2",
+        "官方资料",
+        "可作为组合更新过程"
+      ],
+      [
+        "人脸识别/智慧平台被用于老人关怀等日常服务。",
+        "C066-S3",
+        "政府部门案例资料",
+        "可写功能和流程，不夸大健康效果"
+      ]
+    ],
+    [
+      [
+        "可写入的事实性表述",
+        "来源ID",
+        "证据属性",
+        "写作边界"
+      ],
+      [
+        "2023年Vantaa在Havukoski框架规划相关Charette中真实使用UrbanistAI辅助居民未来空间视觉化。",
+        "C049-S1, C049-S2",
+        "市政府同期资料",
+        "可作为真实过程事实"
+      ],
+      [
+        "工作坊目的包括收集并协调居民/行动者对区域发展的观点和目标。",
+        "C049-S1",
+        "市政府同期资料",
+        "可作为任务定位"
+      ],
+      [
+        "生成式AI主要用于快速生成未来场景图并启动讨论，而非替代规划决策。",
+        "C049-S1, C049-S2",
+        "市政府流程说明",
+        "可作为能力—任务解释"
+      ],
+      [
+        "截至2026年框架规划仍在推进，尚不能评价GenAI的建成空间效果。",
+        "C049-S3",
+        "市政府当前规划状态",
+        "必须作为结论边界"
+      ]
+    ],
+    [
+      [
+        "编号",
+        "可写论点",
+        "003",
+        "005",
+        "008",
+        "007",
+        "010",
+        "062",
+        "024",
+        "036",
+        "060",
+        "061",
+        "033",
+        "034",
+        "039",
+        "064",
+        "043",
+        "066",
+        "049"
+      ],
+      [
+        "1",
+        "既有社区的人口、建筑形态、更新问题与制度条件，会影响技术首先进入什么任务。",
+        "●",
+        "●",
+        "●",
+        "●",
+        "○",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●"
+      ],
+      [
+        "2",
+        "技术嵌入不是一次性部署，常经历延期、低采用、调整、任务再嵌入或扩散。",
+        "○",
+        "●",
+        "●",
+        "●",
+        "○",
+        "●",
+        "○",
+        "●",
+        "●",
+        "●",
+        "○",
+        "●",
+        "○",
+        "○",
+        "●",
+        "○",
+        "○"
+      ],
+      [
+        "3",
+        "早期案例中技术首先改变信息获取、表达和服务接口，而非直接改变建筑形态。",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "○",
+        "○",
+        "○",
+        "—",
+        "—",
+        "—",
+        "—",
+        "—",
+        "—",
+        "—",
+        "—",
+        "—"
+      ],
+      [
+        "4",
+        "较新的感知/数据/生成能力扩展到运维、风险识别和规划可视化，但并不意味着自动化治理。",
+        "○",
+        "○",
+        "○",
+        "○",
+        "○",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●"
+      ]
+    ],
+    [
+      [
+        "编号",
+        "可写论点",
+        "003",
+        "005",
+        "008",
+        "007",
+        "010",
+        "062",
+        "024",
+        "036",
+        "060",
+        "061",
+        "033",
+        "034",
+        "039",
+        "064",
+        "043",
+        "066",
+        "049"
+      ],
+      [
+        "1",
+        "跨案例比较应以“能力进入任务”而非单纯技术名称作为共同坐标。",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●"
+      ],
+      [
+        "2",
+        "技术能力能否生效通常依赖社区组织、物业/住宅协会、政府部门、志愿者或居民技术角色的中介。",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●"
+      ],
+      [
+        "3",
+        "居民在部分案例中从服务对象转为数据生产者、网络维护者、共同设计者或规划表达主体。",
+        "●",
+        "●",
+        "○",
+        "●",
+        "○",
+        "●",
+        "●",
+        "●",
+        "○",
+        "○",
+        "○",
+        "●",
+        "○",
+        "●",
+        "●",
+        "●",
+        "●"
+      ],
+      [
+        "4",
+        "数字技术更多重组信息流、责任分配和协作关系，而非简单替代人。",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●"
+      ]
+    ],
+    [
+      [
+        "编号",
+        "可写论点",
+        "003",
+        "005",
+        "008",
+        "007",
+        "010",
+        "062",
+        "024",
+        "036",
+        "060",
+        "061",
+        "033",
+        "034",
+        "039",
+        "064",
+        "043",
+        "066",
+        "049"
+      ],
+      [
+        "1",
+        "组织关系变化通常比大尺度空间形态变化更普遍，也更容易被证据直接识别。",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●"
+      ],
+      [
+        "2",
+        "数字技术产生的空间响应多表现为入口、停车、室内环境、公共空间和设施运行等局部重组，并常与实体改造捆绑。",
+        "○",
+        "○",
+        "○",
+        "○",
+        "○",
+        "○",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "○"
+      ],
+      [
+        "3",
+        "采用不足、维护依赖、部署延期、居民抵触和项目退出等非线性结果是常见现象。",
+        "●",
+        "●",
+        "●",
+        "●",
+        "○",
+        "●",
+        "●",
+        "○",
+        "●",
+        "●",
+        "●",
+        "●",
+        "○",
+        "○",
+        "●",
+        "○",
+        "●"
+      ],
+      [
+        "4",
+        "楼层高度、密度和人口规模更适合作为技术需求的Context，而非数字技术的直接Result。",
+        "○",
+        "●",
+        "●",
+        "●",
+        "○",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●",
+        "●"
+      ],
+      [
+        "5",
+        "生成式AI目前能证明进入真实规划参与过程，但尚不足以证明建成空间或长期治理效果。",
+        "—",
+        "—",
+        "—",
+        "—",
+        "—",
+        "—",
+        "—",
+        "—",
+        "—",
+        "—",
+        "—",
+        "—",
+        "—",
+        "—",
+        "—",
+        "—",
+        "●"
+      ]
+    ],
+    [
+      [
+        "证据状态",
+        "可写内容",
+        "避免/改写方式"
+      ],
+      [
+        "高置信",
+        "具体时间、地点、参与主体、技术部署、任务、明确的调整节点；来自官方同期文件或同行评议原始研究。",
+        "可以直接作为案例事实，但仍按来源引用。"
+      ],
+      [
+        "中等置信",
+        "居民接受度、使用变化、部分治理效果；有调查或项目评估但样本有限。",
+        "注明调查范围/样本，不外推整个社区。"
+      ],
+      [
+        "机构自报",
+        "节能率、案件下降、零事故、覆盖规模等由政府/项目方报告的结果。",
+        "写成“官方/项目方报告称……”，不直接写成技术因果效果。"
+      ],
+      [
+        "研究解释",
+        "“技术首先改变组织再影响空间”“社区形态塑造技术任务”等跨案例归纳。",
+        "放在5.3—5.5，由多案例共同支撑，不能伪装成单一来源事实。"
+      ],
+      [
+        "尚不可写为效果",
+        "Havukoski生成式AI的建成影响；数字技术导致楼层高度/容积率/人口增加。",
+        "只能写过程/研究假设，除非后续出现直接追踪证据。"
+      ]
+    ]
+  ]
+}
