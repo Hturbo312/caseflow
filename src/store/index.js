@@ -227,7 +227,8 @@ export const useSchemaStore = create((set, get) => ({
 
         set({
           schemas: fullSchemas,
-          currentSchemaId: (fullSchemas.find(s => s.id === '3') || fullSchemas[0])?.id?.toString() || null,
+          // 2.0：默认优先论文 Schema 9（Dynamic Schema v1.0），其次兼容旧默认 3
+          currentSchemaId: (fullSchemas.find(s => s.id === '9') || fullSchemas.find(s => s.id === '3') || fullSchemas[0])?.id?.toString() || null,
           isLoading: false
         });
       } else {

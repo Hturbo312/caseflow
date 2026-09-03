@@ -69,7 +69,7 @@ router.get('/', authMiddleware, async (req, res) => {
     // 只查消费方实际使用的列：created_at/source_segment_ids/standardized_name 前端从未读取；
     // 关系列用显式列代替 SELECT *。响应保持 snake_case，camelCase 由前端 loadCases 统一映射
     const [casesResult, entitiesResult, relationsResult] = await Promise.all([
-      pool.query('SELECT id, name, schema_id, location, year, description, tags, created_at FROM cases ORDER BY created_at DESC'),
+      pool.query('SELECT id, name, schema_id, location, year, description, tags, case_status, metadata, created_at FROM cases ORDER BY created_at DESC'),
       pool.query('SELECT id, case_id, name, entity_type, properties, color FROM case_entities'),
       pool.query('SELECT id, case_id, source_entity_id, target_entity_id, relation_type FROM case_relations')
     ]);
@@ -269,7 +269,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const [caseResult, entitiesResult, relationsResult] = await Promise.all([
-      pool.query('SELECT id, name, schema_id, location, year, description, tags, created_at FROM cases WHERE id = $1', [id]),
+      pool.query('SELECT id, name, schema_id, location, year, description, tags, case_status, metadata, created_at FROM cases WHERE id = $1', [id]),
       pool.query('SELECT id, case_id, name, entity_type, properties, color FROM case_entities WHERE case_id = $1', [id]),
       pool.query('SELECT id, case_id, source_entity_id, target_entity_id, relation_type FROM case_relations WHERE case_id = $1', [id])
     ]);

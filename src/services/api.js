@@ -162,6 +162,7 @@ export const caseApi = {
 export const evidenceApi = {
   getByEntity: (entityId) => request(`/evidence?entity_id=${entityId}`),
   getByRelation: (relationId) => request(`/evidence?relation_id=${relationId}`),
+  getCounts: (caseId) => request(`/evidence/counts?case_id=${caseId}`),
 };
 
 // ============================================
@@ -476,4 +477,34 @@ export const chatApi = {
   deleteSession: (agentName, sessionId) => request(`/agents/${agentName}/sessions/${sessionId}`, {
     method: 'DELETE',
   }),
+};
+// ============================================
+// Review API（2.0 审核工作流）
+// ============================================
+export const reviewApi = {
+  queues: (caseId, status) =>
+    request(`/review/queues?case_id=${caseId}${status ? `&status=${status}` : ''}`),
+  entityAction: (id, action, body = {}) =>
+    request(`/review/entity/${id}/${action}`, { method: 'POST', body: JSON.stringify(body) }),
+  relationAction: (id, action, body = {}) =>
+    request(`/review/relation/${id}/${action}`, { method: 'POST', body: JSON.stringify(body) }),
+  entityHistory: (id) => request(`/review/entity/${id}/history`),
+  relationHistory: (id) => request(`/review/relation/${id}/history`),
+};
+
+// ============================================
+// Analysis API（2.0 确定性分析聚合，Spec §6.6）
+// ============================================
+export const analysisApi = {
+  processStates: (caseIds) =>
+    request('/compare/process-states', { method: 'POST', body: JSON.stringify({ case_ids: caseIds }) }),
+  evidenceCoverage: (caseIds, evidenceStatusFilters) =>
+    request('/compare/evidence-coverage', {
+      method: 'POST',
+      body: JSON.stringify({ case_ids: caseIds, evidence_status_filters: evidenceStatusFilters }),
+    }),
+  capabilityTask: (caseIds) =>
+    request('/compare/capability-task', { method: 'POST', body: JSON.stringify({ case_ids: caseIds }) }),
+  actionChain: (caseId) =>
+    request('/compare/action-chain', { method: 'POST', body: JSON.stringify({ case_id: caseId }) }),
 };
