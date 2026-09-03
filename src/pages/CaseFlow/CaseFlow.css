@@ -142,12 +142,27 @@
   flex-direction: column;
   flex-shrink: 0;
   overflow: hidden;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.caseflow-left.collapsed {
+  width: 0 !important;
+  min-width: 0;
+  overflow: hidden;
+  border-right: none;
 }
 
 .caseflow-left-header {
   padding: 24px 24px;
   border-bottom: 1px solid var(--border-light);
   flex-shrink: 0;
+}
+
+.caseflow-left-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .caseflow-logo {
@@ -357,6 +372,97 @@
   flex: 1;
   min-height: 0;
   height: 100%;
+}
+
+/* ========== 侧边栏折叠/展开 ========== */
+
+/* 侧边栏折叠按钮 */
+.caseflow-sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.caseflow-sidebar-toggle:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* 右侧栏 header 操作区 */
+.caseflow-right-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 折叠后的展开标签 */
+.caseflow-sidebar-expand-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 48px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-primary);
+  border-radius: 0 6px 6px 0;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  padding: 0;
+  position: relative;
+  z-index: 20;
+}
+
+.caseflow-sidebar-expand-tab:hover {
+  background: var(--bg-secondary);
+  color: var(--color-primary);
+  border-color: var(--color-primary-light);
+}
+
+.caseflow-sidebar-expand-tab-right {
+  border-radius: 6px 0 0 6px;
+}
+
+/* 右侧栏折叠 */
+.caseflow-right {
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.caseflow-right.collapsed {
+  width: 0 !important;
+  min-width: 0;
+  overflow: hidden;
+  border-left: none;
+}
+
+/* ========== 拖拽调整宽度手柄 ========== */
+.caseflow-resizer {
+  width: 4px;
+  height: 100%;
+  background: transparent;
+  cursor: col-resize;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+  position: relative;
+  z-index: 15;
+}
+
+.caseflow-resizer:hover {
+  background: var(--color-primary-light);
+}
+
+.caseflow-resizer:active {
+  background: var(--color-primary);
 }
 
 /* ========== 响应式布局 ========== */

@@ -10,6 +10,7 @@
   flex-direction: column;
   flex-shrink: 0;
   overflow: hidden;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .caseflow-right-header {
@@ -100,8 +101,8 @@
   border-radius: 50%;
 }
 
-.caseflow-status-dot.active { background: var(--color-success); }
-.caseflow-status-dot.completed { background: var(--text-muted); }
+.caseflow-status-dot.active { background: var(--color-primary); }
+.caseflow-status-dot.completed { background: var(--color-success); }
 .caseflow-status-dot.planning { background: var(--color-warning); }
 
 .caseflow-status-text {
@@ -371,11 +372,54 @@
   gap: 8px;
 }
 
+.caseflow-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
 .caseflow-card-badges {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+/* 位置年份标签 */
+.caseflow-card-location {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: var(--text-muted);
+  padding: 2px 6px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+/* 标签行 */
+.caseflow-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.caseflow-card-tag {
+  font-size: 10px;
+  color: var(--color-primary-dark);
+  background: var(--color-primary-light);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.caseflow-card-tag-more {
+  font-size: 10px;
+  color: var(--text-muted);
+  padding: 2px 4px;
 }
 
 /* 摘要区域 */
@@ -413,7 +457,7 @@
   letter-spacing: 0.5px;
 }
 
-/* 核心实体 */
+/* 实体类型分布 */
 .caseflow-card-entities {
   display: flex;
   flex-direction: column;
@@ -423,17 +467,33 @@
 .caseflow-card-entity-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
 }
 
-.caseflow-card-entity-item {
+.caseflow-card-type-badge {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 8px;
+  gap: 4px;
+  padding: 3px 7px;
   background: var(--bg-secondary);
-  border-radius: 6px;
-  font-size: 11px;
+  border-radius: 5px;
+  font-size: 10px;
+}
+
+.caseflow-card-type-name {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.caseflow-card-type-count {
+  color: var(--text-primary);
+  font-weight: 700;
+  background: var(--bg-tertiary);
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 9px;
+  min-width: 16px;
+  text-align: center;
 }
 
 .caseflow-card-entity-dot {

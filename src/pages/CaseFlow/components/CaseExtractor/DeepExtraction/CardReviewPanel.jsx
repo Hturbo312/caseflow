@@ -83,15 +83,22 @@ const CardReviewPanel = memo(({ entityType, cards, currentSchema, onUpdateStatus
       </div>
 
       {/* 批量操作 */}
-      {stats.pending > 0 && (
-        <div className="flex items-center gap-2 px-1">
-          <button
-            onClick={handleSelectAll}
-            className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
-          >
-            <CheckCheck size={14} />
-            {selectedIds.size > 0 ? t('pipeline.selected', { count: selectedIds.size }) : t('pipeline.selectPending')}
-          </button>
+      <div className="flex items-center gap-2 px-1">
+        <button
+          onClick={handleSelectAll}
+          className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 font-medium"
+        >
+          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
+            pendingIds.length > 0 && pendingIds.every(id => selectedIds.has(id))
+              ? 'bg-blue-500 border-blue-500'
+              : 'border-gray-300'
+          }`}>
+            {pendingIds.length > 0 && pendingIds.every(id => selectedIds.has(id)) && (
+              <Check size={10} className="text-white" />
+            )}
+          </div>
+          {selectedIds.size > 0 ? t('pipeline.selected', { count: selectedIds.size }) : t('pipeline.selectPending')}
+        </button>
           {selectedIds.size > 0 && (
             <>
               <button
@@ -132,15 +139,14 @@ const CardReviewPanel = memo(({ entityType, cards, currentSchema, onUpdateStatus
         <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
           {filteredCards.map(card => (
             <div key={card.id} className="relative">
-              {selectedIds.has(card.id) && (
-                <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-400 rounded-full" />
-              )}
               <EntityCard
                 card={card}
                 entityType={entityType}
                 color={color}
                 onApprove={(id) => onUpdateStatus(id, 'approved')}
                 onSkip={(id) => onUpdateStatus(id, 'skipped')}
+                isSelected={selectedIds.has(card.id)}
+                onToggleSelect={handleToggleSelect}
               />
             </div>
           ))}

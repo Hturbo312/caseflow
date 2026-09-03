@@ -65,13 +65,12 @@ function buildGraphML(graphId, nodes, edges) {
 router.get('/', authMiddleware, async (req, res) => {
   try {
     // 并行查询：案例 + 所有实体 + 所有关系（避免 N+1）
-    // 排除 embedding 列：pgvector 向量序列化为 JSON 数组会膨胀 ~8 倍（4KB→32KB）
-    // 只查消费方实际使用的列：created_at/source_segment_ids/standardized_name 前端从未读取；
-    // 关系列用显式列代替 SELECT *。响应保持 snake_case，camelCase 由前端 loadCases 统一映射
+    // 排除 embedding 列：pgvector 向量序列化为 JSON 数组会膨胀 ~8 倍（4KB→32KB），
+    // 前端展示不需要向量数据，排除后响应体从 5MB+ 降至 ~300KB
     const [casesResult, entitiesResult, relationsResult] = await Promise.all([
       pool.query('SELECT id, name, schema_id, location, year, description, tags, created_at FROM cases ORDER BY created_at DESC'),
-      pool.query('SELECT id, case_id, name, entity_type, properties, color FROM case_entities'),
-      pool.query('SELECT id, case_id, source_entity_id, target_entity_id, relation_type FROM case_relations')
+      pool.query('SELECT id, case_id, name, entity_type, properties, created_at, source_segment_ids, standardized_name, color FROM case_entities'),
+      pool.query('SELECT * FROM case_relations')
     ]);
 
     // 按 case_id 分组
@@ -90,8 +89,20 @@ router.get('/', authMiddleware, async (req, res) => {
     const casesWithDetails = casesResult.rows.map(c => ({
       ...c,
       schemaId: c.schema_id?.toString(),
-      entities: entitiesByCase.get(c.id) || [],
-      relations: relationsByCase.get(c.id) || []
+      entities: (entitiesByCase.get(c.id) || []).map(e => ({
+        ...e,
+        id: e.id?.toString(),
+        caseId: e.case_id?.toString(),
+        entityType: e.entity_type
+      })),
+      relations: (relationsByCase.get(c.id) || []).map(r => ({
+        ...r,
+        id: r.id?.toString(),
+        caseId: r.case_id?.toString(),
+        sourceId: r.source_entity_id?.toString(),
+        targetId: r.target_entity_id?.toString(),
+        name: r.relation_type
+      }))
     }));
 
     res.json({ cases: casesWithDetails });
@@ -264,14 +275,14 @@ router.get('/export-all', authMiddleware, async (req, res) => {
   }
 });
 
-// 获取案例详情（优化：3 个查询并行执行；列瘦身理由同列表接口）
+// 获取案例详情（优化：3 个查询并行执行，减少等待时间）
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const [caseResult, entitiesResult, relationsResult] = await Promise.all([
       pool.query('SELECT id, name, schema_id, location, year, description, tags, created_at FROM cases WHERE id = $1', [id]),
-      pool.query('SELECT id, case_id, name, entity_type, properties, color FROM case_entities WHERE case_id = $1', [id]),
-      pool.query('SELECT id, case_id, source_entity_id, target_entity_id, relation_type FROM case_relations WHERE case_id = $1', [id])
+      pool.query('SELECT id, case_id, name, entity_type, properties, created_at, source_segment_ids, standardized_name, color FROM case_entities WHERE case_id = $1', [id]),
+      pool.query('SELECT * FROM case_relations WHERE case_id = $1', [id])
     ]);
 
     if (caseResult.rows.length === 0) {

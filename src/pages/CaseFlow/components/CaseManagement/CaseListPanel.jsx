@@ -1,6 +1,6 @@
 import React from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { Plus } from 'lucide-react';
+import { Plus, PanelRightClose } from 'lucide-react';
 import { useI18n } from '../../../../i18n';
 import CaseCard from './CaseCard';
 import PreviewPanel from './PreviewPanel';
@@ -23,7 +23,9 @@ const CaseListPanel = ({
   setMainView,
   isAuthenticated,
   onShowLogin,
-  currentSchema
+  currentSchema,
+  isMobile,
+  onToggleCollapse
 }) => {
   const { t } = useI18n();
   // 获取聚焦案例
@@ -39,20 +41,31 @@ const CaseListPanel = ({
   };
 
   return (
-    <aside className="caseflow-right">
+    <>
       <div className="caseflow-right-header">
         <div className="caseflow-right-header-top">
           <div>
             <h2 className="caseflow-right-title">{t('case.title')}</h2>
             <p className="caseflow-right-count">{t('case.total', { count: filteredCasesList.length })}</p>
           </div>
-          <button
-            onClick={handleCreateClick}
-            className="caseflow-create-btn"
-            title={isAuthenticated ? t('case.new') : t('app.loginPrompt')}
-          >
-            <Plus size={16} />
-          </button>
+          <div className="caseflow-right-header-actions">
+            {!isMobile && onToggleCollapse && (
+              <button
+                className="caseflow-sidebar-toggle"
+                onClick={onToggleCollapse}
+                title="折叠案例栏"
+              >
+                <PanelRightClose size={16} />
+              </button>
+            )}
+            <button
+              onClick={handleCreateClick}
+              className="caseflow-create-btn"
+              title={isAuthenticated ? t('case.new') : t('app.loginPrompt')}
+            >
+              <Plus size={16} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -83,7 +96,7 @@ const CaseListPanel = ({
           />
         )}
       </AnimatePresence>
-    </aside>
+    </>
   );
 };
 

@@ -1,8 +1,8 @@
 import React, { memo, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Focus, Trash2, ChevronDown, ChevronUp, Building, Link2, Activity, MapPin, Calendar, FileText, Settings } from 'lucide-react';
+import { Focus, Trash2, ChevronDown, ChevronUp, Building, Link2, Activity, MapPin, Calendar, FileText, Settings, Tag, Layers } from 'lucide-react';
 import { useI18n } from '../../../../i18n';
-import { calculateTopologyMetrics } from './utils';
+import { calculateTopologyMetrics, getCaseStatus } from './utils';
 
 /**
  * 预设函数实现
@@ -80,6 +80,9 @@ const CaseCard = memo(({
     customFields: []
   };
 
+  // 案例状态
+  const caseStatus = useMemo(() => getCaseStatus(caseItem), [caseItem]);
+
   // 构建 entityType 配置映射
   const entityTypeConfig = useMemo(() => {
     const map = new Map();
@@ -93,7 +96,34 @@ const CaseCard = memo(({
     return map;
   }, [entityTypes]);
 
-  // 获取核心实体
+  // 实体类型分布统计
+  const entityTypeDistribution = useMemo(() => {
+    if (!caseItem.entities || caseItem.entities.length === 0) return [];
+
+    const typeMap = new Map();
+    caseItem.entities.forEach(entity => {
+      const type = entity.entityType || '其他';
+      if (!typeMap.has(type)) typeMap.set(type, { count: 0, color: null });
+      const entry = typeMap.get(type);
+      entry.count++;
+      if (!entry.color) {
+        const config = entityTypeConfig.get(type);
+        entry.color = config?.color || entity.color || '#6366f1';
+      }
+    });
+
+    const coreTypes = entityTypes.filter(t => t.isCore).map(t => t.name);
+    return [...typeMap.entries()]
+      .sort(([a], [b]) => {
+        const aIsCore = coreTypes.includes(a) ? 0 : 1;
+        const bIsCore = coreTypes.includes(b) ? 0 : 1;
+        if (aIsCore !== bIsCore) return aIsCore - bIsCore;
+        return typeMap.get(b).count - typeMap.get(a).count;
+      })
+      .map(([name, info]) => ({ name, ...info }));
+  }, [caseItem.entities, entityTypes, entityTypeConfig]);
+
+  // 获取核心实体（代表性实体名称）
   const coreEntities = useMemo(() => {
     if (!caseItem.entities || caseItem.entities.length === 0) return [];
 
@@ -131,6 +161,16 @@ const CaseCard = memo(({
   const topologyMetrics = useMemo(() => {
     return calculateTopologyMetrics(entityCount, relationCount);
   }, [entityCount, relationCount]);
+
+  // Tags 数组
+  const tags = useMemo(() => {
+    if (!caseItem.tags) return [];
+    if (Array.isArray(caseItem.tags)) return caseItem.tags;
+    if (typeof caseItem.tags === 'string') {
+      try { return JSON.parse(caseItem.tags); } catch { return [caseItem.tags]; }
+    }
+    return [];
+  }, [caseItem.tags]);
 
   // 生成逻辑摘要
   const summary = useMemo(() => {
@@ -193,7 +233,10 @@ const CaseCard = memo(({
       <div className="caseflow-card-main">
         <div className="caseflow-card-header">
           <div className="caseflow-card-title-row">
-            <h3 className="caseflow-card-title">{caseItem.name}</h3>
+            <div className="caseflow-card-title-group">
+              <span className={`caseflow-status-dot ${caseStatus}`} title={caseStatus} />
+              <h3 className="caseflow-card-title">{caseItem.name}</h3>
+            </div>
             <div className="caseflow-card-actions">
               {isSelected && (
                 <button onClick={handleDeselectClick} className="caseflow-card-action-btn" title={t('case.backGlobal')}>
@@ -210,8 +253,26 @@ const CaseCard = memo(({
           </div>
           <div className="caseflow-card-badges">
             <span className="caseflow-card-badge">{schemaName}</span>
+            {(caseItem.location || caseItem.year) && (
+              <span className="caseflow-card-location">
+                <MapPin size={10} />
+                {caseItem.location}{caseItem.year ? ` · ${caseItem.year}` : ''}
+              </span>
+            )}
           </div>
         </div>
+
+        {/* 标签 */}
+        {config.showTags && tags.length > 0 && (
+          <div className="caseflow-card-tags">
+            {tags.slice(0, 5).map((tag, i) => (
+              <span key={i} className="caseflow-card-tag">{tag}</span>
+            ))}
+            {tags.length > 5 && (
+              <span className="caseflow-card-tag-more">+{tags.length - 5}</span>
+            )}
+          </div>
+        )}
 
         {/* 逻辑摘要 */}
         {config.showSummary && (
@@ -221,18 +282,18 @@ const CaseCard = memo(({
           </div>
         )}
 
-        {/* 核心实体 */}
-        {config.showEntities && coreEntities.length > 0 && (
+        {/* 实体类型分布 */}
+        {config.showEntities && entityTypeDistribution.length > 0 && (
           <div className="caseflow-card-entities">
             <span className="caseflow-card-section-label">
-              <Building size={10} /> {t('case.coreEntities')}
+              <Layers size={10} /> {t('case.entityTypes')}
             </span>
             <div className="caseflow-card-entity-list">
-              {coreEntities.map((entity, index) => (
-                <div key={index} className="caseflow-card-entity-item">
-                  <div className="caseflow-card-entity-dot" style={{ backgroundColor: entity.color }} />
-                  <span className="caseflow-card-entity-name">{entity.name}</span>
-                  {entity.count > 1 && <span className="caseflow-card-entity-count">+{entity.count - 1}</span>}
+              {entityTypeDistribution.map((typeInfo, index) => (
+                <div key={index} className="caseflow-card-type-badge">
+                  <div className="caseflow-card-entity-dot" style={{ backgroundColor: typeInfo.color }} />
+                  <span className="caseflow-card-type-name">{typeInfo.name}</span>
+                  <span className="caseflow-card-type-count">{typeInfo.count}</span>
                 </div>
               ))}
             </div>
@@ -265,11 +326,10 @@ const CaseCard = memo(({
                 <span className="caseflow-card-metric-label sm:hidden">度</span>
               </div>
               <div className="caseflow-card-metric-item">
-                <div className="caseflow-card-metric-density" style={{ '--density': topologyMetrics.completeness + '%' }}>
-                  <div className="caseflow-card-metric-density-fill" />
-                </div>
-                <span className="caseflow-card-metric-label hidden sm:inline">{t('case.completeness')}</span>
-                <span className="caseflow-card-metric-label sm:hidden">完整</span>
+                <Layers size={12} />
+                <span className="caseflow-card-metric-value">{entityTypeDistribution.length}</span>
+                <span className="caseflow-card-metric-label hidden sm:inline">{t('case.entityTypes')}</span>
+                <span className="caseflow-card-metric-label sm:hidden">类型</span>
               </div>
             </div>
           </div>

@@ -7,7 +7,7 @@ import { authHelper } from '../../../../../utils';
  * Hook: Graph data export (GraphML / CSV / JSON)
  * Extracted from KnowledgeGraphCanvas/index.jsx
  */
-export function useGraphExport(currentCaseId) {
+export function useGraphExport(currentCaseId, currentSchemaId) {
   const { t } = useI18n();
   const { error: showError, success: showSuccess } = useToastStore();
 
@@ -43,7 +43,8 @@ export function useGraphExport(currentCaseId) {
   const handleExportAllCases = useCallback(async (format) => {
     try {
       const token = getToken();
-      const res = await fetch(`/api/cases/export-all?format=${format}`, {
+      const schemaParam = currentSchemaId ? `&schemaId=${encodeURIComponent(currentSchemaId)}` : '';
+      const res = await fetch(`/api/cases/export-all?format=${format}${schemaParam}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       });
       if (!res.ok) throw new Error(`导出失败: HTTP ${res.status}`);
@@ -62,7 +63,7 @@ export function useGraphExport(currentCaseId) {
       console.error('导出全部案例失败:', e);
       showError(t('toast.exportFailed') + e.message);
     }
-  }, [t, showSuccess, showError]);
+  }, [currentSchemaId, t, showSuccess, showError]);
 
   return { handleExportGraph, handleExportAllCases };
 }

@@ -110,7 +110,7 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
   const [showNoCaseAlert, setShowNoCaseAlert] = useState(false);
 
   // 图谱导出
-  const { handleExportGraph, handleExportAllCases } = useGraphExport(currentCaseId);
+  const { handleExportGraph, handleExportAllCases } = useGraphExport(currentCaseId, currentSchemaId);
 
   // Hover & focus state for dynamic highlighting
   const [hoveredNode, setHoveredNode] = useState(null);

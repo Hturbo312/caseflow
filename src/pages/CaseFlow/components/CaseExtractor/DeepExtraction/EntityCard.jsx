@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import { useI18n } from '../../../../../i18n';
 
-const EntityCard = memo(({ card, entityType, color, onApprove, onSkip }) => {
+const EntityCard = memo(({ card, entityType, color, onApprove, onSkip, isSelected, onToggleSelect }) => {
   const { t } = useI18n();
   const [expanded, setExpanded] = useState(false);
 
@@ -27,12 +27,24 @@ const EntityCard = memo(({ card, entityType, color, onApprove, onSkip }) => {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className={`rounded-xl border-2 ${statusColor[card.status || 'pending']} overflow-hidden transition-all`}
+      className={`rounded-xl border-2 ${statusColor[card.status || 'pending']} overflow-hidden transition-all ${isSelected ? 'ring-2 ring-blue-400' : ''} ${card.status === 'pending' && onToggleSelect ? 'cursor-pointer' : ''}`}
       style={{ borderLeftColor: color || '#3b82f6', borderLeftWidth: 4 }}
+      onClick={() => card.status === 'pending' && onToggleSelect?.(card.id)}
     >
       {/* 头部 */}
       <div className="px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
+          {/* 选择框 */}
+          {card.status === 'pending' && onToggleSelect && (
+            <div
+              className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-300 hover:border-blue-400'
+              }`}
+              onClick={(e) => { e.stopPropagation(); onToggleSelect(card.id); }}
+            >
+              {isSelected && <Check size={10} className="text-white" />}
+            </div>
+          )}
           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color || '#3b82f6' }} />
           <span className="font-semibold text-gray-900 text-sm">{card.name}</span>
           {entityType && (

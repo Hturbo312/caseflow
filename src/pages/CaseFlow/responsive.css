@@ -171,6 +171,13 @@
     left: 12px;
   }
 
+  /* 隐藏桌面端侧边栏控制项 */
+  .caseflow-sidebar-toggle,
+  .caseflow-sidebar-expand-tab,
+  .caseflow-resizer {
+    display: none;
+  }
+
   /* 主窗口全屏 */
   .caseflow-main {
     width: 100% !important;

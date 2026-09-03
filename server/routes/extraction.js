@@ -251,11 +251,26 @@ router.post('/:caseId/batch-save-entities', authMiddleware, async (req, res) => 
           params.push(e.name, e.entityType, JSON.stringify(e.properties || {}), e.color || null);
         });
 
-        const result = await pool.query(
-          `INSERT INTO case_entities (case_id, name, entity_type, properties, color) VALUES ${values} RETURNING *`,
-          params
-        );
-        savedEntities.push(...result.rows);
+        try {
+          const result = await pool.query(
+            `INSERT INTO case_entities (case_id, name, entity_type, properties, color) VALUES ${values} RETURNING *`,
+            params
+          );
+          savedEntities.push(...result.rows);
+        } catch (insertErr) {
+          // 序列可能落后于实际数据，自动修复后重试一次
+          if (insertErr.code === '23505' && insertErr.constraint === 'case_entities_pkey') {
+            console.warn('[batch-save-entities] 检测到序列不同步，自动修复后重试...');
+            await pool.query(`SELECT setval('case_entities_id_seq', (SELECT COALESCE(MAX(id), 0) + 1 FROM case_entities))`);
+            const retryResult = await pool.query(
+              `INSERT INTO case_entities (case_id, name, entity_type, properties, color) VALUES ${values} RETURNING *`,
+              params
+            );
+            savedEntities.push(...retryResult.rows);
+          } else {
+            throw insertErr;
+          }
+        }
       }
     }
 

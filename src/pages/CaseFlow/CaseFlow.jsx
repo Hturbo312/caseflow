@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Database,
@@ -11,6 +11,10 @@ import {
   Menu,
   X,
   List,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useGraphStore, useSchemaStore, useAuthStore } from '../../store';
@@ -34,6 +38,49 @@ const CaseFlow = () => {
   const isMobile = useMobileDetect(768);
   // Mobile drawer state
   const [mobileDrawer, setMobileDrawer] = useState(null); // null | 'left' | 'right'
+
+  // Desktop sidebar state
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(false);
+  const [leftWidth, setLeftWidth] = useState(380);
+  const [rightWidth, setRightWidth] = useState(320);
+  const resizing = useRef(null); // { side: 'left'|'right', startX, startWidth }
+  const wrapperRef = useRef(null);
+
+  // Resize handlers
+  const handleResizeStart = useCallback((side, e) => {
+    e.preventDefault();
+    const sidebar = side === 'left'
+      ? wrapperRef.current?.querySelector('.caseflow-left')
+      : wrapperRef.current?.querySelector('.caseflow-right');
+    const currentWidth = sidebar ? parseFloat(getComputedStyle(sidebar).width) : (side === 'left' ? leftWidth : rightWidth);
+    resizing.current = { side, startX: e.clientX, startWidth: currentWidth };
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [leftWidth, rightWidth]);
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!resizing.current) return;
+      const { side, startX, startWidth } = resizing.current;
+      const delta = side === 'left' ? e.clientX - startX : startX - e.clientX;
+      const newWidth = Math.min(500, Math.max(200, startWidth + delta));
+      if (side === 'left') setLeftWidth(newWidth);
+      else setRightWidth(newWidth);
+    };
+    const handleMouseUp = () => {
+      if (!resizing.current) return;
+      resizing.current = null;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
 
   // Use extracted hooks
   const { isAuthenticated, user, logout } = useAuth();
@@ -180,21 +227,35 @@ const CaseFlow = () => {
       )}
 
       {/* 左栏 - Schema 管理栏 */}
-      <aside className={`caseflow-left${isMobile && mobileDrawer === 'left' ? ' caseflow-drawer-open' : ''}`}>
+      <aside
+        className={`caseflow-left${isMobile && mobileDrawer === 'left' ? ' caseflow-drawer-open' : ''}${leftCollapsed ? ' collapsed' : ''}`}
+        style={{ width: isMobile ? undefined : (leftCollapsed ? 0 : leftWidth) }}
+      >
         {isMobile && (
           <button className="caseflow-drawer-close" onClick={closeMobileDrawer} aria-label="Close">
             <X size={20} />
           </button>
         )}
         <div className="caseflow-left-header">
-          <div className="caseflow-logo">
-            <div className="caseflow-logo-icon">
-              <Share2 size={18} color="#ffffff" />
+          <div className="caseflow-left-header-top">
+            <div className="caseflow-logo">
+              <div className="caseflow-logo-icon">
+                <Share2 size={18} color="#ffffff" />
+              </div>
+              <div>
+                <div className="caseflow-logo-text">CaseFlow</div>
+                <div className="caseflow-logo-subtitle">{t('app.logo.subtitle')}</div>
+              </div>
             </div>
-            <div>
-              <div className="caseflow-logo-text">CaseFlow</div>
-              <div className="caseflow-logo-subtitle">{t('app.logo.subtitle')}</div>
-            </div>
+            {!isMobile && (
+              <button
+                className="caseflow-sidebar-toggle"
+                onClick={() => setLeftCollapsed(true)}
+                title="折叠 Schema 栏"
+              >
+                <PanelLeftClose size={16} />
+              </button>
+            )}
           </div>
 
           {/* 登录/用户信息 */}
@@ -255,6 +316,25 @@ const CaseFlow = () => {
           </Link>
         </div>
       </aside>
+
+      {/* 左栏拖拽手柄 */}
+      {!isMobile && !leftCollapsed && (
+        <div
+          className="caseflow-resizer"
+          onMouseDown={(e) => handleResizeStart('left', e)}
+        />
+      )}
+
+      {/* 左栏折叠后展开 tab */}
+      {!isMobile && leftCollapsed && (
+        <button
+          className="caseflow-sidebar-expand-tab caseflow-sidebar-expand-tab-left"
+          onClick={() => setLeftCollapsed(false)}
+          title="展开 Schema 栏"
+        >
+          <PanelLeftOpen size={16} />
+        </button>
+      )}
 
       {/* 中间主窗口 */}
       <main className="caseflow-main" id="caseflow-main-content">
@@ -328,8 +408,30 @@ const CaseFlow = () => {
         </div>
       </main>
 
+      {/* 右栏拖拽手柄 */}
+      {!isMobile && !rightCollapsed && (
+        <div
+          className="caseflow-resizer"
+          onMouseDown={(e) => handleResizeStart('right', e)}
+        />
+      )}
+
+      {/* 右栏折叠后展开 tab */}
+      {!isMobile && rightCollapsed && (
+        <button
+          className="caseflow-sidebar-expand-tab caseflow-sidebar-expand-tab-right"
+          onClick={() => setRightCollapsed(false)}
+          title="展开案例栏"
+        >
+          <PanelRightOpen size={16} />
+        </button>
+      )}
+
       {/* 右栏 - 案例卡片栏 */}
-      <aside className={`caseflow-right${isMobile && mobileDrawer === 'right' ? ' caseflow-drawer-open' : ''}`}>
+      <aside
+        className={`caseflow-right${isMobile && mobileDrawer === 'right' ? ' caseflow-drawer-open' : ''}${rightCollapsed ? ' collapsed' : ''}`}
+        style={{ width: isMobile ? undefined : (rightCollapsed ? 0 : rightWidth) }}
+      >
         {isMobile && (
           <button className="caseflow-drawer-close" onClick={closeMobileDrawer} aria-label="Close">
             <X size={20} />
@@ -350,6 +452,8 @@ const CaseFlow = () => {
           isAuthenticated={isAuthenticated}
           onShowLogin={() => setShowLoginModal(true)}
           currentSchema={currentSchema}
+          isMobile={isMobile}
+          onToggleCollapse={() => setRightCollapsed(true)}
         />
       </aside>
 
