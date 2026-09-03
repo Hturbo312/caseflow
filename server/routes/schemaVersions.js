@@ -266,6 +266,11 @@ for (const [action, rule] of Object.entries(TRANSITIONS)) {
               [version.id, parent.legacy_schema_id, version.legacy_schema_id]);
           }
         }
+        // 正式化 legacy schema 名称：草案克隆行带着「[draft]」前缀，发布后改为正式名
+        await client.query(
+          `UPDATE schemas SET name = $1, description = COALESCE($2, description) WHERE id = $3`,
+          [`${version.family_name || 'Dynamic Schema'} ${version.version_key}`,
+           version.research_question, version.legacy_schema_id]);
       } else if (action === 'freeze') {
         await client.query(
           `UPDATE schema_versions SET status = 'frozen', frozen_at = CURRENT_TIMESTAMP WHERE id = $1`, [version.id]);

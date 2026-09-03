@@ -27,6 +27,19 @@ async function guardVersionWritable(schemaId, res) {
   return true;
 }
 
+// 变更日志：类型/关系修改落到所属草案版本的 schema_changes（Spec §4.2 版本内追溯）
+// 仅 draft 版本记录；使用中/冻结/归档版本不在此记录
+async function logSchemaChange(schemaId, changeType, targetKey, payload) {
+  const { rows } = await pool.query(
+    `SELECT v.id FROM schema_versions v
+     WHERE v.legacy_schema_id = $1 AND v.status = 'draft' LIMIT 1`, [schemaId]);
+  if (rows.length === 0) return;
+  await pool.query(
+    `INSERT INTO schema_changes (schema_version_id, change_type, target_key, payload)
+     VALUES ($1, $2, $3, $4)`,
+    [rows[0].id, changeType, targetKey || null, payload ? JSON.stringify(payload) : null]);
+}
+
 // Health Check
 router.get('/health', async (req, res) => {
   try {
@@ -132,6 +145,8 @@ router.post('/:schemaId/entity-types', authMiddleware, async (req, res) => {
       'INSERT INTO entity_types (schema_id, name, color, properties, stable_key) VALUES ($1, $2, $3, $4, $5) RETURNING *',
       [schemaId, name, color, JSON.stringify(properties || []), toStableKey(name)]
     );
+    await logSchemaChange(schemaId, 'add_entity_type', result.rows[0].stable_key,
+      { name: result.rows[0].name, color });
     res.json({ entityType: result.rows[0] });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -151,6 +166,8 @@ router.put('/:schemaId/entity-types/:entityTypeId', authMiddleware, async (req, 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Entity type not found' });
     }
+    await logSchemaChange(schemaId, 'edit_entity_type', result.rows[0].stable_key,
+      { name: result.rows[0].name, color: result.rows[0].color, properties: result.rows[0].properties });
     res.json({ entityType: result.rows[0] });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -162,7 +179,13 @@ router.delete('/:schemaId/entity-types/:entityTypeId', authMiddleware, async (re
   const { schemaId, entityTypeId } = req.params;
   if (!(await guardVersionWritable(schemaId, res))) return;
   try {
+    const existing = await pool.query(
+      'SELECT name, stable_key FROM entity_types WHERE id = $1 AND schema_id = $2', [entityTypeId, schemaId]);
     await pool.query('DELETE FROM entity_types WHERE id = $1 AND schema_id = $2', [entityTypeId, schemaId]);
+    if (existing.rows.length > 0) {
+      await logSchemaChange(schemaId, 'remove_entity_type', existing.rows[0].stable_key,
+        { name: existing.rows[0].name });
+    }
     res.json({ message: 'Entity type deleted' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -179,6 +202,8 @@ router.post('/:schemaId/relations', authMiddleware, async (req, res) => {
       'INSERT INTO relations (schema_id, name, from_entity_type, to_entity_type, description, direction, color, style, properties, stable_key) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
       [schemaId, name, fromEntityType, toEntityType, description, direction || 'directed', color || '#9ca3af', style || 'solid', JSON.stringify(properties || []), toStableKey(name)]
     );
+    await logSchemaChange(schemaId, 'add_relation', result.rows[0].stable_key,
+      { name: result.rows[0].name, from_entity_type: fromEntityType, to_entity_type: toEntityType });
     res.json({ relation: result.rows[0] });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -207,6 +232,8 @@ router.put('/:schemaId/relations/:relationId', authMiddleware, async (req, res) 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Relation not found' });
     }
+    await logSchemaChange(schemaId, 'edit_relation', result.rows[0].stable_key,
+      { name: result.rows[0].name, from_entity_type: result.rows[0].from_entity_type, to_entity_type: result.rows[0].to_entity_type });
     res.json({ relation: result.rows[0] });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -218,7 +245,13 @@ router.delete('/:schemaId/relations/:relationId', authMiddleware, async (req, re
   const { schemaId, relationId } = req.params;
   if (!(await guardVersionWritable(schemaId, res))) return;
   try {
+    const existing = await pool.query(
+      'SELECT name, stable_key FROM relations WHERE id = $1 AND schema_id = $2', [relationId, schemaId]);
     await pool.query('DELETE FROM relations WHERE id = $1 AND schema_id = $2', [relationId, schemaId]);
+    if (existing.rows.length > 0) {
+      await logSchemaChange(schemaId, 'remove_relation', existing.rows[0].stable_key,
+        { name: existing.rows[0].name });
+    }
     res.json({ message: 'Relation deleted' });
   } catch (error) {
     res.status(500).json({ error: error.message });

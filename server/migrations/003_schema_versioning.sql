@@ -156,3 +156,19 @@ WHERE af.fact_type = 'relation_evidence'
   AND af.metadata->>'target_type' = 'relation'
   AND af.metadata->>'target_id' IS NOT NULL
 ON CONFLICT DO NOTHING;
+
+-- ============ 共享概念挂到 Schema 家族（跨版本存活，Spec §4.4） ============
+-- concepts.schema_id 保留为兼容列；family_id 是主定位：
+-- 版本批准后案例迁移到新 legacy schema，共享概念不应随 schema 行漂移
+ALTER TABLE concepts ADD COLUMN IF NOT EXISTS family_id INTEGER REFERENCES schema_families(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_concepts_family ON concepts(family_id);
+
+UPDATE concepts c
+SET family_id = v.family_id
+FROM schema_versions v
+WHERE v.legacy_schema_id = c.schema_id
+  AND c.family_id IS NULL;
+
+-- 家族内 key 唯一（family 作用域概念新增校验用）
+CREATE UNIQUE INDEX IF NOT EXISTS uq_concepts_family_key
+  ON concepts(family_id, key) WHERE family_id IS NOT NULL;

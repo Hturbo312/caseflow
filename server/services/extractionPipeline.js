@@ -959,3 +959,80 @@ export async function getExtractionProgress(caseId) {
     segment_count: segResult.rows[0]?.count || 0
   };
 }
+
+// ============================================================
+// 证据与原子事实落库（Spec §4.5/§4.6）
+// 知识进入图谱必须能回溯：实体/关系保存时同步写 evidence（逐字引文+段落锚点）
+// 与 atomic_facts（L1 事实层）。quote 缺失时跳过，不伪造证据。
+// ============================================================
+
+// 按引文前缀匹配原文段落，返回 segment_id（找不到返回 null）
+async function matchSegment(caseId, quote) {
+  if (!quote) return null;
+  const prefix = quote.trim().slice(0, 60);
+  const { rows } = await pool.query(
+    `SELECT id FROM text_segments
+     WHERE case_id = $1 AND (content LIKE $2 OR $2 LIKE '%' || LEFT(content, 60) || '%')
+     ORDER BY segment_index LIMIT 1`,
+    [caseId, `%${prefix}%`]
+  );
+  return rows[0]?.id || null;
+}
+
+/**
+ * 为已保存的实体/关系写入 evidence + atomic_facts
+ * @param {number} caseId
+ * @param {Array<{targetType:'entity'|'relation', targetId:number, quote?:string, segmentId?:number|null, confidence?:number, status?:string, sourceRefs?:Array, evidenceStatus?:string}>} items
+ * @returns {{evidence_count:number, fact_count:number}}
+ */
+export async function persistEvidenceAndFacts(caseId, items = []) {
+  let evidenceCount = 0;
+  let factCount = 0;
+  for (const item of items) {
+    const quote = (item.quote || '').trim();
+    if (!quote) continue; // 无引文不落证据，保持诚实状态
+    const segmentId = item.segmentId ?? await matchSegment(caseId, quote);
+    const status = item.evidenceStatus || 'confirmed';
+
+    const evRes = await pool.query(
+      `INSERT INTO evidence (entity_id, relation_id, segment_id, quote, confidence, source, status, metadata)
+       VALUES ($1, $2, $3, $4, $5, 'extraction', $6, $7) RETURNING id`,
+      [item.targetType === 'entity' ? item.targetId : null,
+       item.targetType === 'relation' ? item.targetId : null,
+       segmentId, quote, item.confidence ?? null, status,
+       JSON.stringify({ source_refs: item.sourceRefs || [] })]
+    );
+    evidenceCount++;
+
+    // 同步写 L1 原子事实（独立于 Schema，schema 改版不重拆）
+    const factRes = await pool.query(
+      `INSERT INTO atomic_facts (case_id, segment_id, fact_text, fact_type, status, metadata)
+       VALUES ($1, $2, $3, $4, 'confirmed', $5) RETURNING id`,
+      [caseId, segmentId, quote,
+       item.targetType === 'entity' ? 'entity_evidence' : 'relation_evidence',
+       JSON.stringify({
+         target_type: item.targetType, target_id: item.targetId,
+         evidence_id: evRes.rows[0]?.id, source_refs: item.sourceRefs || []
+       })]
+    );
+    factCount++;
+
+    // 写事实断言（版本化关联，Spec §4.5）
+    const versionId = item.schemaVersionId || null;
+    if (item.targetType === 'entity') {
+      await pool.query(
+        `INSERT INTO fact_entity_assertions (fact_id, entity_id, schema_version_id, assertion_status)
+         VALUES ($1, $2, $3, 'confirmed') ON CONFLICT DO NOTHING`,
+        [factRes.rows[0].id, item.targetId, versionId]);
+    } else {
+      await pool.query(
+        `INSERT INTO fact_relation_assertions (fact_id, relation_id, schema_version_id, assertion_status)
+         VALUES ($1, $2, $3, 'confirmed') ON CONFLICT DO NOTHING`,
+        [factRes.rows[0].id, item.targetId, versionId]);
+    }
+  }
+  if (evidenceCount > 0) {
+    console.log(`[persistEvidenceAndFacts] case ${caseId}: ${evidenceCount} 条证据 / ${factCount} 条原子事实`);
+  }
+  return { evidence_count: evidenceCount, fact_count: factCount };
+}

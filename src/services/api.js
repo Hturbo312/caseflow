@@ -163,6 +163,24 @@ export const evidenceApi = {
   getByEntity: (entityId) => request(`/evidence?entity_id=${entityId}`),
   getByRelation: (relationId) => request(`/evidence?relation_id=${relationId}`),
   getCounts: (caseId) => request(`/evidence/counts?case_id=${caseId}`),
+  getFacts: (entityId) => request(`/evidence/facts?entity_id=${entityId}`),
+  getRelationFacts: (relationId) => request(`/evidence/facts?relation_id=${relationId}`),
+};
+
+// ============================================
+// Concept API（L3 概念层：共享概念 + 案例原生术语映射 + 跨案例对齐）
+// ============================================
+export const conceptApi = {
+  list: (familyId) => request(`/concepts${familyId ? `?family_id=${familyId}` : ''}`),
+  create: (data) => request('/concepts', { method: 'POST', body: JSON.stringify(data) }),
+  remove: (id) => request(`/concepts/${id}`, { method: 'DELETE' }),
+  mappings: (caseId) => request(`/concepts/mappings?case_id=${caseId}`),
+  addMapping: (data) => request('/concepts/mappings', { method: 'POST', body: JSON.stringify(data) }),
+  bulkMappings: (caseId, items) =>
+    request('/concepts/mappings/bulk', { method: 'POST', body: JSON.stringify({ case_id: caseId, items }) }),
+  removeMapping: (id) => request(`/concepts/mappings/${id}`, { method: 'DELETE' }),
+  suggestions: (caseId) => request(`/concepts/suggestions?case_id=${caseId}`),
+  coverage: (caseIds) => request(`/concepts/coverage?case_ids=${caseIds.join(',')}`),
 };
 
 // ============================================

@@ -468,3 +468,51 @@
   padding: 7px 12px; box-shadow: 0 2px 8px rgba(0,0,0,.08);
 }
 .v2-back-link:hover { background: #ecfeff; }
+
+/* ---------- 概念对齐矩阵 + 映射缺口面板（L3） ---------- */
+.ws-concept-table { border-collapse: collapse; font-size: 12px; min-width: 100%; }
+.ws-concept-table th, .ws-concept-table td {
+  border: 1px solid #eef2f7; padding: 5px 8px; text-align: center; white-space: nowrap;
+}
+.ws-concept-table thead th { background: #f8fafc; color: #475569; font-weight: 700; }
+.ws-concept-table .ws-ct-label { text-align: left; font-weight: 600; color: #334155; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+.ws-ct-cell {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 26px; height: 20px; border-radius: 5px; color: #0c4a6e;
+  font-weight: 700; font-size: 11.5px; padding: 0 6px; cursor: default;
+}
+.ws-ct-empty { color: #cbd5e1; }
+.ws-ct-total td { background: #fbfdfe; }
+.ws-ct-total-btn {
+  display: inline-flex; align-items: center; gap: 4px; border: 1px solid #e2e8f0;
+  background: #fff; border-radius: 6px; padding: 2px 8px; cursor: pointer; font-size: 11.5px; color: #334155;
+}
+.ws-ct-total-btn em { font-style: normal; color: #b45309; font-size: 10.5px; }
+.ws-ct-total-btn:hover, .ws-ct-total-btn.open { border-color: #67e8f9; background: #ecfeff; }
+
+.ws-gap { margin-top: 10px; border: 1px solid #e5e7eb; border-radius: 9px; background: #fff; }
+.ws-gap-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+  padding: 8px 12px; border-bottom: 1px solid #eef2f7; font-size: 12px;
+}
+.ws-gap-head b { color: #0e7490; display: block; }
+.ws-gap-head span { color: #94a3b8; font-size: 11px; }
+.ws-gap-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.ws-gap-err { margin: 8px 12px 0; color: #b91c1c; background: #fef2f2; border-radius: 7px; padding: 6px 9px; font-size: 11.5px; }
+.ws-gap-err-inline { color: #b91c1c; font-size: 11px; }
+.ws-gap-list { padding: 8px 12px 12px; display: flex; flex-direction: column; gap: 5px; max-height: 320px; overflow: auto; }
+.ws-gap-row { display: flex; align-items: center; gap: 8px; font-size: 12px; background: #f8fafc; border-radius: 7px; padding: 5px 9px; }
+.ws-gap-term { font-weight: 600; color: #334155; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ws-gap-cnt { color: #94a3b8; font-size: 11px; }
+.ws-gap-sug {
+  color: #0e7490; background: #ecfeff; border: 1px solid #a5f3fc; border-radius: 5px;
+  padding: 1px 7px; font-size: 11px;
+}
+.ws-gap-row select {
+  border: 1px solid #e5e7eb; border-radius: 6px; padding: 3px 6px; font-size: 11.5px;
+  color: #334155; max-width: 200px; margin-left: auto; background: #fff;
+}
+.ws-gap-new { display: flex; gap: 7px; padding: 9px 12px; border-bottom: 1px solid #f1f5f9; flex-wrap: wrap; align-items: center; }
+.ws-gap-new input {
+  flex: 1; min-width: 160px; border: 1px solid #e5e7eb; border-radius: 7px; padding: 6px 10px; font-size: 12px;
+}

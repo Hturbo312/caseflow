@@ -51,4 +51,33 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
+// 事实断言链：实体/关系 ← 事实断言 ← 原子事实 ← 原文分段（Spec §4.5，L1↔L2 版本化关联）
+router.get('/facts', authMiddleware, async (req, res) => {
+  try {
+    const { entity_id, relation_id } = req.query;
+    if (!entity_id && !relation_id) {
+      return res.status(400).json({ error: 'entity_id 或 relation_id 必填其一' });
+    }
+    const isEntity = Boolean(entity_id);
+    const table = isEntity ? 'fact_entity_assertions' : 'fact_relation_assertions';
+    const col = isEntity ? 'entity_id' : 'relation_id';
+    const { rows } = await pool.query(
+      `SELECT fa.id AS assertion_id, fa.assertion_status, fa.schema_version_id,
+              af.id AS fact_id, af.fact_text, af.fact_type, af.status AS fact_status,
+              af.metadata, af.created_at,
+              s.id AS segment_id, s.content AS segment_content, s.page, s.segment_index,
+              d.id AS document_id, d.title AS document_title
+       FROM ${table} fa
+       JOIN atomic_facts af ON af.id = fa.fact_id
+       LEFT JOIN text_segments s ON s.id = af.segment_id
+       LEFT JOIN documents d ON s.document_id = d.id
+       WHERE fa.${col} = $1
+       ORDER BY af.created_at DESC`,
+      [entity_id || relation_id]);
+    res.json({ facts: rows });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

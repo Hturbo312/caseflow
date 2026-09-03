@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { Download, GitCompare, Loader2, Info } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { Download, GitCompare, Loader2, Info, Sparkles, Plus, Check, Link2 } from 'lucide-react';
 import { useCaseStore } from '../../../../store';
 import { useWorkspaceStore } from '../../../../store/workspaceStore';
 import { useCompareStore } from '../../../../store/compareStore';
-import { analysisApi } from '../../../../services/api';
+import { analysisApi, conceptApi } from '../../../../services/api';
 import { exportCSV, exportJSON, exportSVGAsPNG } from './exportUtils';
 
 const STATE_LABEL = {
@@ -42,6 +42,7 @@ export default function AnalysisWorkspace() {
       </div>
       <ProcessMatrix ids={ids} />
       <EvidenceCoverage ids={ids} />
+      <ConceptAlignment ids={ids} />
       <CapabilityTaskHeatmap ids={ids} />
       <ActionChain caseId={caseDetailId ? Number(caseDetailId) : ids[0]} />
       <div className="ws-analysis-note">
@@ -392,5 +393,271 @@ function ErrorCard({ title, err }) {
       <ChartHead title={title} />
       <div className="ws-tab-error">加载失败：{err}</div>
     </section>
+  );
+}
+
+// ============ E. 概念对齐矩阵（L3：共享概念 × 案例，Spec §2.3/§7.2） ============
+// 案例原生术语（=实体名）经 concept_mappings 映射到共享概念后进入统一比较坐标系；
+// 未映射的缺口在面板里由研究者手动或按确定性建议补齐，AI 不参与计算。
+function ConceptAlignment({ ids }) {
+  const [data, setData] = useState(null);
+  const [err, setErr] = useState('');
+  const [gapCaseId, setGapCaseId] = useState(null);
+
+  const load = useCallback(async () => {
+    if (!ids.length) return;
+    setErr('');
+    try {
+      setData(await conceptApi.coverage(ids));
+    } catch (e) {
+      setErr(e.message);
+    }
+  }, [ids]);
+  useEffect(() => { setData(null); load(); }, [load]);
+
+  if (err) return <ErrorCard title="概念对齐矩阵" err={err} />;
+  if (!data) return <LoadingCard title="概念对齐矩阵" />;
+
+  const cases = data.cases || [];
+  const concepts = data.concepts || [];
+  const cell = (conceptId, caseId) => data.matrix[`${conceptId}:${caseId}`];
+  const maxCell = Math.max(1, ...Object.values(data.matrix || {}).map((m) => m.entity_count));
+  const shortName = (n) => (n.length > 9 ? n.slice(0, 8) + '…' : n);
+
+  const csv = [
+    ['共享概念 \\ 案例', ...cases.map((c) => c.name)],
+    ...concepts.map((c) => [c.label, ...cases.map((cas) => cell(c.id, cas.id)?.entity_count ?? 0)]),
+  ];
+
+  return (
+    <section className="ws-chart">
+      <ChartHead
+        title="概念对齐矩阵" sub={`共享概念 × 案例 · 原生术语映射进统一比较坐标系（当前 ${concepts.length} 个共享概念）`}
+        onCsv={() => exportCSV(csv, '概念对齐矩阵')}
+        onJson={true} data={data}
+      />
+      {!concepts.length ? (
+        <div className="ws-tab-hint">本 Schema 家族尚无共享概念 — 在下方缺口面板中新建。</div>
+      ) : !cases.length ? (
+        <div className="ws-tab-hint">没有可展示的案例。</div>
+      ) : (
+        <div className="ws-chart-scroll">
+          <table className="ws-concept-table">
+            <thead>
+              <tr>
+                <th className="ws-ct-label">共享概念</th>
+                {cases.map((c) => <th key={c.id} title={c.name}>{shortName(c.name)}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {concepts.map((c) => (
+                <tr key={c.id}>
+                  <td className="ws-ct-label" title={c.label}>{c.label}</td>
+                  {cases.map((cas) => {
+                    const v = cell(c.id, cas.id);
+                    const n = v?.entity_count || 0;
+                    return (
+                      <td key={cas.id}>
+                        {n ? (
+                          <span className="ws-ct-cell"
+                            style={{ background: `rgba(8, 145, 178, ${0.15 + 0.75 * (n / maxCell)})` }}
+                            title={`原生术语：${(v.native_terms || []).join('、')}`}>
+                            {n}
+                          </span>
+                        ) : (
+                          <span className="ws-ct-empty">·</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+              <tr className="ws-ct-total">
+                <td className="ws-ct-label">概念覆盖</td>
+                {cases.map((cas) => {
+                  const t = data.case_totals?.[String(cas.id)] || { entities: 0, mapped: 0, unmapped: 0 };
+                  return (
+                    <td key={cas.id}>
+                      <button className={`ws-ct-total-btn${gapCaseId === cas.id ? ' open' : ''}`}
+                        onClick={() => setGapCaseId(gapCaseId === cas.id ? null : cas.id)}
+                        title="点击管理该案例的未映射原生术语">
+                        {t.mapped}/{t.entities}
+                        {t.unmapped > 0 && <em>+{t.unmapped}</em>}
+                      </button>
+                    </td>
+                  );
+                })}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+      {gapCaseId != null && cases.length > 0 && (
+        <ConceptGapPanel
+          caseId={gapCaseId}
+          caseName={cases.find((c) => c.id === gapCaseId)?.name || `案例 ${gapCaseId}`}
+          concepts={concepts}
+          gaps={(data.gaps || {})[String(gapCaseId)] || []}
+          onRefresh={load}
+        />
+      )}
+    </section>
+  );
+}
+
+// 缺口面板：未映射原生术语 → 手动/建议映射 → 新建共享概念
+function ConceptGapPanel({ caseId, caseName, concepts, gaps, onRefresh }) {
+  const [sugs, setSugs] = useState(null); // 自动建议（确定性字符串匹配）
+  const [busy, setBusy] = useState('');
+  const [err, setErr] = useState('');
+  const [showNew, setShowNew] = useState(false);
+
+  const sugByTerm = useMemo(() => new Map((sugs || []).map((s) => [s.native_term, s])), [sugs]);
+
+  const autoSuggest = async () => {
+    setBusy('sug'); setErr('');
+    try {
+      const d = await conceptApi.suggestions(caseId);
+      setSugs(d.suggestions || []);
+      if (!d.suggestions?.length) setErr('没有产生新建议（术语已映射或无匹配）。');
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const applyAll = async () => {
+    setBusy('all'); setErr('');
+    try {
+      await conceptApi.bulkMappings(caseId, sugs.map((s) => ({
+        native_term: s.native_term, concept_id: s.concept_id,
+        confidence: s.confidence, mapping_type: 'suggested',
+      })));
+      setSugs(null);
+      await onRefresh();
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBusy('');
+    }
+  };
+
+  return (
+    <div className="ws-gap">
+      <div className="ws-gap-head">
+        <div>
+          <b>映射缺口 · {caseName}</b>
+          <span>{gaps.length} 个未映射原生术语（按实体数排序）</span>
+        </div>
+        <div className="ws-gap-actions">
+          <button className="ws-act" onClick={autoSuggest} disabled={busy === 'sug'}>
+            {busy === 'sug' ? <Loader2 size={11} className="spin" /> : <Sparkles size={11} />} 自动建议
+          </button>
+          {sugs?.length > 0 && (
+            <button className="ws-act ok" onClick={applyAll} disabled={busy === 'all'}>
+              {busy === 'all' ? <Loader2 size={11} className="spin" /> : <Check size={11} />} 应用全部建议（{sugs.length}）
+            </button>
+          )}
+          <button className="ws-act" onClick={() => setShowNew(!showNew)}>
+            <Plus size={11} /> 新建共享概念
+          </button>
+        </div>
+      </div>
+      {err && <div className="ws-gap-err">{err}</div>}
+      {showNew && <NewConceptForm onCreated={onRefresh} />}
+      <div className="ws-gap-list">
+        {gaps.length === 0 && <div className="ws-tab-hint">该案例的原生术语都已映射到共享概念。</div>}
+        {gaps.map((g) => (
+          <ConceptGapRow
+            key={g.native_term}
+            caseId={caseId}
+            gap={g}
+            suggestion={sugByTerm.get(g.native_term)}
+            concepts={concepts}
+            onDone={onRefresh}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ConceptGapRow({ caseId, gap, suggestion, concepts, onDone }) {
+  const [sel, setSel] = useState(suggestion?.concept_id ? String(suggestion.concept_id) : '');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  useEffect(() => { setSel(suggestion?.concept_id ? String(suggestion.concept_id) : ''); }, [suggestion?.concept_id]);
+
+  const apply = async () => {
+    if (!sel) return;
+    setBusy(true); setErr('');
+    try {
+      await conceptApi.addMapping({
+        case_id: caseId, native_term: gap.native_term, concept_id: Number(sel),
+        confidence: suggestion?.confidence ?? 1,
+        mapping_type: suggestion ? 'suggested_confirmed' : 'manual',
+      });
+      await onDone();
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="ws-gap-row">
+      <span className="ws-gap-term" title={gap.native_term}>{gap.native_term}</span>
+      <span className="ws-gap-cnt">×{gap.entity_count}</span>
+      {suggestion && (
+        <span className="ws-gap-sug" title={`匹配依据：${suggestion.basis}`}>
+          {suggestion.concept_label} · {Math.round(suggestion.confidence * 100)}%
+        </span>
+      )}
+      <select value={sel} onChange={(e) => setSel(e.target.value)}>
+        <option value="">选择共享概念…</option>
+        {concepts.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+      </select>
+      <button className="ws-act ok" disabled={!sel || busy} onClick={apply}>
+        {busy ? <Loader2 size={11} className="spin" /> : <Link2 size={11} />} 映射
+      </button>
+      {err && <span className="ws-gap-err-inline">{err}</span>}
+    </div>
+  );
+}
+
+function NewConceptForm({ onCreated }) {
+  const [label, setLabel] = useState('');
+  const [aliases, setAliases] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  const create = async () => {
+    if (!label.trim()) return;
+    setBusy(true); setErr('');
+    try {
+      await conceptApi.create({
+        label: label.trim(),
+        aliases: aliases.split(/[,，、;；]/).map((s) => s.trim()).filter(Boolean),
+      });
+      setLabel(''); setAliases('');
+      await onCreated();
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="ws-gap-new">
+      <input placeholder="共享概念名称（如：参与式治理）" value={label} onChange={(e) => setLabel(e.target.value)} />
+      <input placeholder="别名，逗号分隔（可选）" value={aliases} onChange={(e) => setAliases(e.target.value)} />
+      <button className="ws-act ok" disabled={!label.trim() || busy} onClick={create}>
+        {busy ? <Loader2 size={11} className="spin" /> : <Plus size={11} />} 创建
+      </button>
+      {err && <span className="ws-gap-err-inline">{err}</span>}
+    </div>
   );
 }
