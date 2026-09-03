@@ -157,6 +157,22 @@ export const caseApi = {
 };
 
 // ============================================
+// Evidence API（知识证据链：逐字引文 + 原文定位 + 文档出处）
+// ============================================
+export const evidenceApi = {
+  getByEntity: (entityId) => request(`/evidence?entity_id=${entityId}`),
+  getByRelation: (relationId) => request(`/evidence?relation_id=${relationId}`),
+};
+
+// ============================================
+// Compare API（跨案例对比矩阵）
+// ============================================
+export const compareApi = {
+  matrix: (schemaId, caseIds) =>
+    request(`/compare?schema_id=${schemaId}&case_ids=${caseIds.join(',')}`),
+};
+
+// ============================================
 // Graph API (AGE)
 // ============================================
 export const graphApi = {

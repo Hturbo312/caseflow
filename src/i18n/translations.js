@@ -11,6 +11,20 @@ export const zh = {
   // Tabs
   'tab.graph': '知识图谱',
   'tab.ai': 'AI 助手',
+  'tab.compare': '案例对比',
+  // Compare panel
+  'compare.title': '跨案例对比',
+  'compare.selectHint': '选择 2-4 个案例进入对比（当前 Schema 下）',
+  'compare.empty': '选择案例后生成对比矩阵',
+  'compare.minHint': '至少选择 2 个案例',
+  'compare.emptyCell': '材料未涉及',
+  'compare.noEvidence': '该实体暂无证据记录',
+  'compare.evidence': '证据链',
+  'compare.coverage': '证据覆盖',
+  'compare.loading': '加载中…',
+  'compare.quote': '引文',
+  'compare.source': '出处',
+  'compare.noSegment': '未关联原文分段',
   'tab.results': '拆解结果',
   'tab.manual': '手动编辑',
   // Status bar
@@ -594,6 +608,20 @@ export const en = {
   // Tabs
   'tab.graph': 'Knowledge Graph',
   'tab.ai': 'AI Copilot',
+  'tab.compare': 'Compare',
+  // Compare panel
+  'compare.title': 'Cross-case Comparison',
+  'compare.selectHint': 'Select 2-4 cases to compare (current schema)',
+  'compare.empty': 'Select cases to generate the comparison matrix',
+  'compare.minHint': 'Select at least 2 cases',
+  'compare.emptyCell': 'Not covered',
+  'compare.noEvidence': 'No evidence recorded for this entity',
+  'compare.evidence': 'Evidence',
+  'compare.coverage': 'Coverage',
+  'compare.loading': 'Loading…',
+  'compare.quote': 'Quote',
+  'compare.source': 'Source',
+  'compare.noSegment': 'No source segment linked',
   'tab.results': 'Results',
   'tab.manual': 'Manual Edit',
   // Status bar

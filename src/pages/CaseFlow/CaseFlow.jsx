@@ -4,6 +4,7 @@ import {
   Database,
   Share2,
   MessageSquare,
+  GitCompare,
   ChevronLeft,
   LogIn,
   LogOut,
@@ -25,6 +26,7 @@ import KnowledgeGraphCanvas from './components/KnowledgeGraphCanvas';
 import CaseExtractor from './components/CaseExtractor';
 import LoginModal from './components/LoginModal';
 import { CaseListPanel, CreateCaseModal } from './components/CaseManagement';
+import ComparePanel from './components/ComparePanel';
 import { useI18n } from '../../i18n';
 import './CaseFlow.css';
 import './components/CaseManagement/CaseCard.css';
@@ -214,6 +216,13 @@ const CaseFlow = () => {
               <MessageSquare size={18} />
               <span>{t('tab.ai')}</span>
             </button>
+            <button
+              onClick={() => setMainView('compare')}
+              className={`caseflow-mobile-tab ${mainView === 'compare' ? 'active' : ''}`}
+            >
+              <GitCompare size={18} />
+              <span>{t('tab.compare')}</span>
+            </button>
           </div>
           <button
             className="caseflow-mobile-menu-btn"
@@ -362,6 +371,16 @@ const CaseFlow = () => {
                 <MessageSquare size={16} aria-hidden="true" />
                 <span className="caseflow-view-tab-text">{t('tab.ai')}</span>
               </button>
+              <button
+                onClick={() => setMainView('compare')}
+                className={`caseflow-view-tab ${mainView === 'compare' ? 'active' : ''}`}
+                role="tab"
+                aria-selected={mainView === 'compare'}
+                aria-label={t('tab.compare')}
+              >
+                <GitCompare size={16} aria-hidden="true" />
+                <span className="caseflow-view-tab-text">{t('tab.compare')}</span>
+              </button>
             </div>
             <span className="caseflow-date">
               {new Date().toLocaleDateString(locale === 'zh' ? 'zh-CN' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -391,6 +410,17 @@ const CaseFlow = () => {
                   isAuthenticated={isAuthenticated}
                   onShowLogin={() => setShowLoginModal(true)}
                 />
+              </motion.div>
+            ) : mainView === 'compare' ? (
+              <motion.div
+                key="compare"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.25 }}
+                className="h-full"
+              >
+                <ComparePanel />
               </motion.div>
             ) : (
               <motion.div

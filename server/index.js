@@ -19,6 +19,8 @@ import aiRoutes from './routes/ai.js';
 import ragRoutes from './routes/rag.js';
 import graphRagRoutes from './routes/graphRag.js';
 import extractionRoutes from './routes/extraction.js';
+import evidenceRoutes from './routes/evidence.js';
+import compareRoutes from './routes/compare.js';
 
 dotenv.config();
 
@@ -47,6 +49,8 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/rag', ragRoutes);
 app.use('/api/graph-rag', graphRagRoutes);
 app.use('/api/extraction', extractionRoutes);
+app.use('/api/evidence', evidenceRoutes);
+app.use('/api/compare', compareRoutes);
 
 // 启动服务器 - 设置较长超时（LLM 调用较慢）
 const server = app.listen(PORT, '0.0.0.0', async () => {
