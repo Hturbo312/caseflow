@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { Plus, PanelRightClose } from 'lucide-react';
+import { Plus, PanelRightClose, GitCompare, X } from 'lucide-react';
 import { useI18n } from '../../../../i18n';
+import { useCompareStore } from '../../../../store/compareStore';
 import CaseCard from './CaseCard';
 import PreviewPanel from './PreviewPanel';
 
 /**
  * CaseListPanel - 右栏案例列表面板
- * 包含案例列表和预览面板
+ * 包含案例列表和预览面板；内置跨案例对比：选择模式 + 吸顶托盘，选择集与主区对比面板共用（compareStore）
  */
 const CaseListPanel = ({
   cases,
@@ -28,8 +29,12 @@ const CaseListPanel = ({
   onToggleCollapse
 }) => {
   const { t } = useI18n();
+  const [picking, setPicking] = useState(false);
+  const { ids: compareIds, toggle: toggleCompare, clear: clearCompare } = useCompareStore();
+
   // 获取聚焦案例
   const focusedCase = cases.find(c => c.id === focusCaseId);
+  const canStart = compareIds.length >= 2;
 
   // 处理创建案例按钮点击
   const handleCreateClick = () => {
@@ -40,15 +45,35 @@ const CaseListPanel = ({
     setShowCreateCase(true);
   };
 
+  // 开始对比：切到主区对比视图（移动端同时收起抽屉）
+  const startCompare = () => {
+    if (!canStart) return;
+    setMainView('compare');
+  };
+
   return (
     <>
       <div className="caseflow-right-header">
         <div className="caseflow-right-header-top">
           <div>
             <h2 className="caseflow-right-title">{t('case.title')}</h2>
-            <p className="caseflow-right-count">{t('case.total', { count: filteredCasesList.length })}</p>
+            <p className="caseflow-right-count">
+              {picking
+                ? `${compareIds.length}/4 · ${t('compare.pick.hint')}`
+                : t('case.total', { count: filteredCasesList.length })}
+            </p>
           </div>
           <div className="caseflow-right-header-actions">
+            <button
+              className={`caseflow-create-btn caseflow-compare-btn ${picking ? 'active' : ''}`}
+              onClick={() => setPicking((p) => !p)}
+              title={picking ? t('compare.mode.exit') : t('compare.mode.enter')}
+            >
+              <GitCompare size={16} />
+              {compareIds.length > 0 && (
+                <span className="caseflow-compare-badge">{compareIds.length}</span>
+              )}
+            </button>
             {!isMobile && onToggleCollapse && (
               <button
                 className="caseflow-sidebar-toggle"
@@ -69,7 +94,45 @@ const CaseListPanel = ({
         </div>
       </div>
 
-      <div className="caseflow-right-list">
+      {/* 对比托盘：选择模式下吸顶展示已选案例 */}
+      {picking && (
+        <div className="compare-tray">
+          <div className="compare-tray-chips">
+            {compareIds.length === 0 && (
+              <span className="compare-tray-hint">{t('compare.pick.hint')}</span>
+            )}
+            {compareIds.map((id) => {
+              const c = cases.find((x) => String(x.id) === String(id));
+              if (!c) return null;
+              return (
+                <span key={id} className="compare-tray-chip" title={c.name}>
+                  {c.name}
+                  <button
+                    className="compare-tray-chip-remove"
+                    onClick={() => toggleCompare(id)}
+                  >
+                    <X size={10} />
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+          <div className="compare-tray-actions">
+            <button
+              className="compare-tray-clear"
+              onClick={clearCompare}
+              disabled={compareIds.length === 0}
+            >
+              {t('compare.tray.clear')}
+            </button>
+            <button className="compare-tray-start" onClick={startCompare} disabled={!canStart}>
+              {t('compare.tray.start')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className={`caseflow-right-list${picking ? ' compare-picking' : ''}`}>
         {filteredCasesList.map((caseItem) => (
           <CaseCard
             key={caseItem.id}
@@ -82,6 +145,9 @@ const CaseListPanel = ({
             onSelect={handleCaseSelect}
             onDeselect={handleCaseDeselect}
             onDelete={onDeleteCase}
+            compareMode={picking}
+            compareSelected={compareIds.includes(String(caseItem.id))}
+            onToggleCompare={() => toggleCompare(caseItem.id)}
           />
         ))}
       </div>

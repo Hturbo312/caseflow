@@ -1711,3 +1711,5 @@ export const useExtractionStore = create((set, get) => ({
     currentEntityType: null,
   }),
 }));
+// 跨案例对比选择集（全局，列表托盘与主区对比面板共用）
+export { useCompareStore } from './compareStore';

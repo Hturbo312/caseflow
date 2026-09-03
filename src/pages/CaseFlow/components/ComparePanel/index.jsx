@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { FileText, X, MapPin, Calendar, ShieldAlert, Loader2 } from 'lucide-react';
-import { useCaseStore, useSchemaStore } from '../../../../store';
+import { useCaseStore, useSchemaStore, useCompareStore } from '../../../../store';
 import { compareApi, evidenceApi } from '../../../../services/api';
 import { useI18n } from '../../../../i18n';
 import './ComparePanel.css';
@@ -9,12 +9,13 @@ import './ComparePanel.css';
  * ComparePanel - 跨案例对比面板
  * 行 = 当前 Schema 的实体类型维度，列 = 选中的案例
  * 单元格 = 该维度知识摘要（实体 chips + 证据覆盖），点击实体查看证据链（引文 + 原文出处）
+ * 选择集为全局 compareStore：与案例列表的对比托盘双向同步
  */
 const ComparePanel = () => {
   const { t } = useI18n();
   const cases = useCaseStore((s) => s.cases);
   const { currentSchemaId, schemas } = useSchemaStore();
-  const [selectedIds, setSelectedIds] = useState([]);
+  const { ids: selectedIds, toggle: toggleCase } = useCompareStore();
   const [matrixData, setMatrixData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -33,14 +34,6 @@ const ComparePanel = () => {
     const schema = schemas.find((s) => String(s.id) === String(currentSchemaId));
     return schema?.name || '-';
   }, [schemas, currentSchemaId]);
-
-  const toggleCase = useCallback((id) => {
-    setSelectedIds((prev) => {
-      if (prev.includes(id)) return prev.filter((x) => x !== id);
-      if (prev.length >= 4) return prev;
-      return [...prev, id];
-    });
-  }, []);
 
   useEffect(() => {
     if (selectedIds.length < 2 || !currentSchemaId) {

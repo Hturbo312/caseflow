@@ -14,6 +14,11 @@ export const zh = {
   'tab.compare': '案例对比',
   // Compare panel
   'compare.title': '跨案例对比',
+  'compare.pick.hint': '点选案例加入对比（2-4 个）',
+  'compare.mode.enter': '选入对比',
+  'compare.mode.exit': '移出对比',
+  'compare.tray.start': '开始对比',
+  'compare.tray.clear': '清空',
   'compare.selectHint': '选择 2-4 个案例进入对比（当前 Schema 下）',
   'compare.empty': '选择案例后生成对比矩阵',
   'compare.minHint': '至少选择 2 个案例',
@@ -611,6 +616,11 @@ export const en = {
   'tab.compare': 'Compare',
   // Compare panel
   'compare.title': 'Cross-case Comparison',
+  'compare.pick.hint': 'Pick 2-4 cases to compare',
+  'compare.mode.enter': 'Add to comparison',
+  'compare.mode.exit': 'Remove from comparison',
+  'compare.tray.start': 'Compare now',
+  'compare.tray.clear': 'Clear',
   'compare.selectHint': 'Select 2-4 cases to compare (current schema)',
   'compare.empty': 'Select cases to generate the comparison matrix',
   'compare.minHint': 'Select at least 2 cases',

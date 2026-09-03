@@ -1,6 +1,6 @@
 import React, { memo, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Focus, Trash2, ChevronDown, ChevronUp, Building, Link2, Activity, MapPin, Calendar, FileText, Settings, Tag, Layers } from 'lucide-react';
+import { Focus, Trash2, ChevronDown, ChevronUp, Building, Link2, Activity, MapPin, Calendar, FileText, Settings, Tag, Layers, GitCompare } from 'lucide-react';
 import { useI18n } from '../../../../i18n';
 import { calculateTopologyMetrics, getCaseStatus } from './utils';
 
@@ -63,7 +63,10 @@ const CaseCard = memo(({
   cardConfig,
   onSelect,
   onDeselect,
-  onDelete
+  onDelete,
+  compareMode = false,
+  compareSelected = false,
+  onToggleCompare
 }) => {
   const { t } = useI18n();
   const [expanded, setExpanded] = useState(false);
@@ -223,10 +226,15 @@ const CaseCard = memo(({
     onDelete(caseItem, e);
   };
 
+  const handleCompareClick = (e) => {
+    e.stopPropagation();
+    onToggleCompare?.(caseItem);
+  };
+
   return (
     <motion.div
       onClick={handleClick}
-      className={`caseflow-card-enhanced ${isSelected ? 'selected' : ''} ${expanded ? 'expanded' : ''}`}
+      className={`caseflow-card-enhanced ${isSelected ? 'selected' : ''} ${expanded ? 'expanded' : ''} ${compareSelected ? 'compare-selected' : ''}`}
       initial={false}
       animate={{ height: expanded ? 'auto' : 'auto' }}
     >
@@ -234,6 +242,15 @@ const CaseCard = memo(({
         <div className="caseflow-card-header">
           <div className="caseflow-card-title-row">
             <div className="caseflow-card-title-group">
+              {compareMode && (
+                <button
+                  onClick={handleCompareClick}
+                  className={`caseflow-card-compare-check ${compareSelected ? 'on' : ''}`}
+                  title={compareSelected ? t('compare.mode.exit') : t('compare.mode.enter')}
+                >
+                  <GitCompare size={11} />
+                </button>
+              )}
               <span className={`caseflow-status-dot ${caseStatus}`} title={caseStatus} />
               <h3 className="caseflow-card-title">{caseItem.name}</h3>
             </div>
