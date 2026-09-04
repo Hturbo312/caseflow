@@ -83,6 +83,16 @@
 .v2-right .caseflow-card-title-row { width: 100%; }
 .v2-right .caseflow-card-title { width: 100%; word-break: break-word; white-space: normal; }
 
+/* ---------- 紧凑卡片（v2 右栏，Spec §5.3：卡片不塞长段落） ---------- */
+.v2-right .caseflow-card-enhanced.compact { padding: 8px 11px; margin-bottom: 6px; border-radius: 10px; }
+.v2-right .caseflow-card-enhanced.compact .caseflow-card-header { margin-bottom: 0; gap: 3px; }
+.v2-right .caseflow-card-enhanced.compact .caseflow-card-title { font-size: 13px; line-height: 1.35; }
+.v2-right .caseflow-card-enhanced.compact .caseflow-card-badges { gap: 6px; margin-top: 2px; }
+.v2-right .caseflow-card-enhanced.compact .caseflow-card-badge { margin-bottom: 0; font-size: 10px; padding: 1px 6px; }
+.v2-right .caseflow-card-enhanced.compact .caseflow-card-location { font-size: 10px; padding: 1px 6px; }
+.v2-right .caseflow-card-enhanced.compact .caseflow-card-action-btn { width: 22px; height: 22px; }
+.v2-right .caseflow-right-list { padding: 8px; }
+
 .v2-rail-collapse {
   position: absolute; top: 50%; transform: translateY(-50%);
   width: 18px; height: 44px; border: 1px solid #e5e7eb; background: #fff;
@@ -487,8 +497,9 @@
   .ws-chat-input textarea { font-size: 13.5px; }
   .ws-chat-empty span { font-size: 12.5px; }
 
-  /* 案例库卡片 */
-  .v2-right .caseflow-card-title { font-size: 15px; }
+  /* 案例库卡片（compact 卡保持小字号） */
+  .v2-right .caseflow-card-enhanced:not(.compact) .caseflow-card-title { font-size: 15px; }
+  .v2-right .caseflow-card-enhanced.compact .caseflow-card-title { font-size: 13.5px; }
   .v2-right .caseflow-card-badge,
   .v2-right .caseflow-card-tag,
   .v2-right .caseflow-card-location { font-size: 11.5px; }
@@ -555,7 +566,8 @@
   .ws-msg-bubble { font-size: 14.5px; }
   .ws-chat-input textarea { font-size: 14.5px; }
 
-  .v2-right .caseflow-card-title { font-size: 16.5px; }
+  .v2-right .caseflow-card-enhanced:not(.compact) .caseflow-card-title { font-size: 16.5px; }
+  .v2-right .caseflow-card-enhanced.compact .caseflow-card-title { font-size: 14.5px; }
   .ws-case-title h2 { font-size: 21px; }
   .ws-case-sub { font-size: 14.5px; }
   .ws-subtabs button { font-size: 15px; }

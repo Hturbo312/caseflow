@@ -26,7 +26,8 @@ const CaseListPanel = ({
   onShowLogin,
   currentSchema,
   isMobile,
-  onToggleCollapse
+  onToggleCollapse,
+  compact = false
 }) => {
   const { t } = useI18n();
   const [picking, setPicking] = useState(false);
@@ -148,13 +149,14 @@ const CaseListPanel = ({
             compareMode={picking}
             compareSelected={compareIds.includes(String(caseItem.id))}
             onToggleCompare={() => toggleCompare(caseItem.id)}
+            compact={compact}
           />
         ))}
       </div>
 
-      {/* 预览面板 */}
+      {/* 预览面板（compact/2.0 模式下案例详情在中栏，不渲染） */}
       <AnimatePresence>
-        {focusCaseId && focusedCase && (
+        {focusCaseId && focusedCase && !compact && (
           <PreviewPanel
             focusedCase={focusedCase}
             onDeselect={handleCaseDeselect}

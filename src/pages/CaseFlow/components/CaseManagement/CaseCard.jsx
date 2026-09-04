@@ -66,7 +66,8 @@ const CaseCard = memo(({
   onDelete,
   compareMode = false,
   compareSelected = false,
-  onToggleCompare
+  onToggleCompare,
+  compact = false
 }) => {
   const { t } = useI18n();
   const [expanded, setExpanded] = useState(false);
@@ -74,14 +75,20 @@ const CaseCard = memo(({
   const entityCount = caseItem.entities?.length || 0;
   const relationCount = caseItem.relations?.length || 0;
 
-  // 默认配置
-  const config = cardConfig || {
+  // 默认配置；compact 模式只保留标题 + 单行元信息（Spec §5.3：卡片不塞长段落，详情在中栏）
+  const config = compact ? {
+    showSummary: false,
+    showMetrics: false,
+    showEntities: false,
+    showTags: false,
+    customFields: []
+  } : (cardConfig || {
     showSummary: true,
     showMetrics: true,
     showEntities: true,
     showTags: true,
     customFields: []
-  };
+  });
 
   // 案例状态
   const caseStatus = useMemo(() => getCaseStatus(caseItem), [caseItem]);
@@ -207,7 +214,7 @@ const CaseCard = memo(({
   }, [config.customFields, caseItem, entityTypeConfig]);
 
   const handleClick = () => {
-    if (!expanded) setExpanded(true);
+    if (!compact && !expanded) setExpanded(true);
     onSelect(caseItem);
   };
 
@@ -234,7 +241,7 @@ const CaseCard = memo(({
   return (
     <motion.div
       onClick={handleClick}
-      className={`caseflow-card-enhanced ${isSelected ? 'selected' : ''} ${expanded ? 'expanded' : ''} ${compareSelected ? 'compare-selected' : ''}`}
+      className={`caseflow-card-enhanced ${compact ? 'compact' : ''} ${isSelected ? 'selected' : ''} ${expanded ? 'expanded' : ''} ${compareSelected ? 'compare-selected' : ''}`}
       initial={false}
       animate={{ height: expanded ? 'auto' : 'auto' }}
     >
@@ -252,7 +259,7 @@ const CaseCard = memo(({
                 </button>
               )}
               <span className={`caseflow-status-dot ${caseStatus}`} title={caseStatus} />
-              <h3 className="caseflow-card-title">{caseItem.name}</h3>
+              <h3 className="caseflow-card-title" title={caseItem.name}>{caseItem.name}</h3>
             </div>
             <div className="caseflow-card-actions">
               {isSelected && (
@@ -263,18 +270,36 @@ const CaseCard = memo(({
               <button onClick={handleDeleteClick} className="caseflow-card-action-btn caseflow-card-delete" title={t('delete.entity.title')}>
                 <Trash2 size={14} />
               </button>
-              <button onClick={handleToggleExpand} className="caseflow-card-action-btn" title={expanded ? t('case.collapse') : t('case.info')}>
-                {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              </button>
+              {!compact && (
+                <button onClick={handleToggleExpand} className="caseflow-card-action-btn" title={expanded ? t('case.collapse') : t('case.info')}>
+                  {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </button>
+              )}
             </div>
           </div>
           <div className="caseflow-card-badges">
-            <span className="caseflow-card-badge">{schemaName}</span>
-            {(caseItem.location || caseItem.year) && (
-              <span className="caseflow-card-location">
-                <MapPin size={10} />
-                {caseItem.location}{caseItem.year ? ` · ${caseItem.year}` : ''}
-              </span>
+            {compact ? (
+              <>
+                {caseItem.metadata?.case_code && (
+                  <span className="caseflow-card-badge">{caseItem.metadata.case_code}</span>
+                )}
+                {(caseItem.location || caseItem.year) && (
+                  <span className="caseflow-card-location">
+                    <MapPin size={10} />
+                    {caseItem.location}{caseItem.year ? ` · ${caseItem.year}` : ''}
+                  </span>
+                )}
+              </>
+            ) : (
+              <>
+                <span className="caseflow-card-badge">{schemaName}</span>
+                {(caseItem.location || caseItem.year) && (
+                  <span className="caseflow-card-location">
+                    <MapPin size={10} />
+                    {caseItem.location}{caseItem.year ? ` · ${caseItem.year}` : ''}
+                  </span>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -377,9 +402,9 @@ const CaseCard = memo(({
         )}
       </div>
 
-      {/* 展开详情面板 */}
+      {/* 展开详情面板（compact 模式无展开；详情在中栏 Case 工作区） */}
       <AnimatePresence>
-        {expanded && (
+        {expanded && !compact && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}

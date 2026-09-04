@@ -95,6 +95,7 @@ const CaseFlowV2 = () => {
     isAuthenticated,
     onShowLogin: () => setShowLoginModal(true),
     currentSchema,
+    compact: true, // 紧凑卡片：详情统一在中栏 Case 工作区
   };
 
   return (
