@@ -49,6 +49,16 @@ function extractYear(text) {
   return m ? m[0] : null;
 }
 
+// 证据状态映射（Spec §4.6：confirmed/limited/blocked/not_evidenced 严格区分）
+// 案例卡"写作边界"含限定表述（口径/样本限制/因果边界/不外推等）→ limited
+function evidenceStatusFor(boundary, attribute) {
+  const t = `${boundary || ''}${attribute || ''}`;
+  if (/局限|判断|避免|不能|不是唯一|限于|限制|仅限|口径|边界|决定论|不量化|不直接等同|不夸大|不泛化|分析结论|报告结果|非独立因果|外推|解释/.test(t)) {
+    return 'limited';
+  }
+  return 'confirmed';
+}
+
 // 事实文本与实体名的关键词重叠判断（取实体名 6 字滑窗任一命中即视为相关）
 function factMentionsEntity(factText, entityName) {
   const f = clean(factText).replace(/[，。；：、"（）()【】\[\],.:;?"'—-]/g, '');
@@ -325,11 +335,12 @@ async function importCase(client, book, card, summaryRow, typeColors) {
 
     // 事实 → 相关实体的证据行（关键词重叠；无命中则事实独立存在，不伪造关联）
     const matched = entities.filter(e => factMentionsEntity(factText, e.name) || factMentionsEntity(e.name, factText));
+    const evStatus = evidenceStatusFor(row.boundary, row.attribute);
     for (const ent of matched.slice(0, 4)) {
       await client.query(
         `INSERT INTO evidence (entity_id, quote, source, status, metadata)
-         VALUES ($1,$2,'manual','confirmed',$3)`,
-        [ent.id, trimTo(factText, 300),
+         VALUES ($1,$2,'manual',$3,$4)`,
+        [ent.id, trimTo(factText, 300), evStatus,
          JSON.stringify({ source_refs: sourceRefs, origin: 'fact_table', case_code: code })]
       );
     }

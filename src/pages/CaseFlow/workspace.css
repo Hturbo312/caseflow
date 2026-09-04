@@ -62,7 +62,7 @@
 .v2-columns {
   flex: 1;
   display: grid;
-  grid-template-columns: 340px 1fr 316px;
+  grid-template-columns: 340px minmax(0, 1fr) 316px;
   min-height: 0;
 }
 .v2-rail { position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
@@ -74,6 +74,9 @@
 /* CaseListPanel 复用经典样式：列表占满剩余高度 */
 .v2-right > .caseflow-right-list,
 .v2-right > div:not(.caseflow-right-header) { flex: 1; min-height: 0; }
+
+/* 整体图谱主视图（KnowledgeGraphCanvas 自带内部布局） */
+.v2-graph { position: relative; height: 100%; min-height: 0; overflow: hidden; }
 
 /* 修复 v1 遗留：增强卡片头部 title-row 与 badges 横排挤压标题（仅 v2 右栏生效） */
 .v2-right .caseflow-card-header { flex-direction: column; align-items: stretch; gap: 6px; }
@@ -218,9 +221,9 @@
 }
 .ws-subtabs button:hover { color: #0e7490; }
 .ws-subtabs button.active { color: #0e7490; border-bottom-color: #0891b2; }
-.ws-case-body { flex: 1; min-height: 0; overflow: auto; }
+.ws-case-body { flex: 1; min-height: 0; overflow: auto; position: relative; }
 .ws-case-graph { position: absolute; inset: 0; }
-.ws-case-body:has(.ws-case-graph) { position: relative; overflow: hidden; }
+.ws-case-body:has(.ws-case-graph) { overflow: hidden; }
 
 .ws-overview { padding: 18px; max-width: 760px; }
 .ws-overview-desc { font-size: 13px; line-height: 1.7; color: #374151; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 13px 15px; }
@@ -394,7 +397,11 @@
 /* ============================================================
    中栏：Analysis 工作区
    ============================================================ */
-.ws-analysis { padding: 14px 16px 30px; display: flex; flex-direction: column; gap: 14px; max-width: 1280px; }
+.ws-analysis {
+  padding: 16px 22px 36px; display: flex; flex-direction: column; gap: 16px;
+  max-width: 1500px; margin: 0 auto;
+}
+.ws-analysis > .ws-chart { min-width: 0; }
 .ws-analysis-bar {
   display: flex; align-items: center; gap: 8px; font-size: 12px; color: #475569;
   background: #fff; border: 1px solid #e5e7eb; border-radius: 9px; padding: 9px 13px;
@@ -414,11 +421,11 @@
 }
 .ws-chart-actions button:hover { border-color: #a5f3fc; color: #0e7490; }
 .ws-chart-scroll { overflow-x: auto; }
-.ws-svg { width: 100%; min-width: 640px; height: auto; display: block; }
-.ws-svg-col { font-size: 10.5px; fill: #64748b; font-weight: 700; }
-.ws-svg-row { font-size: 10.5px; fill: #334155; }
-.ws-svg-num { font-size: 10px; font-weight: 800; }
-.ws-svg-legend { font-size: 10.5px; fill: #475569; }
+.ws-svg { width: 100%; min-width: 620px; height: auto; display: block; }
+.ws-svg-col { font-size: 11px; fill: #64748b; font-weight: 700; }
+.ws-svg-row { font-size: 11px; fill: #334155; }
+.ws-svg-num { font-size: 10.5px; font-weight: 800; }
+.ws-svg-legend { font-size: 11px; fill: #475569; }
 
 /* 作用链 */
 .ws-chain {
@@ -447,16 +454,116 @@
 .ws-chain-more { font-size: 10.5px; color: #94a3b8; text-align: center; }
 .ws-chain-legend { display: flex; gap: 14px; font-size: 11px; color: #64748b; margin-top: 8px; }
 
-/* ---------- 响应式 ---------- */
-@media (max-width: 1100px) {
-  .v2-columns { grid-template-columns: 300px 1fr 270px; }
+/* ---------- 响应式与自适应 ---------- */
+/* 中屏 */
+@media (max-width: 1240px) {
+  .v2-columns { grid-template-columns: 300px minmax(0, 1fr) 280px; }
 }
+/* 小屏/移动端 */
 @media (max-width: 900px) {
   .v2-columns { grid-template-columns: 1fr; grid-template-rows: auto 1fr; overflow-y: auto; }
   .v2-left, .v2-right { display: none; }
   .v2-main { overflow: visible; }
   .ws-evidence { grid-template-columns: 1fr; }
   .ws-ev-list { max-height: 260px; }
+}
+
+/* ---------- 大屏适配（≥1536px）：加宽栏距 + 整体字号上调 ---------- */
+@media (min-width: 1536px) {
+  .v2-columns { grid-template-columns: clamp(360px, 23vw, 470px) minmax(0, 1fr) clamp(340px, 21vw, 440px); }
+
+  .v2-topbar { height: 58px; flex-basis: 58px; padding: 0 22px; }
+  .v2-brand-name { font-size: 16.5px; }
+  .v2-brand-sub { font-size: 11.5px; }
+  .v2-tab { font-size: 14px; padding: 8px 16px; }
+  .v2-classic-link, .v2-login-btn { font-size: 13px; }
+
+  /* Copilot 字体 */
+  .ws-account-strip { font-size: 13px; padding: 11px 14px; }
+  .ws-account-name { max-width: 130px; }
+  .ws-context-line { font-size: 12.5px; }
+  .ws-chat { padding: 14px 16px; }
+  .ws-msg-bubble { font-size: 13.5px; line-height: 1.62; }
+  .ws-chat-input textarea { font-size: 13.5px; }
+  .ws-chat-empty span { font-size: 12.5px; }
+
+  /* 案例库卡片 */
+  .v2-right .caseflow-card-title { font-size: 15px; }
+  .v2-right .caseflow-card-badge,
+  .v2-right .caseflow-card-tag,
+  .v2-right .caseflow-card-location { font-size: 11.5px; }
+  .v2-right .caseflow-card-summary-text { font-size: 12px; line-height: 1.6; }
+
+  /* Case 工作区 */
+  .ws-case-header { padding: 15px 22px 0; }
+  .ws-case-title h2 { font-size: 18.5px; }
+  .ws-case-sub { font-size: 13px; }
+  .ws-subtabs button { font-size: 13.5px; padding: 9px 14px; }
+  .ws-overview { padding: 22px; }
+  .ws-overview-desc { font-size: 13.5px; }
+  .ws-stat b { font-size: 23px; }
+  .ws-type-cell { padding: 9px 13px; }
+  .ws-type-name { font-size: 12.5px; }
+  .ws-segment p { font-size: 13.5px; }
+  .ws-ev-entity { font-size: 13px; padding: 7px 9px; }
+  .ws-ev-name { font-size: 13px; }
+  .ws-ev-quote { font-size: 13.5px; }
+  .ws-review-card-main b { font-size: 13.5px; }
+  .ws-fact p { font-size: 13.5px; }
+  .ws-act { font-size: 12px; padding: 5px 10px; }
+
+  /* Analysis */
+  .ws-analysis { padding: 20px 28px 40px; }
+  .ws-analysis-bar { font-size: 13px; }
+  .ws-chart { padding: 15px 18px; }
+  .ws-chart-head h3 { font-size: 15px; }
+  .ws-chart-sub { font-size: 12px; }
+  .ws-svg { min-width: 680px; }
+  .ws-chain-name { font-size: 12px; }
+  .ws-chain-head { font-size: 12px; }
+  .ws-versionbar { font-size: 13px; }
+
+  /* 证据覆盖 + 过程矩阵在大屏并排（作用链独占整行） */
+  .ws-analysis.toobig-none {}
+}
+@media (min-width: 1760px) {
+  .ws-analysis {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    max-width: none;
+  }
+  .ws-analysis-bar,
+  .ws-analysis-note { grid-column: 1 / -1; }
+  /* 过程矩阵列多，占左列整列高度；证据覆盖右列 */
+  .ws-analysis > .ws-chart:nth-of-type(1) { grid-row: 2; }
+  .ws-analysis > .ws-chart:nth-of-type(2) { grid-row: 2; }
+  .ws-analysis > .ws-chart:nth-of-type(3) { grid-row: 3; }
+  .ws-analysis > .ws-chain,
+  .ws-analysis > .ws-chart:last-child { grid-column: 1 / -1; grid-row: 4; }
+}
+
+/* ---------- 超大屏 / 4K（≥2300px）：进一步放大 ---------- */
+@media (min-width: 2300px) {
+  .v2-columns { grid-template-columns: clamp(420px, 22vw, 560px) minmax(0, 1fr) clamp(400px, 20vw, 520px); }
+  .v2-topbar { height: 64px; flex-basis: 64px; }
+  .v2-brand-name { font-size: 18px; }
+  .v2-tab { font-size: 15px; }
+
+  .ws-account-strip { font-size: 14px; }
+  .ws-context-line { font-size: 13.5px; }
+  .ws-msg-bubble { font-size: 14.5px; }
+  .ws-chat-input textarea { font-size: 14.5px; }
+
+  .v2-right .caseflow-card-title { font-size: 16.5px; }
+  .ws-case-title h2 { font-size: 21px; }
+  .ws-case-sub { font-size: 14.5px; }
+  .ws-subtabs button { font-size: 15px; }
+  .ws-overview-desc, .ws-segment p, .ws-ev-quote, .ws-fact p { font-size: 15px; }
+  .ws-msg-bubble, .ws-chat-input textarea { font-size: 14.5px; }
+  .ws-chart-head h3 { font-size: 17px; }
+  .ws-analysis-bar { font-size: 14px; }
+  .ws-badge { font-size: 12px; }
 }
 
 /* ---------- 经典页返回新版悬浮按钮 ---------- */

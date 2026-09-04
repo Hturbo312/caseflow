@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Database, FolderOpen, BarChart3, ChevronLeft, ChevronRight, LogIn, History,
+  Database, FolderOpen, BarChart3, Share2, ChevronLeft, ChevronRight, LogIn, History,
 } from 'lucide-react';
 import { useGraphStore, useSchemaStore } from '../../store';
 import { useAuth } from '../../hooks';
@@ -11,6 +11,7 @@ import CopilotRail from './components/Workspace/CopilotRail';
 import CaseWorkspace from './components/Workspace/CaseWorkspace';
 import AnalysisWorkspace from './components/Workspace/AnalysisWorkspace';
 import SchemaWorkspace from './components/Workspace/SchemaWorkspace';
+import KnowledgeGraphCanvas from './components/KnowledgeGraphCanvas';
 import LoginModal from './components/LoginModal';
 import { CaseListPanel, CreateCaseModal } from './components/CaseManagement';
 import './CaseFlow.css';
@@ -18,6 +19,7 @@ import './components/CaseManagement/CaseCard.css';
 import './workspace.css';
 
 const MAIN_TABS = [
+  { id: 'graph', label: '图谱', icon: Share2, task: '整体图谱浏览' },
   { id: 'schema', label: 'Dynamic Schema', icon: Database, task: 'Schema 设计' },
   { id: 'case', label: 'Case', icon: FolderOpen, task: '案例审阅' },
   { id: 'analysis', label: 'Analysis', icon: BarChart3, task: '跨案例分析' },
@@ -152,6 +154,11 @@ const CaseFlowV2 = () => {
 
         {/* 中栏主工作区 */}
         <main className="v2-main">
+          {mainTab === 'graph' && (
+            <div className="v2-graph">
+              <KnowledgeGraphCanvas isAuthenticated={isAuthenticated} onShowLogin={() => setShowLoginModal(true)} />
+            </div>
+          )}
           {mainTab === 'schema' && (
             <SchemaWorkspace isAuthenticated={isAuthenticated} onShowLogin={() => setShowLoginModal(true)} />
           )}
