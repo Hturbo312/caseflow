@@ -17,13 +17,13 @@ export const CASE_STATUS = {
 };
 
 /**
- * 案例状态列表（用于下拉选择、状态筛选等）
+ * 案例状态列表（用于下拉选择、状态筛选等；label 为 i18n key，渲染处需用 t() 转换）
  * @constant {Array<{value: string, label: string, className: string}>}
  */
 export const CASE_STATUS_LIST = [
-  { value: CASE_STATUS.PLANNING, label: '规划中', className: 'planning' },
-  { value: CASE_STATUS.ACTIVE, label: '进行中', className: 'active' },
-  { value: CASE_STATUS.COMPLETED, label: '已完成', className: 'completed' }
+  { value: CASE_STATUS.PLANNING, label: 'case.planning', className: 'planning' },
+  { value: CASE_STATUS.ACTIVE, label: 'case.inProgress', className: 'active' },
+  { value: CASE_STATUS.COMPLETED, label: 'case.completed', className: 'completed' }
 ];
 
 /**
@@ -38,12 +38,12 @@ export const CASE_DETAIL_TABS = {
 };
 
 /**
- * 案例详情页 Tab 配置（用于渲染 Tab 列表）
+ * 案例详情页 Tab 配置（用于渲染 Tab 列表；label 为 i18n key，渲染处需用 t() 转换）
  * @constant {Array<{id: string, label: string, icon: string}>}
  */
 export const CASE_DETAIL_TAB_CONFIG = [
-  { id: CASE_DETAIL_TABS.RESULTS, label: '拆解结果', icon: 'CheckCircle' },
-  { id: CASE_DETAIL_TABS.MANUAL, label: '手动编辑', icon: 'Edit2' }
+  { id: CASE_DETAIL_TABS.RESULTS, label: 'tab.results', icon: 'CheckCircle' },
+  { id: CASE_DETAIL_TABS.MANUAL, label: 'tab.manual', icon: 'Edit2' }
 ];
 
 /**
@@ -101,14 +101,14 @@ export const VIEW_MODES = {
 };
 
 /**
- * 案例排序选项
+ * 案例排序选项（label 为 i18n key，渲染处需用 t() 转换）
  * @constant {Array<{value: string, label: string}>}
  */
 export const CASE_SORT_OPTIONS = [
-  { value: 'updatedAt', label: '最近更新' },
-  { value: 'createdAt', label: '创建时间' },
-  { value: 'name', label: '名称' },
-  { value: 'status', label: '状态' }
+  { value: 'updatedAt', label: 'case.sortRecent' },
+  { value: 'createdAt', label: 'case.sortCreated' },
+  { value: 'name', label: 'case.sortName' },
+  { value: 'status', label: 'case.sortStatus' }
 ];
 
 /**

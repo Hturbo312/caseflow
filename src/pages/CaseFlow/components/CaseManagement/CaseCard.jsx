@@ -64,6 +64,9 @@ const CaseCard = memo(({
   onSelect,
   onDeselect,
   onDelete,
+  onPreview,
+  isAuthenticated = true,
+  onShowLogin,
   compareMode = false,
   compareSelected = false,
   onToggleCompare,
@@ -213,8 +216,17 @@ const CaseCard = memo(({
     return values;
   }, [config.customFields, caseItem, entityTypeConfig]);
 
+  // 点击分级：单击 → 预览（若支持预览则不抢占中栏），否则维持原选中；双击 → 正式在中栏打开
   const handleClick = () => {
     if (!compact && !expanded) setExpanded(true);
+    if (onPreview) {
+      onPreview(caseItem);
+    } else {
+      onSelect(caseItem);
+    }
+  };
+
+  const handleDoubleClick = () => {
     onSelect(caseItem);
   };
 
@@ -230,6 +242,11 @@ const CaseCard = memo(({
 
   const handleDeleteClick = (e) => {
     e.stopPropagation();
+    // 访客删除保护：未登录时弹登录而不是执行删除
+    if (!isAuthenticated) {
+      onShowLogin?.();
+      return;
+    }
     onDelete(caseItem, e);
   };
 
@@ -241,6 +258,7 @@ const CaseCard = memo(({
   return (
     <motion.div
       onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
       className={`caseflow-card-enhanced ${compact ? 'compact' : ''} ${isSelected ? 'selected' : ''} ${expanded ? 'expanded' : ''} ${compareSelected ? 'compare-selected' : ''}`}
       initial={false}
       animate={{ height: expanded ? 'auto' : 'auto' }}
@@ -260,6 +278,9 @@ const CaseCard = memo(({
               )}
               <span className={`caseflow-status-dot ${caseStatus}`} title={caseStatus} />
               <h3 className="caseflow-card-title" title={caseItem.name}>{caseItem.name}</h3>
+              {!isAuthenticated && (
+                <span className="v2-demo-badge">{t('ux.import.badge')}</span>
+              )}
             </div>
             <div className="caseflow-card-actions">
               {isSelected && (

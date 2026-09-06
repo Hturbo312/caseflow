@@ -1,13 +1,15 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { useI18n } from './i18n';
 
 const Home = lazy(() => import('./pages/Home/Home'));
 const CaseFlowV2 = lazy(() => import('./pages/CaseFlow/CaseFlowV2'));
 const ClassicCaseFlow = lazy(() => import('./pages/CaseFlow/ClassicCaseFlow'));
 
 function App() {
+  const { t } = useI18n();
   return (
-    <Suspense fallback={<div className="loading-spinner">加载中...</div>}>
+    <Suspense fallback={<div className="loading-spinner">{t('app.loading')}</div>}>
       <Routes>
         <Route path="/" element={<Home />} />
         {/* CaseFlow 2.0 三栏工作台（默认） */}

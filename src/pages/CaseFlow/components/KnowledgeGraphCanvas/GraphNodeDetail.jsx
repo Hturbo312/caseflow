@@ -3,14 +3,17 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { X, Trash2 } from 'lucide-react';
 import { getNodeColor } from '@utils';
 import { useI18n } from '../../../../i18n';
+import { useWorkspaceStore } from '../../../../store/workspaceStore';
 
 const GraphNodeDetail = ({
   selectedNode,
   entityTypeColorMap,
   onClose,
   onRequestDelete,
+  isAuthenticated,
 }) => {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const { openCaseDetail, askCopilot } = useWorkspaceStore();
   const prefersReducedMotion = useReducedMotion();
 
   return (
@@ -81,9 +84,49 @@ const GraphNodeDetail = ({
                   <div className="text-xs text-blue-600 font-medium">{selectedNode.caseName}</div>
                 </div>
               )}
+              {/* 溯源双链操作区：实体 → 案例/证据/问AI */}
+              {selectedNode?.caseId && (
+                <div className="pt-2 border-t border-gray-100">
+                  <span className="text-gray-500 text-xs">{selectedNode.caseName}</span>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        openCaseDetail(selectedNode.caseId, 'evidence');
+                        onClose();
+                      }}
+                      className="flex-1 px-2 py-1.5 text-xs text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-lg transition-colors whitespace-nowrap"
+                    >
+                      {t('ux.graph.evidence')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        openCaseDetail(selectedNode.caseId);
+                        onClose();
+                      }}
+                      className="flex-1 px-2 py-1.5 text-xs text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-lg transition-colors whitespace-nowrap"
+                    >
+                      {t('ux.graph.openCase')}
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      askCopilot(locale === 'zh'
+                        ? `请解释实体「${selectedNode.name}」（类型：${selectedNode.type}，案例：${selectedNode.caseName}）：它在案例中扮演什么角色？有哪些证据缺口？`
+                        : `Explain the entity "${selectedNode.name}" (type: ${selectedNode.type}, case: ${selectedNode.caseName}): what role does it play, and where are the evidence gaps?`);
+                    }}
+                    className="w-full mt-1.5 px-2 py-1.5 text-xs text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-lg transition-colors"
+                  >
+                    {t('ux.graph.askNode')}
+                  </button>
+                </div>
+              )}
             </div>
             {/* 删除按钮 */}
-            <div className="mt-4 pt-3 border-t border-gray-100">
+            {isAuthenticated && (
+              <div className="mt-4 pt-3 border-t border-gray-100">
               <button
                 onClick={() => {
                   if (!selectedNode?.caseId || !selectedNode?.id) return;
@@ -94,7 +137,8 @@ const GraphNodeDetail = ({
                 <Trash2 className="w-4 h-4" />
                 {t('detail.node.delete')}
               </button>
-            </div>
+              </div>
+            )}
           </motion.div>
 
           {/* 移动端底部面板 */}
@@ -156,17 +200,58 @@ const GraphNodeDetail = ({
                   <div className="text-sm text-blue-600 font-medium mt-1">{selectedNode.caseName}</div>
                 </div>
               )}
+              {/* 溯源双链操作区：实体 → 案例/证据/问AI */}
+              {selectedNode?.caseId && (
+                <div className="pt-3 border-t border-gray-100">
+                  <span className="text-gray-500 text-xs">{selectedNode.caseName}</span>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        openCaseDetail(selectedNode.caseId, 'evidence');
+                        onClose();
+                      }}
+                      className="flex-1 px-2 py-2 text-xs text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-xl transition-colors whitespace-nowrap"
+                    >
+                      {t('ux.graph.evidence')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        openCaseDetail(selectedNode.caseId);
+                        onClose();
+                      }}
+                      className="flex-1 px-2 py-2 text-xs text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-xl transition-colors whitespace-nowrap"
+                    >
+                      {t('ux.graph.openCase')}
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      askCopilot(locale === 'zh'
+                        ? `请解释实体「${selectedNode.name}」（类型：${selectedNode.type}，案例：${selectedNode.caseName}）：它在案例中扮演什么角色？有哪些证据缺口？`
+                        : `Explain the entity "${selectedNode.name}" (type: ${selectedNode.type}, case: ${selectedNode.caseName}): what role does it play, and where are the evidence gaps?`);
+                    }}
+                    className="w-full mt-1.5 px-2 py-2 text-xs text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-xl transition-colors"
+                  >
+                    {t('ux.graph.askNode')}
+                  </button>
+                </div>
+              )}
               {/* 删除按钮 */}
-              <button
-                onClick={() => {
-                  if (!selectedNode?.caseId || !selectedNode?.id) return;
-                  onRequestDelete(selectedNode);
-                }}
-                className="w-full py-3 text-sm text-red-600 hover:bg-red-50 rounded-xl flex items-center justify-center gap-2 transition-colors border border-red-200 bg-red-50"
-              >
-                <Trash2 className="w-4 h-4" />
-                {t('detail.node.delete')}
-              </button>
+              {isAuthenticated && (
+                <button
+                  onClick={() => {
+                    if (!selectedNode?.caseId || !selectedNode?.id) return;
+                    onRequestDelete(selectedNode);
+                  }}
+                  className="w-full py-3 text-sm text-red-600 hover:bg-red-50 rounded-xl flex items-center justify-center gap-2 transition-colors border border-red-200 bg-red-50"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {t('detail.node.delete')}
+                </button>
+              )}
             </div>
           </motion.div>
         </>

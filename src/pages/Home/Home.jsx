@@ -2,22 +2,23 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useMobileDetect } from '@hooks/useMobileDetect';
 import { Sliders, EyeOff, ExternalLink, Mail, Phone, User } from 'lucide-react';
+import { useI18n } from '../../i18n';
 import './Home.css';
 
-// ── 3D 图谱集群预设 ──
+// ── 3D 图谱集群预设（name 为中英成对结构，按 locale 取值）──
 const CLUSTER_PRESETS = [
-  { id: 1, relX: 0.15, relY: 0.70, relZ: 0.2, color: '#3dc9b0', size: 28, name: '数据分析' },
-  { id: 2, relX: 0.288, relY: 0.440, relZ: -0.1, color: '#d186c3', size: 38, name: 'CaseFlow' },
-  { id: 3, relX: 0.368, relY: 0.828, relZ: 0.4, color: '#9076bc', size: 14, name: 'Python' },
-  { id: 4, relX: 0.439, relY: 0.239, relZ: -0.3, color: '#a2a99d', size: 18, name: 'GIS' },
-  { id: 5, relX: 0.546, relY: 0.603, relZ: 0.0, color: '#e0f3f8', size: 45, name: 'Hturbo' },
-  { id: 6, relX: 0.576, relY: 0.354, relZ: 0.25, color: '#8874a3', size: 18, name: 'AI / LLM' },
-  { id: 7, relX: 0.651, relY: 0.114, relZ: -0.2, color: '#d48d94', size: 28, name: '更新旧城' },
-  { id: 8, relX: 0.735, relY: 0.489, relZ: -0.15, color: '#4abfa1', size: 40, name: '知识图谱可视化' },
-  { id: 9, relX: 0.754, relY: 0.776, relZ: 0.3, color: '#b9beae', size: 16, name: 'React' },
-  { id: 10, relX: 0.875, relY: 0.246, relZ: 0.1, color: '#978db9', size: 20, name: 'TypeScript' },
-  { id: 11, relX: 0.935, relY: 0.631, relZ: -0.3, color: '#c4cb87', size: 15, name: 'ABM 模拟' },
-  { id: 12, relX: 0.884, relY: 0.862, relZ: 0.15, color: '#7bb0b8', size: 12, name: '博客 & 写作' }
+  { id: 1, relX: 0.15, relY: 0.70, relZ: 0.2, color: '#3dc9b0', size: 28, name: { zh: '数据分析', en: 'Data Analysis' } },
+  { id: 2, relX: 0.288, relY: 0.440, relZ: -0.1, color: '#d186c3', size: 38, name: { zh: 'CaseFlow', en: 'CaseFlow' } },
+  { id: 3, relX: 0.368, relY: 0.828, relZ: 0.4, color: '#9076bc', size: 14, name: { zh: 'Python', en: 'Python' } },
+  { id: 4, relX: 0.439, relY: 0.239, relZ: -0.3, color: '#a2a99d', size: 18, name: { zh: 'GIS', en: 'GIS' } },
+  { id: 5, relX: 0.546, relY: 0.603, relZ: 0.0, color: '#e0f3f8', size: 45, name: { zh: 'Hturbo', en: 'Hturbo' } },
+  { id: 6, relX: 0.576, relY: 0.354, relZ: 0.25, color: '#8874a3', size: 18, name: { zh: 'AI / LLM', en: 'AI / LLM' } },
+  { id: 7, relX: 0.651, relY: 0.114, relZ: -0.2, color: '#d48d94', size: 28, name: { zh: '更新旧城', en: 'Old City Renewal' } },
+  { id: 8, relX: 0.735, relY: 0.489, relZ: -0.15, color: '#4abfa1', size: 40, name: { zh: '知识图谱可视化', en: 'Knowledge Graph Visualization' } },
+  { id: 9, relX: 0.754, relY: 0.776, relZ: 0.3, color: '#b9beae', size: 16, name: { zh: 'React', en: 'React' } },
+  { id: 10, relX: 0.875, relY: 0.246, relZ: 0.1, color: '#978db9', size: 20, name: { zh: 'TypeScript', en: 'TypeScript' } },
+  { id: 11, relX: 0.935, relY: 0.631, relZ: -0.3, color: '#c4cb87', size: 15, name: { zh: 'ABM 模拟', en: 'ABM Simulation' } },
+  { id: 12, relX: 0.884, relY: 0.862, relZ: 0.15, color: '#7bb0b8', size: 12, name: { zh: '博客 & 写作', en: 'Blog & Writing' } }
 ];
 
 const CLUSTER_CONNECTIONS = [
@@ -133,6 +134,9 @@ class Node3D {
 
 function Home() {
   const isMobile = useMobileDetect();
+  const { t, locale } = useI18n();
+  const tRef = useRef(t);
+  useEffect(() => { tRef.current = t; }, [t]);
   const canvasRef = useRef(null);
   const labelsRef = useRef(null);
   const [hintText, setHintText] = useState('');
@@ -158,32 +162,32 @@ function Home() {
     draggedCluster: null, animFrameId: null, labelClickCallbacks: {}
   });
 
-  // 集群点击回调
-  const getClusterAction = (name) => {
-    const preset = CLUSTER_PRESETS.find(p => p.name === name);
+  // 集群点击回调（按 id 匹配，名称按 locale 取值）
+  const getClusterAction = (id) => {
+    const preset = CLUSTER_PRESETS.find(p => p.id === id);
     const color = preset?.color || '#22d3ee';
-    switch(name) {
-      case 'Hturbo':
+    switch(id) {
+      case 5: // Hturbo
         return { type: 'info', title: 'Hturbo', color, lines: ['wjl20010702@163.com', '18811722967'] };
-      case 'CaseFlow':
-        return { type: 'link', title: 'CaseFlow', color, url: '/caseflow', label: 'View Project' };
+      case 2: // CaseFlow
+        return { type: 'link', title: 'CaseFlow', color, url: '/caseflow', label: t('home.popup.viewProject') };
       default:
-        return { type: 'label', title: name, color };
+        return { type: 'label', title: preset ? preset.name[locale] : '', color };
     }
   };
 
   const handleMsgSubmit = () => {
     if (!msgName.trim() || !msgBody.trim()) return;
-    const subject = encodeURIComponent(`[Hturbo主页留言] 来自 ${msgName}`);
-    const body = encodeURIComponent(`留言人: ${msgName}\n邮箱: ${msgEmail || '未填写'}\n\n${msgBody}`);
+    const subject = encodeURIComponent(t('home.msg.mailSubject', { name: msgName }));
+    const body = encodeURIComponent(`${t('home.msg.mailFromLabel')}: ${msgName}\n${t('home.msg.mailEmailLabel')}: ${msgEmail || t('home.msg.mailUnfilled')}\n\n${msgBody}`);
     window.location.href = `mailto:wjl20010702@163.com?subject=${subject}&body=${body}`;
     setMsgSent(true);
     setTimeout(() => { setMsgSent(false); setShowMessage(false); setMsgName(''); setMsgEmail(''); setMsgBody(''); }, 3000);
   };
 
-  const handleClusterClick = (name) => {
-    const action = getClusterAction(name);
-    setActiveCluster(activeCluster === name ? null : name);
+  const handleClusterClick = (id) => {
+    const action = getClusterAction(id);
+    setActiveCluster(activeCluster === id ? null : id);
   };
 
   useEffect(() => {
@@ -224,13 +228,13 @@ function Home() {
         if (labelsRef.current) {
           const btn = document.createElement('button');
           btn.className = 'cluster-label-btn';
-          btn.innerText = preset.name;
+          btn.innerText = preset.name[locale];
           btn.style.borderColor = preset.color + '88';
           btn.style.background = preset.color + '18';
-          btn.onclick = () => handleClusterClick(preset.name);
+          btn.onclick = () => handleClusterClick(preset.id);
           labelsRef.current.appendChild(btn);
           s.labelElements.push({ element: btn, cluster });
-          s.labelClickCallbacks[preset.name] = btn;
+          s.labelClickCallbacks[preset.id] = btn;
         }
       });
 
@@ -283,7 +287,7 @@ function Home() {
         if (cluster) {
           cluster.isDragging = true;
           s.draggedCluster = cluster;
-          setHintText(`正在激活实体链：${cluster.name}`);
+          setHintText(tRef.current('home.hint.activate', { name: cluster.name[locale] }));
           setShowHint(true);
           setTimeout(() => setShowHint(false), 3000);
           const normal = new THREE.Vector3();
@@ -487,6 +491,14 @@ function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 语言切换时刷新图谱集群标签文字
+  useEffect(() => {
+    sceneRef.current.labelElements.forEach(({ element, cluster }) => {
+      const preset = CLUSTER_PRESETS.find(p => p.id === cluster.id);
+      if (element && preset) element.innerText = preset.name[locale];
+    });
+  }, [locale]);
+
   useEffect(() => { physics.gravity = gravityVal; }, [gravityVal]);
   useEffect(() => { physics.repulsion = repulsionVal; }, [repulsionVal]);
   useEffect(() => { physics.isMoving = motionState; }, [motionState]);
@@ -499,9 +511,9 @@ function Home() {
         <canvas ref={canvasRef} />
         <div className="mobile-content">
           <h1 className="mobile-title">Hturbo</h1>
-          <p className="mobile-subtitle">数据分析师 & 城市规划师</p>
-          <p className="mobile-bio">用多维知识网图理解城市复杂系统，用智能体编织未来治理方案。</p>
-          <a href="/caseflow" className="mobile-link">进入 CaseFlow →</a>
+          <p className="mobile-subtitle">{t('home.mobile.subtitle')}</p>
+          <p className="mobile-bio">{t('home.mobile.bio')}</p>
+          <a href="/caseflow" className="mobile-link">{t('home.mobile.enterCaseflow')}</a>
         </div>
       </div>
     );
@@ -550,7 +562,7 @@ function Home() {
       )}
 
       {/* 留言按钮 */}
-      <button className="msg-btn" onClick={() => setShowMessage(true)} title="给我留言">
+      <button className="msg-btn" onClick={() => setShowMessage(true)} title={t('home.msg.openTitle')}>
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       </button>
 
@@ -561,24 +573,24 @@ function Home() {
             <div className="popup-icon" style={{ background: '#22d3ee33' }}>
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             </div>
-            <h3>发送留言</h3>
+            <h3>{t('home.msg.title')}</h3>
             <button className="popup-close" onClick={() => { setShowMessage(false); setMsgSent(false); }}>✕</button>
           </div>
           {msgSent ? (
             <div className="popup-body" style={{ textAlign: 'center', padding: '24px 20px' }}>
               <div style={{ fontSize: '24px', marginBottom: '8px' }}>✅</div>
-              <p style={{ color: '#e2e8f0', fontSize: '13px', margin: 0 }}>邮件客户端已打开，发送即可！</p>
+              <p style={{ color: '#e2e8f0', fontSize: '13px', margin: 0 }}>{t('home.msg.sent')}</p>
             </div>
           ) : (
             <div className="popup-body">
-              <input className="msg-input" placeholder="你的称呼" value={msgName} onChange={e => setMsgName(e.target.value)} />
-              <input className="msg-input" placeholder="你的邮箱（可选）" value={msgEmail} onChange={e => setMsgEmail(e.target.value)} />
-              <textarea className="msg-textarea" rows={4} placeholder="想说的话..." value={msgBody} onChange={e => setMsgBody(e.target.value)} />
+              <input className="msg-input" placeholder={t('home.msg.namePlaceholder')} value={msgName} onChange={e => setMsgName(e.target.value)} />
+              <input className="msg-input" placeholder={t('home.msg.emailPlaceholder')} value={msgEmail} onChange={e => setMsgEmail(e.target.value)} />
+              <textarea className="msg-textarea" rows={4} placeholder={t('home.msg.bodyPlaceholder')} value={msgBody} onChange={e => setMsgBody(e.target.value)} />
               <button className="msg-submit-btn" onClick={handleMsgSubmit}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                发送留言
+                {t('home.msg.submit')}
               </button>
-              <p className="msg-hint">将通过邮件发送到 wjl20010702@163.com</p>
+              <p className="msg-hint">{t('home.msg.hint')}</p>
             </div>
           )}
         </div>
@@ -587,27 +599,27 @@ function Home() {
       {/* 物理控制面板 */}
       <div className={`physics-panel ${physicsVisible ? '' : 'hidden-panel'}`}>
         <div className="physics-header">
-          <span><Sliders size={14} className="text-cyan-400" /> 物理控制</span>
+          <span><Sliders size={14} className="text-cyan-400" /> {t('home.physics.title')}</span>
           <div className="physics-header-actions">
-            <button className="panel-hide-btn" onClick={() => setPhysicsVisible(false)} title="收起">
+            <button className="panel-hide-btn" onClick={() => setPhysicsVisible(false)} title={t('home.physics.collapse')}>
               <EyeOff size={14} />
             </button>
           </div>
         </div>
         <div className="physics-control">
-          <div className="control-label"><span>引力</span><span className="mono">{gravityVal.toFixed(2)}</span></div>
+          <div className="control-label"><span>{t('home.physics.gravity')}</span><span className="mono">{gravityVal.toFixed(2)}</span></div>
           <input type="range" min="0.01" max="0.15" step="0.01" value={gravityVal} onChange={e => setGravityVal(parseFloat(e.target.value))} />
         </div>
         <div className="physics-control">
-          <div className="control-label"><span>斥力</span><span className="mono">{repulsionVal}</span></div>
+          <div className="control-label"><span>{t('home.physics.repulsion')}</span><span className="mono">{repulsionVal}</span></div>
           <input type="range" min="10" max="80" step="5" value={repulsionVal} onChange={e => setRepulsionVal(parseInt(e.target.value))} />
         </div>
         <button className="toggle-btn" onClick={() => setMotionState(!motionState)}>
-          {motionState ? '冻结' : '恢复'}
+          {motionState ? t('home.physics.freeze') : t('home.physics.resume')}
         </button>
       </div>
 
-      <button className={`physics-restore-btn ${!physicsVisible ? 'visible' : ''}`} onClick={() => setPhysicsVisible(true)} title="展开">
+      <button className={`physics-restore-btn ${!physicsVisible ? 'visible' : ''}`} onClick={() => setPhysicsVisible(true)} title={t('home.physics.expand')}>
         <Sliders size={16} />
       </button>
     </div>

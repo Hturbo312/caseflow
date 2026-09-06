@@ -2,12 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { GitBranch, Loader2, Plus, X, Check, Lock, Archive, ArrowLeftRight, AlertTriangle } from 'lucide-react';
 import { schemaVersionApi } from '../../../../services/api';
 import { useAuthStore } from '../../../../store';
+import { useI18n } from '../../../../i18n';
 
 const STATUS_BADGE = {
-  active: { label: '使用中', cls: 'ok' },
-  draft: { label: '草案', cls: 'warn' },
-  frozen: { label: '已冻结', cls: 'na' },
-  archived: { label: '已归档', cls: 'na' },
+  active: { label: 'v2.version.inUse', cls: 'ok' },
+  draft: { label: 'v2.version.draft', cls: 'warn' },
+  frozen: { label: 'v2.version.frozen', cls: 'na' },
+  archived: { label: 'v2.version.archived', cls: 'na' },
 };
 
 /**
@@ -16,6 +17,7 @@ const STATUS_BADGE = {
  * AI 建议不在此自动发布；一切版本变更为研究者手动操作。
  */
 export default function VersionBar({ schemaId }) {
+  const { t } = useI18n();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [family, setFamily] = useState(null);
   const [versions, setVersions] = useState([]);
@@ -94,28 +96,28 @@ export default function VersionBar({ schemaId }) {
     <div className="ws-versionbar">
       <div className="ws-versionbar-row">
         <GitBranch size={13} />
-        <span className="ws-versionbar-title">Schema 版本</span>
-        {active && <span className={`ws-badge ${STATUS_BADGE.active.cls}`}>{active.version_key} 使用中</span>}
+        <span className="ws-versionbar-title">{t('v2.version.title')}</span>
+        {active && <span className={`ws-badge ${STATUS_BADGE.active.cls}`}>{active.version_key} {t('v2.version.inUse')}</span>}
         <button className="ws-versionbar-toggle" onClick={() => setExpanded(!expanded)}>
-          {expanded ? '收起' : `全部 ${versions.length} 个版本`}
+          {expanded ? t('v2.version.collapse') : t('v2.version.allCount', { count: versions.length })}
         </button>
         {isAuthenticated && (
-          <button className="ws-versionbar-new" onClick={() => setCreating(!creating)} title="创建新草案">
-            <Plus size={12} /> 新草案
+          <button className="ws-versionbar-new" onClick={() => setCreating(!creating)} title={t('v2.version.newDraftTitle')}>
+            <Plus size={12} /> {t('v2.version.newDraft')}
           </button>
         )}
       </div>
 
       {creating && (
         <div className="ws-versionbar-form">
-          <input placeholder="版本号（如 v1.1）" value={form.versionKey}
+          <input placeholder={t('v2.version.keyPlaceholder')} value={form.versionKey}
             onChange={(e) => setForm({ ...form, versionKey: e.target.value })} />
-          <input placeholder="研究问题（可选）" value={form.researchQuestion}
+          <input placeholder={t('v2.version.rqPlaceholder')} value={form.researchQuestion}
             onChange={(e) => setForm({ ...form, researchQuestion: e.target.value })} />
           <button className="ws-act ok" disabled={busy || !form.versionKey.trim()} onClick={createDraft}>
-            {busy ? <Loader2 size={12} className="spin" /> : <Check size={12} />} 创建（克隆当前类型）
+            {busy ? <Loader2 size={12} className="spin" /> : <Check size={12} />} {t('v2.version.create')}
           </button>
-          <button className="ws-act" onClick={() => setCreating(false)}><X size={12} /> 取消</button>
+          <button className="ws-act" onClick={() => setCreating(false)}><X size={12} /> {t('common.cancel')}</button>
         </div>
       )}
 
@@ -126,25 +128,25 @@ export default function VersionBar({ schemaId }) {
           {versions.map((v) => (
             <div className="ws-version-item" key={v.id}>
               <b>{v.version_key}</b>
-              <span className={`ws-badge ${STATUS_BADGE[v.status]?.cls || 'na'}`}>{STATUS_BADGE[v.status]?.label || v.status}</span>
+              <span className={`ws-badge ${STATUS_BADGE[v.status]?.cls || 'na'}`}>{t(STATUS_BADGE[v.status]?.label) || v.status}</span>
               {v.research_question && <span className="ws-version-rq" title={v.research_question}>{v.research_question}</span>}
               <span className="ws-version-actions">
-                <button className="ws-act" disabled={busy} onClick={() => showPanel('diff', v.id)}>差异</button>
-                <button className="ws-act" disabled={busy} onClick={() => showPanel('impact', v.id)}>影响</button>
-                <button className="ws-act" disabled={busy} onClick={() => showPanel('log', v.id)}>日志</button>
+                <button className="ws-act" disabled={busy} onClick={() => showPanel('diff', v.id)}>{t('v2.version.diff')}</button>
+                <button className="ws-act" disabled={busy} onClick={() => showPanel('impact', v.id)}>{t('v2.version.impact')}</button>
+                <button className="ws-act" disabled={busy} onClick={() => showPanel('log', v.id)}>{t('v2.version.log')}</button>
                 {isAuthenticated && v.status === 'draft' && (
-                  <button className="ws-act ok" disabled={busy} onClick={() => act(schemaVersionApi.approve, v.id)} title="发布为使用中版本">
-                    <Check size={11} /> 批准
+                  <button className="ws-act ok" disabled={busy} onClick={() => act(schemaVersionApi.approve, v.id)} title={t('v2.version.approveTitle')}>
+                    <Check size={11} /> {t('v2.version.approve')}
                   </button>
                 )}
                 {isAuthenticated && (v.status === 'draft' || v.status === 'active') && (
-                  <button className="ws-act" disabled={busy} onClick={() => act(schemaVersionApi.freeze, v.id)} title="冻结为只读">
-                    <Lock size={11} /> 冻结
+                  <button className="ws-act" disabled={busy} onClick={() => act(schemaVersionApi.freeze, v.id)} title={t('v2.version.freezeTitle')}>
+                    <Lock size={11} /> {t('v2.version.freeze')}
                   </button>
                 )}
                 {isAuthenticated && v.status !== 'archived' && (
                   <button className="ws-act bad" disabled={busy} onClick={() => act(schemaVersionApi.archive, v.id)}>
-                    <Archive size={11} /> 归档
+                    <Archive size={11} /> {t('v2.version.archive')}
                   </button>
                 )}
               </span>
@@ -156,30 +158,30 @@ export default function VersionBar({ schemaId }) {
           )}
           {panel?.type === 'impact' && (
             <div className="ws-version-panel">
-              <div className="ws-version-panel-head">影响分析（发布前必读）<button onClick={() => setPanel(null)}><X size={12} /></button></div>
+              <div className="ws-version-panel-head">{t('v2.version.impactTitle')}<button onClick={() => setPanel(null)}><X size={12} /></button></div>
               <div className="ws-version-panel-body">
                 <div className="ws-stat-row">
-                  <div className="ws-stat"><b>{panel.data.affected_cases}</b><span>受影响案例</span></div>
-                  <div className="ws-stat"><b>{panel.data.typed_entities}</b><span>已类型化实体</span></div>
-                  <div className="ws-stat"><b>{panel.data.typed_relations}</b><span>已类型化关系</span></div>
-                  <div className="ws-stat"><b>{panel.data.fact_assertions?.pending ?? 0}</b><span>待重映射事实</span></div>
+                  <div className="ws-stat"><b>{panel.data.affected_cases}</b><span>{t('v2.version.affectedCases')}</span></div>
+                  <div className="ws-stat"><b>{panel.data.typed_entities}</b><span>{t('v2.version.typedEntities')}</span></div>
+                  <div className="ws-stat"><b>{panel.data.typed_relations}</b><span>{t('v2.version.typedRelations')}</span></div>
+                  <div className="ws-stat"><b>{panel.data.fact_assertions?.pending ?? 0}</b><span>{t('v2.version.pendingFacts')}</span></div>
                 </div>
-                <p className="ws-version-note">状态：{panel.data.status}。发布（批准）后案例与类型外键将迁移到本版本。</p>
+                <p className="ws-version-note">{t('v2.version.impactNote', { status: panel.data.status })}</p>
               </div>
             </div>
           )}
           {panel?.type === 'log' && (
             <div className="ws-version-panel">
-              <div className="ws-version-panel-head">变更日志<button onClick={() => setPanel(null)}><X size={12} /></button></div>
+              <div className="ws-version-panel-head">{t('v2.version.changeLog')}<button onClick={() => setPanel(null)}><X size={12} /></button></div>
               <div className="ws-version-panel-body">
                 {panel.data.changes.map((c) => (
                   <div className="ws-version-log-row" key={c.id}>
                     <span className="ws-version-log-type">{c.change_type}</span>
                     <span>{c.target_key}</span>
-                    <span className="ws-version-log-meta">{c.creator || '系统'} · {new Date(c.created_at).toLocaleString('zh-CN')}</span>
+                    <span className="ws-version-log-meta">{c.creator || t('v2.version.bySystem')} · {new Date(c.created_at).toLocaleString('zh-CN')}</span>
                   </div>
                 ))}
-                {panel.data.changes.length === 0 && <div className="ws-tab-hint">暂无变更记录。</div>}
+                {panel.data.changes.length === 0 && <div className="ws-tab-hint">{t('v2.version.noChanges')}</div>}
               </div>
             </div>
           )}
@@ -190,6 +192,7 @@ export default function VersionBar({ schemaId }) {
 }
 
 function DiffPanel({ data, onClose }) {
+  const { t } = useI18n();
   const et = data.entity_types || {};
   const rl = data.relations || {};
   const empty = !et.added?.length && !et.removed?.length && !et.renamed?.length &&
@@ -197,17 +200,17 @@ function DiffPanel({ data, onClose }) {
   return (
     <div className="ws-version-panel">
       <div className="ws-version-panel-head">
-        <ArrowLeftRight size={12} /> 版本差异：{data.parent_version ? `${data.parent_version} → ${data.version_key}` : data.version_key}
+        <ArrowLeftRight size={12} /> {t('v2.version.diffTitle', { versions: data.parent_version ? `${data.parent_version} → ${data.version_key}` : data.version_key })}
         <button onClick={onClose}><X size={12} /></button>
       </div>
       <div className="ws-version-panel-body">
-        {empty && <div className="ws-tab-hint">与父版本无结构差异。</div>}
-        {et.added?.length > 0 && <div className="ws-diff-row"><span className="ws-badge ok">新增类型</span>{et.added.map((x) => <span key={x.stable_key} className="ws-diff-item">{x.name}</span>)}</div>}
-        {et.removed?.length > 0 && <div className="ws-diff-row"><span className="ws-badge bad">移除类型</span>{et.removed.map((x) => <span key={x.stable_key} className="ws-diff-item">{x.name}</span>)}</div>}
-        {et.renamed?.length > 0 && <div className="ws-diff-row"><span className="ws-badge warn">更名</span>{et.renamed.map((x) => <span key={x.stable_key} className="ws-diff-item">{x.from} → {x.to}</span>)}</div>}
-        {rl.added?.length > 0 && <div className="ws-diff-row"><span className="ws-badge ok">新增关系</span>{rl.added.map((x) => <span key={x.stable_key} className="ws-diff-item">{x.name}</span>)}</div>}
-        {rl.removed?.length > 0 && <div className="ws-diff-row"><span className="ws-badge bad">移除关系</span>{rl.removed.map((x) => <span key={x.stable_key} className="ws-diff-item">{x.name}</span>)}</div>}
-        {rl.direction_changed?.length > 0 && <div className="ws-diff-row"><span className="ws-badge warn">方向变化</span>{rl.direction_changed.map((x) => <span key={x.stable_key} className="ws-diff-item">{x.name}: {x.from} → {x.to}</span>)}</div>}
+        {empty && <div className="ws-tab-hint">{t('v2.version.noDiff')}</div>}
+        {et.added?.length > 0 && <div className="ws-diff-row"><span className="ws-badge ok">{t('v2.version.addedTypes')}</span>{et.added.map((x) => <span key={x.stable_key} className="ws-diff-item">{x.name}</span>)}</div>}
+        {et.removed?.length > 0 && <div className="ws-diff-row"><span className="ws-badge bad">{t('v2.version.removedTypes')}</span>{et.removed.map((x) => <span key={x.stable_key} className="ws-diff-item">{x.name}</span>)}</div>}
+        {et.renamed?.length > 0 && <div className="ws-diff-row"><span className="ws-badge warn">{t('v2.version.renamed')}</span>{et.renamed.map((x) => <span key={x.stable_key} className="ws-diff-item">{x.from} → {x.to}</span>)}</div>}
+        {rl.added?.length > 0 && <div className="ws-diff-row"><span className="ws-badge ok">{t('v2.version.addedRelations')}</span>{rl.added.map((x) => <span key={x.stable_key} className="ws-diff-item">{x.name}</span>)}</div>}
+        {rl.removed?.length > 0 && <div className="ws-diff-row"><span className="ws-badge bad">{t('v2.version.removedRelations')}</span>{rl.removed.map((x) => <span key={x.stable_key} className="ws-diff-item">{x.name}</span>)}</div>}
+        {rl.direction_changed?.length > 0 && <div className="ws-diff-row"><span className="ws-badge warn">{t('v2.version.directionChanged')}</span>{rl.direction_changed.map((x) => <span key={x.stable_key} className="ws-diff-item">{x.name}: {x.from} → {x.to}</span>)}</div>}
       </div>
     </div>
   );

@@ -2,12 +2,15 @@ import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Github, Mail, ExternalLink, TrendingUp } from 'lucide-react';
 import { useCanvasStore } from '@store/canvasStore';
-import { nodes as allNodes } from '@/data/content';
+import { nodes as allNodes, nodeTypes } from '@/data/content';
+import { useI18n } from '@/i18n';
+import { pick } from '@/i18n/pick';
 
 /**
  * 节点详情弹窗
  */
 function NodeDetail() {
+  const { t, locale } = useI18n();
   const { activeNode, setActiveNode, nodePositions } = useCanvasStore();
 
   useEffect(() => {
@@ -82,28 +85,28 @@ function NodeDetail() {
 
           {/* Header */}
           <h2 style={{ fontSize: 22, fontWeight: 700, color: '#111', marginBottom: 4, letterSpacing: '-0.02em' }}>
-            {node.label}
+            {pick(node.label, locale)}
           </h2>
           <p style={{ fontSize: 12, color: '#888', marginBottom: 20, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            {node.type}
+            {pick(nodeTypes[node.type]?.label, locale) || node.type}
           </p>
 
           {/* Content by type */}
-          {node.type === 'intro' && <IntroContent data={node.data} />}
-          {node.type === 'project' && <ProjectContent data={node.data} />}
-          {node.type === 'skill' && <SkillContent data={node.data} />}
-          {node.type === 'blog' && <BlogContent data={node.data} />}
-          {node.type === 'dataviz' && <DatavizContent data={node.data} />}
+          {node.type === 'intro' && <IntroContent data={node.data} locale={locale} />}
+          {node.type === 'project' && <ProjectContent data={node.data} locale={locale} t={t} />}
+          {node.type === 'skill' && <SkillContent data={node.data} locale={locale} t={t} />}
+          {node.type === 'blog' && <BlogContent data={node.data} locale={locale} t={t} />}
+          {node.type === 'dataviz' && <DatavizContent data={node.data} locale={locale} t={t} />}
         </motion.div>
       </motion.div>
     </AnimatePresence>
   );
 }
 
-function IntroContent({ data }) {
+function IntroContent({ data, locale }) {
   return (
     <div>
-      <p style={{ fontSize: 15, color: '#444', lineHeight: 1.7, marginBottom: 24 }}>{data.bio}</p>
+      <p style={{ fontSize: 15, color: '#444', lineHeight: 1.7, marginBottom: 24 }}>{pick(data.bio, locale)}</p>
       <div style={{ display: 'flex', gap: 12 }}>
         <a href={`mailto:${data.email}`} style={linkStyle}>
           <Mail size={14} />
@@ -118,7 +121,7 @@ function IntroContent({ data }) {
   );
 }
 
-function ProjectContent({ data }) {
+function ProjectContent({ data, locale, t }) {
   return (
     <div>
       {data.image && (
@@ -135,7 +138,7 @@ function ProjectContent({ data }) {
           }}
         />
       )}
-      <p style={{ fontSize: 14, color: '#444', lineHeight: 1.7, marginBottom: 16 }}>{data.description}</p>
+      <p style={{ fontSize: 14, color: '#444', lineHeight: 1.7, marginBottom: 16 }}>{pick(data.description, locale)}</p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
         {data.tags.map((tag) => (
           <span key={tag} style={tagStyle}>{tag}</span>
@@ -144,19 +147,19 @@ function ProjectContent({ data }) {
       {data.url && data.url !== '#' && (
         <a href={data.url} style={{ ...linkStyle, display: 'inline-flex' }}>
           <ExternalLink size={14} />
-          <span>View Project</span>
+          <span>{t('home.popup.viewProject')}</span>
         </a>
       )}
     </div>
   );
 }
 
-function SkillContent({ data }) {
+function SkillContent({ data, locale, t }) {
   return (
     <div>
-      <p style={{ fontSize: 14, color: '#444', lineHeight: 1.7, marginBottom: 16 }}>{data.description}</p>
+      <p style={{ fontSize: 14, color: '#444', lineHeight: 1.7, marginBottom: 16 }}>{pick(data.description, locale)}</p>
       <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span style={{ fontSize: 12, color: '#888', minWidth: 30 }}>Proficiency</span>
+        <span style={{ fontSize: 12, color: '#888', minWidth: 30 }}>{t('node.detail.proficiency')}</span>
         <div style={{ flex: 1, height: 6, background: '#eee', borderRadius: 3, overflow: 'hidden' }}>
           <div
             style={{
@@ -175,27 +178,27 @@ function SkillContent({ data }) {
   );
 }
 
-function BlogContent({ data }) {
+function BlogContent({ data, locale, t }) {
   return (
     <div>
-      <p style={{ fontSize: 14, color: '#444', lineHeight: 1.7, marginBottom: 12 }}>{data.excerpt}</p>
+      <p style={{ fontSize: 14, color: '#444', lineHeight: 1.7, marginBottom: 12 }}>{pick(data.excerpt, locale)}</p>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
         <span style={{ fontSize: 12, color: '#888' }}>{data.date}</span>
       </div>
       {data.url && data.url !== '#' && (
         <a href={data.url} style={{ ...linkStyle, display: 'inline-flex' }}>
           <ExternalLink size={14} />
-          <span>Read More</span>
+          <span>{t('node.detail.readMore')}</span>
         </a>
       )}
     </div>
   );
 }
 
-function DatavizContent({ data }) {
+function DatavizContent({ data, locale, t }) {
   return (
     <div>
-      <p style={{ fontSize: 14, color: '#444', lineHeight: 1.7, marginBottom: 16 }}>{data.description}</p>
+      <p style={{ fontSize: 14, color: '#444', lineHeight: 1.7, marginBottom: 16 }}>{pick(data.description, locale)}</p>
       <div
         style={{
           width: '100%',
@@ -212,7 +215,7 @@ function DatavizContent({ data }) {
         }}
       >
         <TrendingUp size={16} />
-        <span>Visualization placeholder</span>
+        <span>{t('node.detail.vizPlaceholder')}</span>
       </div>
     </div>
   );

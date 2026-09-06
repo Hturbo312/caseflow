@@ -1,18 +1,15 @@
 import { useCanvasStore } from '@store/canvasStore';
+import { useI18n } from '@/i18n';
+import { pick } from '@/i18n/pick';
 import { nodes as allNodes, nodeTypes } from '@/data/content';
 
-const categories = [
-  { type: 'intro', label: 'About' },
-  { type: 'project', label: 'Projects' },
-  { type: 'skill', label: 'Skills' },
-  { type: 'blog', label: 'Writing' },
-  { type: 'dataviz', label: 'Data' },
-];
+const categories = ['intro', 'project', 'skill', 'blog', 'dataviz'];
 
 /**
  * 侧边导航 — 按类别跳转
  */
 function NavPanel() {
+  const { locale } = useI18n();
   const { setViewport, setActiveNode, nodePositions } = useCanvasStore();
 
   const goTo = (type) => {
@@ -43,10 +40,10 @@ function NavPanel() {
         alignItems: 'center',
       }}
     >
-      {categories.map((cat) => (
+      {categories.map((type) => (
         <button
-          key={cat.type}
-          onClick={() => goTo(cat.type)}
+          key={type}
+          onClick={() => goTo(type)}
           style={{
             background: 'none',
             border: 'none',
@@ -79,7 +76,7 @@ function NavPanel() {
               whiteSpace: 'nowrap',
             }}
           >
-            {cat.label}
+            {pick(nodeTypes[type]?.label, locale)}
           </span>
         </button>
       ))}

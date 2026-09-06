@@ -5,13 +5,23 @@ import { useWorkspaceStore } from '../../../../store/workspaceStore';
 import { useCompareStore } from '../../../../store/compareStore';
 import { analysisApi, conceptApi } from '../../../../services/api';
 import { exportCSV, exportJSON, exportSVGAsPNG } from './exportUtils';
+import { useI18n } from '../../../../i18n';
 
+// 值为 i18n key，渲染处经 t() 转换（unknown 复用 detail.link.unknown）
 const STATE_LABEL = {
-  planned: '计划', piloted: '试验', deployed: '部署', adopted: '采用', adjusted: '调整',
-  scaled: '扩散', suspended: '暂停', withdrawn: '退出', unknown: '未知',
+  planned: 'analysis.state.planned', piloted: 'analysis.state.piloted', deployed: 'analysis.state.deployed',
+  adopted: 'analysis.state.adopted', adjusted: 'analysis.state.adjusted', scaled: 'analysis.state.scaled',
+  suspended: 'analysis.state.suspended', withdrawn: 'analysis.state.withdrawn', unknown: 'detail.link.unknown',
 };
 const EV_STATUS_COLOR = { confirmed: '#16a34a', limited: '#d97706', blocked: '#dc2626', not_evidenced: '#cbd5e1' };
-const EV_STATUS_LABEL = { confirmed: '已确认', limited: '有限支持', blocked: '受阻', not_evidenced: '资料未说明' };
+// confirmed 复用 pipeline.approved
+const EV_STATUS_LABEL = { confirmed: 'pipeline.approved', limited: 'analysis.ev.limited', blocked: 'analysis.ev.blocked', not_evidenced: 'analysis.ev.notEvidenced' };
+
+// 「生成研究简报」：呼叫 Copilot 的提示词（按 locale），发送走 workspaceStore.askCopilot 种子
+const BRIEF_PROMPTS = {
+  zh: '请基于当前比较集与上图数据，生成一页研究简报：1) 比较对象与口径 2) 三条最有把握的发现 3) 证据缺口与下一步建议。',
+  en: 'Based on the current comparison set and the charts above, draft a one-page research brief: 1) subjects and criteria 2) the three most confident findings 3) evidence gaps and next steps.',
+};
 
 /**
  * Analysis 工作区（Spec §3.2/§7.3）
@@ -19,8 +29,9 @@ const EV_STATUS_LABEL = { confirmed: '已确认', limited: '有限支持', block
  * 全部由确定性查询驱动（schema_version + 查询条件显示在图表上），AI 不参与计算
  */
 export default function AnalysisWorkspace() {
+  const { t, locale } = useI18n();
   const { cases } = useCaseStore();
-  const { caseDetailId } = useWorkspaceStore();
+  const { caseDetailId, askCopilot } = useWorkspaceStore();
   const compareIds = useCompareStore((s) => s.ids);
 
   const coreCases = useMemo(() => cases.filter((c) => c.case_status === 'core'), [cases]);
@@ -35,10 +46,18 @@ export default function AnalysisWorkspace() {
       <div className="ws-analysis-bar">
         <GitCompare size={14} />
         {compareIds.length >= 2 ? (
-          <span>比较集：{compareIds.length} 个案例</span>
+          <span>{t('analysis.compareSet.count', { n: compareIds.length })}</span>
         ) : (
-          <span>未选比较集 — 默认展示全部论文核心案例（{coreCases.length} 个）。在右侧案例库勾选 2–6 个可聚焦比较。</span>
+          <span>{t('analysis.noCompareSet', { n: coreCases.length })}</span>
         )}
+        <button
+          className="ws-act"
+          style={{ marginLeft: 'auto' }}
+          onClick={() => askCopilot(BRIEF_PROMPTS[locale === 'en' ? 'en' : 'zh'])}
+          title={t('ux.analysis.brief')}
+        >
+          <Sparkles size={11} /> {t('ux.analysis.brief')}
+        </button>
       </div>
       <ProcessMatrix ids={ids} />
       <EvidenceCoverage ids={ids} />
@@ -46,7 +65,7 @@ export default function AnalysisWorkspace() {
       <CapabilityTaskHeatmap ids={ids} />
       <ActionChain caseId={caseDetailId ? Number(caseDetailId) : ids[0]} />
       <div className="ws-analysis-note">
-        <Info size={12} /> 图表由确定性 SQL 聚合生成，可导出复现；AI 解释请见左侧 Copilot。
+        <Info size={12} /> {t('analysis.deterministicNote')}
       </div>
     </div>
   );
@@ -54,6 +73,7 @@ export default function AnalysisWorkspace() {
 
 // ============ 通用：图表卡片头 ============
 function ChartHead({ title, sub, onPng, onCsv, onJson, data }) {
+  const { t } = useI18n();
   return (
     <div className="ws-chart-head">
       <div>
@@ -61,7 +81,7 @@ function ChartHead({ title, sub, onPng, onCsv, onJson, data }) {
         {sub && <span className="ws-chart-sub">{sub}</span>}
       </div>
       <div className="ws-chart-actions">
-        {onPng && <button onClick={onPng} title="导出 PNG"><Download size={12} /> PNG</button>}
+        {onPng && <button onClick={onPng} title={t('analysis.exportPng')}><Download size={12} /> PNG</button>}
         {onCsv && <button onClick={onCsv}><Download size={12} /> CSV</button>}
         {onJson && data && <button onClick={() => exportJSON(data, title)}><Download size={12} /> JSON</button>}
       </div>
@@ -71,6 +91,7 @@ function ChartHead({ title, sub, onPng, onCsv, onJson, data }) {
 
 // ============ A. 过程状态矩阵 ============
 function ProcessMatrix({ ids }) {
+  const { t } = useI18n();
   const [data, setData] = useState(null);
   const [err, setErr] = useState('');
   const svgRef = useRef(null);
@@ -80,8 +101,8 @@ function ProcessMatrix({ ids }) {
     analysisApi.processStates(ids).then(setData).catch((e) => setErr(e.message));
   }, [ids]);
 
-  if (err) return <ErrorCard title="过程状态矩阵" err={err} />;
-  if (!data) return <LoadingCard title="过程状态矩阵" />;
+  if (err) return <ErrorCard title={t('analysis.processMatrix.title')} err={err} />;
+  if (!data) return <LoadingCard title={t('analysis.processMatrix.title')} />;
 
   const cellMax = Math.max(1, ...data.cases.flatMap((c) => Object.values(c.states)));
   const COL_W = 64, ROW_H = 34, LBL_W = 210, HEAD_H = 46;
@@ -89,16 +110,16 @@ function ProcessMatrix({ ids }) {
   const H = HEAD_H + data.cases.length * ROW_H + 14;
 
   const csv = [
-    ['案例', ...data.states.map((s) => STATE_LABEL[s])],
+    [t('common.case'), ...data.states.map((s) => t(STATE_LABEL[s]))],
     ...data.cases.map((c) => [c.name, ...data.states.map((s) => c.states[s])]),
   ];
 
   return (
     <section className="ws-chart">
       <ChartHead
-        title="过程状态矩阵" sub={`${data.schema_version} · 案例 × 过程状态（技术/行动实体计数）`}
-        onPng={() => exportSVGAsPNG(svgRef.current, '过程状态矩阵')}
-        onCsv={() => exportCSV(csv, '过程状态矩阵')}
+        title={t('analysis.processMatrix.title')} sub={t('analysis.processMatrix.sub', { v: data.schema_version })}
+        onPng={() => exportSVGAsPNG(svgRef.current, t('analysis.processMatrix.title'))}
+        onCsv={() => exportCSV(csv, t('analysis.processMatrix.title'))}
         onJson={true} data={data}
       />
       <div className="ws-chart-scroll">
@@ -106,7 +127,7 @@ function ProcessMatrix({ ids }) {
           {data.states.map((s, j) => (
             <text key={s} x={LBL_W + j * COL_W + COL_W / 2} y={HEAD_H - 24} textAnchor="middle"
               className="ws-svg-col" transform={`rotate(-18 ${LBL_W + j * COL_W + COL_W / 2} ${HEAD_H - 24})`}>
-              {STATE_LABEL[s]}
+              {t(STATE_LABEL[s])}
             </text>
           ))}
           {data.cases.map((c, i) => (
@@ -142,6 +163,7 @@ function ProcessMatrix({ ids }) {
 
 // ============ D. 证据覆盖图 ============
 function EvidenceCoverage({ ids }) {
+  const { t } = useI18n();
   const [data, setData] = useState(null);
   const [err, setErr] = useState('');
   const svgRef = useRef(null);
@@ -151,8 +173,8 @@ function EvidenceCoverage({ ids }) {
     analysisApi.evidenceCoverage(ids).then(setData).catch((e) => setErr(e.message));
   }, [ids]);
 
-  if (err) return <ErrorCard title="证据覆盖图" err={err} />;
-  if (!data) return <LoadingCard title="证据覆盖图" />;
+  if (err) return <ErrorCard title={t('analysis.evidenceCoverage.title')} err={err} />;
+  if (!data) return <LoadingCard title={t('analysis.evidenceCoverage.title')} />;
 
   const ROW_H = 30, LBL_W = 210, LEGEND_H = 26, HEAD_H = 8;
   const segW = 52;
@@ -160,7 +182,7 @@ function EvidenceCoverage({ ids }) {
   const H = HEAD_H + data.cases.length * ROW_H + LEGEND_H + 10;
 
   const csv = [
-    ['案例', ...data.dimensions.flatMap((d) => data.statuses.map((s) => `${d.label}-${EV_STATUS_LABEL[s]}`))],
+    [t('common.case'), ...data.dimensions.flatMap((d) => data.statuses.map((s) => `${d.label}-${t(EV_STATUS_LABEL[s])}`))],
     ...data.cases.map((c) => [
       c.name,
       ...data.dimensions.flatMap((d) => data.statuses.map((s) => c.coverage[d.key]?.[s] ?? 0)),
@@ -170,9 +192,9 @@ function EvidenceCoverage({ ids }) {
   return (
     <section className="ws-chart">
       <ChartHead
-        title="证据覆盖图" sub={`${data.schema_version} · 实体数按证据状态分色（blocked 与 not_evidenced 分离）`}
-        onPng={() => exportSVGAsPNG(svgRef.current, '证据覆盖图')}
-        onCsv={() => exportCSV(csv, '证据覆盖图')}
+        title={t('analysis.evidenceCoverage.title')} sub={t('analysis.evidenceCoverage.sub', { v: data.schema_version })}
+        onPng={() => exportSVGAsPNG(svgRef.current, t('analysis.evidenceCoverage.title'))}
+        onCsv={() => exportCSV(csv, t('analysis.evidenceCoverage.title'))}
         onJson={true} data={data}
       />
       <div className="ws-chart-scroll">
@@ -222,7 +244,7 @@ function EvidenceCoverage({ ids }) {
           {data.statuses.map((s, j) => (
             <g key={s} transform={`translate(${LBL_W + j * 118}, ${H - 10})`}>
               <rect width={10} height={10} rx={2} fill={EV_STATUS_COLOR[s]} y={-9} />
-              <text x={14} y={0} className="ws-svg-legend">{EV_STATUS_LABEL[s]}</text>
+              <text x={14} y={0} className="ws-svg-legend">{t(EV_STATUS_LABEL[s])}</text>
             </g>
           ))}
         </svg>
@@ -233,6 +255,7 @@ function EvidenceCoverage({ ids }) {
 
 // ============ B. 能力—任务热力图 ============
 function CapabilityTaskHeatmap({ ids }) {
+  const { t } = useI18n();
   const [data, setData] = useState(null);
   const [err, setErr] = useState('');
   const svgRef = useRef(null);
@@ -242,13 +265,13 @@ function CapabilityTaskHeatmap({ ids }) {
     analysisApi.capabilityTask(ids).then(setData).catch((e) => setErr(e.message));
   }, [ids]);
 
-  if (err) return <ErrorCard title="能力—任务热力图" err={err} />;
-  if (!data) return <LoadingCard title="能力—任务热力图" />;
+  if (err) return <ErrorCard title={t('analysis.capabilityTask.title')} err={err} />;
+  if (!data) return <LoadingCard title={t('analysis.capabilityTask.title')} />;
   if (!data.links.length) {
     return (
       <section className="ws-chart">
-        <ChartHead title="能力—任务热力图" sub="技术能力经 supports_task 关系进入任务" />
-        <div className="ws-tab-hint">当前范围内暂无「能力 → 任务」关系数据。</div>
+        <ChartHead title={t('analysis.capabilityTask.title')} sub={t('analysis.capabilityTask.subEmpty')} />
+        <div className="ws-tab-hint">{t('analysis.capabilityTask.empty')}</div>
       </section>
     );
   }
@@ -263,16 +286,16 @@ function CapabilityTaskHeatmap({ ids }) {
     .reduce((a, l) => a + l.link_count, 0);
 
   const csv = [
-    ['能力 \\ 任务', ...data.tasks],
-    ...data.capabilities.map((c) => [c, ...data.tasks.map((t) => val(c, t) || '')]),
+    [t('analysis.capabilityTask.csvCorner'), ...data.tasks],
+    ...data.capabilities.map((c) => [c, ...data.tasks.map((tk) => val(c, tk) || '')]),
   ];
 
   return (
     <section className="ws-chart">
       <ChartHead
-        title="能力—任务热力图" sub={`${data.schema_version} · 真正进入共同任务的能力（supports_task）`}
-        onPng={() => exportSVGAsPNG(svgRef.current, '能力任务热力图')}
-        onCsv={() => exportCSV(csv, '能力任务热力图')}
+        title={t('analysis.capabilityTask.title')} sub={t('analysis.capabilityTask.sub', { v: data.schema_version })}
+        onPng={() => exportSVGAsPNG(svgRef.current, t('analysis.capabilityTask.exportName'))}
+        onCsv={() => exportCSV(csv, t('analysis.capabilityTask.exportName'))}
         onJson={true} data={data}
       />
       <div className="ws-chart-scroll">
@@ -311,6 +334,7 @@ function CapabilityTaskHeatmap({ ids }) {
 
 // ============ C. 技术作用链 ============
 function ActionChain({ caseId }) {
+  const { t } = useI18n();
   const [data, setData] = useState(null);
   const [err, setErr] = useState('');
   useEffect(() => {
@@ -320,44 +344,45 @@ function ActionChain({ caseId }) {
   }, [caseId]);
 
   if (!caseId) return null;
-  if (err) return <ErrorCard title="技术作用链" err={err} />;
-  if (!data) return <LoadingCard title="技术作用链" />;
+  if (err) return <ErrorCard title={t('analysis.actionChain.title')} err={err} />;
+  if (!data) return <LoadingCard title={t('analysis.actionChain.title')} />;
 
+  // 值为 i18n key，渲染处经 t() 转换
   const SHORT = {
-    'Community Context（社区情境）': '情境', 'Problem / Pressure（问题与压力）': '问题',
-    'Task（社区更新任务）': '任务', 'Technology（技术）': '技术', 'Capability（技术能力）': '能力',
-    'Action / Event（行动与事件）': '行动', 'Organizational Response（组织响应）': '组织响应',
-    'Spatial Response（空间响应）': '空间响应', 'Behavioral / Service Response（行为与服务响应）': '行为/服务响应',
-    'Outcome（结果）': '结果', 'Constraint / Adjustment（约束与调整）': '约束',
+    'Community Context（社区情境）': 'analysis.chain.context', 'Problem / Pressure（问题与压力）': 'analysis.chain.problem',
+    'Task（社区更新任务）': 'analysis.chain.task', 'Technology（技术）': 'analysis.chain.technology', 'Capability（技术能力）': 'analysis.chain.capability',
+    'Action / Event（行动与事件）': 'analysis.chain.action', 'Organizational Response（组织响应）': 'analysis.chain.orgResponse',
+    'Spatial Response（空间响应）': 'analysis.chain.spatialResponse', 'Behavioral / Service Response（行为与服务响应）': 'analysis.chain.behaviorResponse',
+    'Outcome（结果）': 'analysis.chain.outcome', 'Constraint / Adjustment（约束与调整）': 'analysis.chain.constraint',
   };
-  const byType = new Map(data.chain_order.map((t) => [t, []]));
+  const byType = new Map(data.chain_order.map((ty) => [ty, []]));
   for (const e of data.entities) {
     if (byType.has(e.entity_type)) byType.get(e.entity_type).push(e);
   }
 
   const exportRows = () => [
-    ['链位', '实体', '证据状态'],
+    [t('analysis.chain.pos'), t('toolbar.entity'), t('analysis.evidenceStatus')],
     ...data.entities.flatMap((e) => {
       const evs = Object.entries(e.evidence || {});
-      return evs.length ? evs.map(([st, n]) => [SHORT[e.entity_type] || e.entity_type, e.name, `${EV_STATUS_LABEL[st] || st}×${n}`])
-        : [[SHORT[e.entity_type] || e.entity_type, e.name, '无证据记录']];
+      return evs.length ? evs.map(([st, n]) => [t(SHORT[e.entity_type] || e.entity_type), e.name, `${t(EV_STATUS_LABEL[st] || st)}×${n}`])
+        : [[t(SHORT[e.entity_type] || e.entity_type), e.name, t('analysis.noEvidenceRecord')]];
     }),
   ];
 
   return (
     <section className="ws-chart">
       <ChartHead
-        title="技术作用链" sub={`${data.schema_version} · 情境 → 问题 → 任务 → 技术 → 能力 → 行动 → 响应 → 结果`}
-        onCsv={() => exportCSV(exportRows(), '技术作用链')}
+        title={t('analysis.actionChain.title')} sub={t('analysis.actionChain.sub', { v: data.schema_version })}
+        onCsv={() => exportCSV(exportRows(), t('analysis.actionChain.title'))}
         onJson={true} data={data}
       />
       <div className="ws-chain">
-        {data.chain_order.map((t) => {
-          const ents = byType.get(t) || [];
+        {data.chain_order.map((ty) => {
+          const ents = byType.get(ty) || [];
           if (!ents.length) return null;
           return (
-            <div className="ws-chain-col" key={t}>
-              <div className="ws-chain-head">{SHORT[t] || t}</div>
+            <div className="ws-chain-col" key={ty}>
+              <div className="ws-chain-head">{t(SHORT[ty] || ty)}</div>
               {ents.slice(0, 6).map((e) => (
                 <div className="ws-chain-node" key={e.id} title={e.name}>
                   <span className="ws-chain-dot" style={{ background: e.color || '#94a3b8' }} />
@@ -373,25 +398,27 @@ function ActionChain({ caseId }) {
         })}
       </div>
       <div className="ws-chain-legend">
-        <span>✓ 已确认</span><span>◐ 有限支持</span><span>✕ 受阻</span><span>∅ 无证据记录</span>
+        <span>✓ {t(EV_STATUS_LABEL.confirmed)}</span><span>◐ {t(EV_STATUS_LABEL.limited)}</span><span>✕ {t(EV_STATUS_LABEL.blocked)}</span><span>∅ {t('analysis.noEvidenceRecord')}</span>
       </div>
     </section>
   );
 }
 
 function LoadingCard({ title }) {
+  const { t } = useI18n();
   return (
     <section className="ws-chart">
       <ChartHead title={title} />
-      <div className="ws-loading"><Loader2 size={16} className="spin" /> 查询中…</div>
+      <div className="ws-loading"><Loader2 size={16} className="spin" /> {t('analysis.querying')}</div>
     </section>
   );
 }
 function ErrorCard({ title, err }) {
+  const { t } = useI18n();
   return (
     <section className="ws-chart">
       <ChartHead title={title} />
-      <div className="ws-tab-error">加载失败：{err}</div>
+      <div className="ws-tab-error">{t('analysis.loadFailed', { err })}</div>
     </section>
   );
 }
@@ -400,6 +427,7 @@ function ErrorCard({ title, err }) {
 // 案例原生术语（=实体名）经 concept_mappings 映射到共享概念后进入统一比较坐标系；
 // 未映射的缺口在面板里由研究者手动或按确定性建议补齐，AI 不参与计算。
 function ConceptAlignment({ ids }) {
+  const { t, locale } = useI18n();
   const [data, setData] = useState(null);
   const [err, setErr] = useState('');
   const [gapCaseId, setGapCaseId] = useState(null);
@@ -415,8 +443,8 @@ function ConceptAlignment({ ids }) {
   }, [ids]);
   useEffect(() => { setData(null); load(); }, [load]);
 
-  if (err) return <ErrorCard title="概念对齐矩阵" err={err} />;
-  if (!data) return <LoadingCard title="概念对齐矩阵" />;
+  if (err) return <ErrorCard title={t('analysis.concept.title')} err={err} />;
+  if (!data) return <LoadingCard title={t('analysis.concept.title')} />;
 
   const cases = data.cases || [];
   const concepts = data.concepts || [];
@@ -425,27 +453,27 @@ function ConceptAlignment({ ids }) {
   const shortName = (n) => (n.length > 9 ? n.slice(0, 8) + '…' : n);
 
   const csv = [
-    ['共享概念 \\ 案例', ...cases.map((c) => c.name)],
+    [t('analysis.concept.csvCorner'), ...cases.map((c) => c.name)],
     ...concepts.map((c) => [c.label, ...cases.map((cas) => cell(c.id, cas.id)?.entity_count ?? 0)]),
   ];
 
   return (
     <section className="ws-chart">
       <ChartHead
-        title="概念对齐矩阵" sub={`共享概念 × 案例 · 原生术语映射进统一比较坐标系（当前 ${concepts.length} 个共享概念）`}
-        onCsv={() => exportCSV(csv, '概念对齐矩阵')}
+        title={t('analysis.concept.title')} sub={t('analysis.concept.sub', { n: concepts.length })}
+        onCsv={() => exportCSV(csv, t('analysis.concept.title'))}
         onJson={true} data={data}
       />
       {!concepts.length ? (
-        <div className="ws-tab-hint">本 Schema 家族尚无共享概念 — 在下方缺口面板中新建。</div>
+        <div className="ws-tab-hint">{t('analysis.concept.noConcepts')}</div>
       ) : !cases.length ? (
-        <div className="ws-tab-hint">没有可展示的案例。</div>
+        <div className="ws-tab-hint">{t('analysis.concept.noCases')}</div>
       ) : (
         <div className="ws-chart-scroll">
           <table className="ws-concept-table">
             <thead>
               <tr>
-                <th className="ws-ct-label">共享概念</th>
+                <th className="ws-ct-label">{t('analysis.concept.sharedConcept')}</th>
                 {cases.map((c) => <th key={c.id} title={c.name}>{shortName(c.name)}</th>)}
               </tr>
             </thead>
@@ -461,7 +489,7 @@ function ConceptAlignment({ ids }) {
                         {n ? (
                           <span className="ws-ct-cell"
                             style={{ background: `rgba(8, 145, 178, ${0.15 + 0.75 * (n / maxCell)})` }}
-                            title={`原生术语：${(v.native_terms || []).join('、')}`}>
+                            title={t('analysis.concept.nativeTerms', { terms: (v.native_terms || []).join(locale === 'en' ? ', ' : '、') })}>
                             {n}
                           </span>
                         ) : (
@@ -473,16 +501,16 @@ function ConceptAlignment({ ids }) {
                 </tr>
               ))}
               <tr className="ws-ct-total">
-                <td className="ws-ct-label">概念覆盖</td>
+                <td className="ws-ct-label">{t('analysis.concept.coverage')}</td>
                 {cases.map((cas) => {
-                  const t = data.case_totals?.[String(cas.id)] || { entities: 0, mapped: 0, unmapped: 0 };
+                  const tot = data.case_totals?.[String(cas.id)] || { entities: 0, mapped: 0, unmapped: 0 };
                   return (
                     <td key={cas.id}>
                       <button className={`ws-ct-total-btn${gapCaseId === cas.id ? ' open' : ''}`}
                         onClick={() => setGapCaseId(gapCaseId === cas.id ? null : cas.id)}
-                        title="点击管理该案例的未映射原生术语">
-                        {t.mapped}/{t.entities}
-                        {t.unmapped > 0 && <em>+{t.unmapped}</em>}
+                        title={t('analysis.concept.manageGaps')}>
+                        {tot.mapped}/{tot.entities}
+                        {tot.unmapped > 0 && <em>+{tot.unmapped}</em>}
                       </button>
                     </td>
                   );
@@ -495,7 +523,7 @@ function ConceptAlignment({ ids }) {
       {gapCaseId != null && cases.length > 0 && (
         <ConceptGapPanel
           caseId={gapCaseId}
-          caseName={cases.find((c) => c.id === gapCaseId)?.name || `案例 ${gapCaseId}`}
+          caseName={cases.find((c) => c.id === gapCaseId)?.name || t('analysis.concept.caseFallback', { id: gapCaseId })}
           concepts={concepts}
           gaps={(data.gaps || {})[String(gapCaseId)] || []}
           onRefresh={load}
@@ -507,6 +535,7 @@ function ConceptAlignment({ ids }) {
 
 // 缺口面板：未映射原生术语 → 手动/建议映射 → 新建共享概念
 function ConceptGapPanel({ caseId, caseName, concepts, gaps, onRefresh }) {
+  const { t } = useI18n();
   const [sugs, setSugs] = useState(null); // 自动建议（确定性字符串匹配）
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
@@ -519,7 +548,7 @@ function ConceptGapPanel({ caseId, caseName, concepts, gaps, onRefresh }) {
     try {
       const d = await conceptApi.suggestions(caseId);
       setSugs(d.suggestions || []);
-      if (!d.suggestions?.length) setErr('没有产生新建议（术语已映射或无匹配）。');
+      if (!d.suggestions?.length) setErr(t('analysis.gap.noNewSuggestions'));
     } catch (e) {
       setErr(e.message);
     } finally {
@@ -547,27 +576,27 @@ function ConceptGapPanel({ caseId, caseName, concepts, gaps, onRefresh }) {
     <div className="ws-gap">
       <div className="ws-gap-head">
         <div>
-          <b>映射缺口 · {caseName}</b>
-          <span>{gaps.length} 个未映射原生术语（按实体数排序）</span>
+          <b>{t('analysis.gap.title', { name: caseName })}</b>
+          <span>{t('analysis.gap.count', { n: gaps.length })}</span>
         </div>
         <div className="ws-gap-actions">
           <button className="ws-act" onClick={autoSuggest} disabled={busy === 'sug'}>
-            {busy === 'sug' ? <Loader2 size={11} className="spin" /> : <Sparkles size={11} />} 自动建议
+            {busy === 'sug' ? <Loader2 size={11} className="spin" /> : <Sparkles size={11} />} {t('analysis.gap.autoSuggest')}
           </button>
           {sugs?.length > 0 && (
             <button className="ws-act ok" onClick={applyAll} disabled={busy === 'all'}>
-              {busy === 'all' ? <Loader2 size={11} className="spin" /> : <Check size={11} />} 应用全部建议（{sugs.length}）
+              {busy === 'all' ? <Loader2 size={11} className="spin" /> : <Check size={11} />} {t('analysis.gap.applyAll', { n: sugs.length })}
             </button>
           )}
           <button className="ws-act" onClick={() => setShowNew(!showNew)}>
-            <Plus size={11} /> 新建共享概念
+            <Plus size={11} /> {t('analysis.gap.newConcept')}
           </button>
         </div>
       </div>
       {err && <div className="ws-gap-err">{err}</div>}
       {showNew && <NewConceptForm onCreated={onRefresh} />}
       <div className="ws-gap-list">
-        {gaps.length === 0 && <div className="ws-tab-hint">该案例的原生术语都已映射到共享概念。</div>}
+        {gaps.length === 0 && <div className="ws-tab-hint">{t('analysis.gap.allMapped')}</div>}
         {gaps.map((g) => (
           <ConceptGapRow
             key={g.native_term}
@@ -584,6 +613,7 @@ function ConceptGapPanel({ caseId, caseName, concepts, gaps, onRefresh }) {
 }
 
 function ConceptGapRow({ caseId, gap, suggestion, concepts, onDone }) {
+  const { t } = useI18n();
   const [sel, setSel] = useState(suggestion?.concept_id ? String(suggestion.concept_id) : '');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -611,16 +641,16 @@ function ConceptGapRow({ caseId, gap, suggestion, concepts, onDone }) {
       <span className="ws-gap-term" title={gap.native_term}>{gap.native_term}</span>
       <span className="ws-gap-cnt">×{gap.entity_count}</span>
       {suggestion && (
-        <span className="ws-gap-sug" title={`匹配依据：${suggestion.basis}`}>
+        <span className="ws-gap-sug" title={t('analysis.gap.matchBasis', { basis: suggestion.basis })}>
           {suggestion.concept_label} · {Math.round(suggestion.confidence * 100)}%
         </span>
       )}
       <select value={sel} onChange={(e) => setSel(e.target.value)}>
-        <option value="">选择共享概念…</option>
+        <option value="">{t('analysis.gap.selectConcept')}</option>
         {concepts.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
       </select>
       <button className="ws-act ok" disabled={!sel || busy} onClick={apply}>
-        {busy ? <Loader2 size={11} className="spin" /> : <Link2 size={11} />} 映射
+        {busy ? <Loader2 size={11} className="spin" /> : <Link2 size={11} />} {t('analysis.gap.map')}
       </button>
       {err && <span className="ws-gap-err-inline">{err}</span>}
     </div>
@@ -628,6 +658,7 @@ function ConceptGapRow({ caseId, gap, suggestion, concepts, onDone }) {
 }
 
 function NewConceptForm({ onCreated }) {
+  const { t } = useI18n();
   const [label, setLabel] = useState('');
   const [aliases, setAliases] = useState('');
   const [busy, setBusy] = useState(false);
@@ -652,10 +683,10 @@ function NewConceptForm({ onCreated }) {
 
   return (
     <div className="ws-gap-new">
-      <input placeholder="共享概念名称（如：参与式治理）" value={label} onChange={(e) => setLabel(e.target.value)} />
-      <input placeholder="别名，逗号分隔（可选）" value={aliases} onChange={(e) => setAliases(e.target.value)} />
+      <input placeholder={t('analysis.newConcept.namePlaceholder')} value={label} onChange={(e) => setLabel(e.target.value)} />
+      <input placeholder={t('analysis.newConcept.aliasesPlaceholder')} value={aliases} onChange={(e) => setAliases(e.target.value)} />
       <button className="ws-act ok" disabled={!label.trim() || busy} onClick={create}>
-        {busy ? <Loader2 size={11} className="spin" /> : <Plus size={11} />} 创建
+        {busy ? <Loader2 size={11} className="spin" /> : <Plus size={11} />} {t('analysis.newConcept.create')}
       </button>
       {err && <span className="ws-gap-err-inline">{err}</span>}
     </div>

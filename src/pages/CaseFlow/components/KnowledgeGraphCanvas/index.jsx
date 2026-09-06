@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import * as d3Force from 'd3-force';
-import { Share2, Globe, Focus, LogIn } from 'lucide-react';
+import { Share2, Globe, Focus } from 'lucide-react';
 import { useCaseStore, useSchemaStore } from '@store';
 import { useGraphData } from './hooks';
 import { useGraphExport } from './hooks/useGraphExport';
@@ -33,7 +33,7 @@ import GraphLegend from './GraphLegend';
 import GraphNodeDetail from './GraphNodeDetail';
 import GraphLinkDetail from './GraphLinkDetail';
 
-const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
+const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin, onInspectEntity, onInspectRelation }) => {
   // 使用 useGraphData hook 获取图谱数据和缩放控制
   const {
     nodes,
@@ -286,8 +286,9 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
       handleRelationModeClick(node);
     } else {
       handleNormalClick(node);
+      onInspectEntity?.(node);
     }
-  }, [showPathAnalysis, relationMode, handlePathAnalysisClick, handleRelationModeClick, handleNormalClick]);
+  }, [showPathAnalysis, relationMode, handlePathAnalysisClick, handleRelationModeClick, handleNormalClick, onInspectEntity]);
 
   // Keep handleNodeClickRef in sync
   useEffect(() => { handleNodeClickRef.current = handleNodeClick; }, [handleNodeClick]);
@@ -416,6 +417,10 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
 
   // 删除实体确认处理
   const handleDeleteEntityConfirm = useCallback(async () => {
+    if (!isAuthenticated) {
+      onShowLogin?.();
+      return;
+    }
     const node = deleteEntityModal.node;
     if (!node?.caseId || !node?.id) return;
 
@@ -430,7 +435,7 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
       showError(t('toast.entityDeleteFailed') + error.message);
     }
     setDeleteEntityModal({ open: false, node: null });
-  }, [deleteEntityModal.node, removeNodeFromGraph, setSelectedNode, showSuccess, showError, deleteEntityFromCase]);
+  }, [isAuthenticated, onShowLogin, deleteEntityModal.node, removeNodeFromGraph, setSelectedNode, showSuccess, showError, deleteEntityFromCase]);
 
   // 删除关系确认处理
   const handleDeleteRelationConfirm = useCallback(async () => {
@@ -884,25 +889,8 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
           ))}
         </div>
 
-        {/* 未登录状态 */}
-        {!isAuthenticated ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-50/80">
-            <div className="text-center p-8">
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-                <LogIn className="w-10 h-10 text-gray-400" />
-              </div>
-              <p className="text-lg font-medium text-gray-600 mb-2">{t('empty.loginToView')}</p>
-              <p className="text-sm text-gray-400 mb-5">{t('empty.loginHint')}</p>
-              <button
-                onClick={onShowLogin}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-all shadow-lg shadow-indigo-200"
-              >
-                <LogIn className="w-4 h-4" />
-                {t('app.login')}
-              </button>
-            </div>
-          </div>
-        ) : filteredNodes.length === 0 ? (
+        {/* 空态（访客与登录用户同样渲染图谱/空态） */}
+        {filteredNodes.length === 0 ? (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center p-8">
               <Share2 className="w-16 h-16 mx-auto mb-4 opacity-50 text-gray-400" />
@@ -933,6 +921,7 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
             linkDirectionalArrowRelPos={1}
             onNodeClick={handleNodeClickWithDbl}
             onLinkClick={(link) => {
+              onInspectRelation?.(link);
               setSelectedLink(link);
               setSelectedNode(null);
             }}
@@ -968,15 +957,16 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
 
         {/* 选中节点详情 */}
         <GraphNodeDetail
-          selectedNode={selectedNode}
+          selectedNode={onInspectEntity ? null : selectedNode}
           entityTypeColorMap={entityTypeColorMap}
           onClose={() => setSelectedNode(null)}
           onRequestDelete={(node) => setDeleteEntityModal({ open: true, node })}
+          isAuthenticated={isAuthenticated}
         />
 
         {/* 选中连线详情 */}
         <GraphLinkDetail
-          selectedLink={selectedLink}
+          selectedLink={onInspectRelation ? null : selectedLink}
           relationStyleMap={relationStyleMap}
           onClose={() => setSelectedLink(null)}
           onRequestDelete={(link) => setDeleteRelationModal({ open: true, link })}
@@ -987,7 +977,7 @@ const KnowledgeGraphCanvas = ({ isAuthenticated, onShowLogin }) => {
         {!showLegend && (
           <button
             onClick={() => setShowLegend(true)}
-            className="absolute bottom-4 left-4 p-2 bg-white/90 rounded-lg shadow-sm border border-gray-200 text-gray-500 hover:text-gray-700 transition-colors text-xs"
+            className="absolute bottom-4 left-4 p-2.5 bg-white rounded-lg shadow-md border border-gray-200 text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
             title={t('legend.show')}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>

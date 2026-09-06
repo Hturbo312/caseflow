@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { Settings, LogIn, LogOut, User, Send, Sparkles, AlertCircle } from 'lucide-react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { Settings, Send, Sparkles, AlertCircle } from 'lucide-react';
 import { useAuthStore, useSchemaStore, useCaseStore } from '../../../../store';
 import { useWorkspaceStore } from '../../../../store/workspaceStore';
+import { useI18n } from '../../../../i18n';
 import { aiApi } from '../../../../services/api';
 import { useAIConfig } from '../CaseExtractor/hooks/useAIConfig';
 import SettingsModal from '../CaseExtractor/SettingsModal';
@@ -12,10 +13,11 @@ import SettingsModal from '../CaseExtractor/SettingsModal';
  * AI 只解释与建议，不改变当前案例/比较集/Schema 版本
  */
 export default function CopilotRail({ onShowLogin }) {
-  const { isAuthenticated, user, logout } = useAuthStore();
+  const { t } = useI18n();
+  const { isAuthenticated } = useAuthStore();
   const { schemas, currentSchemaId } = useSchemaStore();
   const { cases } = useCaseStore();
-  const { caseDetailId, contextTask } = useWorkspaceStore();
+  const { caseDetailId, contextTask, copilotSeed } = useWorkspaceStore();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
   const [sending, setSending] = useState(false);
@@ -38,9 +40,9 @@ export default function CopilotRail({ onShowLogin }) {
   }, [messages, sending]);
 
   const contextLines = [
-    ['当前 Schema', currentSchema?.name || '未选择'],
-    ['当前案例', currentCase ? `${currentCase.name}` : '未打开（在右侧案例库单击选择）'],
-    ['当前任务', contextTask],
+    [t('case.currentSchema'), currentSchema?.name || t('common.notSelected')],
+    [t('v2.context.case'), currentCase ? `${currentCase.name}` : t('v2.context.noCase')],
+    [t('v2.context.task'), t(contextTask)],
   ];
 
   const buildSystemPrompt = () => [
@@ -50,26 +52,26 @@ export default function CopilotRail({ onShowLogin }) {
     '2. 不声称因果关系，图谱相似不等于经验可迁移；',
     '3. 区分「资料未说明(not_evidenced)」和「明确受阻(blocked)」；',
     '4. 回答应基于研究者提供的上下文与查询结果，不编造证据。',
-    `当前上下文：Schema=${currentSchema?.name || '未选择'}；案例=${currentCase?.name || '未打开'}；任务=${contextTask}。`,
+    `当前上下文：Schema=${currentSchema?.name || '未选择'}；案例=${currentCase?.name || '未打开'}；任务=${t(contextTask)}。`,
   ].join('\n');
 
-  const handleSend = async () => {
-    const text = input.trim();
+  // 发送逻辑（参数化为文本）：登录 / AI 配置等分支都保留在这里，
+  // 供输入框 handleSend 与「问AI」种子共用
+  const sendText = useCallback(async (raw) => {
+    const text = String(raw || '').trim();
     if (!text || sending) return;
     if (!isAuthenticated) return onShowLogin?.();
 
     if (!ai.configStatus.configured) {
       setMessages((m) => [...m,
         { role: 'user', content: text },
-        { role: 'assistant', content: '尚未配置 AI 服务。请点击顶部「AI设置」配置 Endpoint 与 API Key 后再使用对话功能。', hint: true },
+        { role: 'assistant', content: t('v2.ai.notConfiguredHint'), hint: true },
       ]);
-      setInput('');
       return;
     }
 
     const next = [...messages, { role: 'user', content: text }];
     setMessages(next);
-    setInput('');
     setSending(true);
     try {
       const payload = [
@@ -77,41 +79,54 @@ export default function CopilotRail({ onShowLogin }) {
         ...next.slice(-12).map((m) => ({ role: m.role, content: m.content })),
       ];
       const data = await aiApi.proxy(payload);
-      const reply = data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text || '(空响应)';
+      const reply = data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text || t('v2.ai.emptyResponse');
       setMessages((m) => [...m, { role: 'assistant', content: reply }]);
     } catch (e) {
-      setMessages((m) => [...m, { role: 'assistant', content: `请求失败：${e.message}`, hint: true }]);
+      setMessages((m) => [...m, { role: 'assistant', content: t('v2.ai.requestFailed', { msg: e.message }), hint: true }]);
     } finally {
       setSending(false);
     }
+  }, [messages, sending, isAuthenticated, onShowLogin, ai.configStatus.configured, t,
+    currentSchema?.name, currentCase?.name, contextTask]); // buildSystemPrompt 只读这些值
+
+  const handleSend = () => {
+    const text = input.trim();
+    if (!text || sending) return;
+    sendText(text);
+    // 与原行为一致：已登录才清空输入（未登录时唤起登录框、保留草稿）
+    if (isAuthenticated) setInput('');
   };
+
+  // 「问AI」种子：任何视图 askCopilot() 后自动发送。
+  // 用 ts 去重（ref 记录上次已处理的 ts），经 sendTextRef 调用最新 sendText 避免 stale closure
+  const sendTextRef = useRef(sendText);
+  useEffect(() => { sendTextRef.current = sendText; }, [sendText]);
+  const lastSeedTsRef = useRef(0);
+  const seedTs = copilotSeed?.ts;
+  useEffect(() => {
+    if (!seedTs || seedTs === lastSeedTsRef.current) return;
+    lastSeedTsRef.current = seedTs;
+    sendTextRef.current?.(copilotSeed.text);
+  }, [seedTs, copilotSeed]);
 
   return (
     <div className="ws-copilot">
-      {/* 顶部账户与 AI 配置区（Spec §3.1.1） */}
+      {/* 顶部账户与 AI 配置区（账户信息移至顶栏左上角） */}
       <div className="ws-account-strip">
         {isAuthenticated ? (
           <>
             <span className="ws-account-dot" />
-            <User size={13} className="ws-account-user" />
-            <span className="ws-account-name" title={user?.username}>{user?.username}</span>
             <span className={`ws-ai-status ${ai.configStatus.configured ? 'ok' : 'off'}`}>
-              AI：{ai.configStatus.configured ? '已配置' : '未配置'}
+              {ai.configStatus.configured ? t('v2.ai.configured') : t('v2.ai.unconfigured')}
             </span>
-            <button className="ws-account-btn" onClick={ai.handleOpenSettings} title="AI 设置">
-              <Settings size={14} /> AI设置
-            </button>
-            <button className="ws-account-btn" onClick={logout} title="退出登录">
-              <LogOut size={13} />
+            <button className="ws-account-btn" onClick={ai.handleOpenSettings} title={t('v2.ai.settingsTitle')}>
+              <Settings size={14} /> {t('v2.ai.settings')}
             </button>
           </>
         ) : (
           <>
             <span className="ws-account-dot off" />
-            <span className="ws-account-name">未登录（可浏览，AI 功能需登录）</span>
-            <button className="ws-account-btn primary" onClick={onShowLogin}>
-              <LogIn size={13} /> 登录 / 注册
-            </button>
+            <span className="ws-account-name">{t('v2.ai.guestNote')}</span>
           </>
         )}
       </div>
@@ -131,9 +146,9 @@ export default function CopilotRail({ onShowLogin }) {
         {messages.length === 0 && (
           <div className="ws-chat-empty">
             <Sparkles size={22} />
-            <p>向 AI Copilot 提问</p>
-            <span>例如：对比 C003 与 C007 的组织响应差异；这个案例还有哪些证据缺口？</span>
-            <span className="ws-chat-note">AI 建议不会自动修改 Schema、案例或比较集</span>
+            <p>{t('v2.ai.empty')}</p>
+            <span>{t('v2.ai.emptyExample')}</span>
+            <span className="ws-chat-note">{t('v2.ai.emptyNote')}</span>
           </div>
         )}
         {messages.map((m, i) => (
@@ -142,7 +157,7 @@ export default function CopilotRail({ onShowLogin }) {
             <div className="ws-msg-bubble">{m.content}</div>
           </div>
         ))}
-        {sending && <div className="ws-msg assistant"><div className="ws-msg-bubble typing">正在思考…</div></div>}
+        {sending && <div className="ws-msg assistant"><div className="ws-msg-bubble typing">{t('v2.ai.thinking')}</div></div>}
       </div>
 
       <div className="ws-chat-input">
@@ -152,18 +167,18 @@ export default function CopilotRail({ onShowLogin }) {
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
           }}
-          placeholder={isAuthenticated ? '输入问题，Enter 发送，Shift+Enter 换行' : '登录后可用 AI 对话'}
+          placeholder={isAuthenticated ? t('v2.ai.inputPlaceholder') : t('v2.ai.guestPlaceholder')}
           rows={2}
           disabled={sending}
         />
-        <button className="ws-chat-send" onClick={handleSend} disabled={sending || !input.trim()} title="发送">
+        <button className="ws-chat-send" onClick={handleSend} disabled={sending || !input.trim()} title={t('v2.ai.send')}>
           <Send size={15} />
         </button>
       </div>
 
       {messages.some((m) => m.hint) && !ai.configStatus.configured && isAuthenticated && (
         <div className="ws-config-hint" onClick={ai.handleOpenSettings}>
-          <AlertCircle size={13} /> 未配置 AI 服务，点击配置
+          <AlertCircle size={13} /> {t('v2.ai.configBanner')}
         </div>
       )}
 

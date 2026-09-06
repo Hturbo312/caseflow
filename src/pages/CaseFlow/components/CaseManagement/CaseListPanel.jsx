@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { Plus, PanelRightClose, GitCompare, X } from 'lucide-react';
+import { Plus, PanelRightClose, GitCompare, X, FileUp } from 'lucide-react';
 import { useI18n } from '../../../../i18n';
 import { useCompareStore } from '../../../../store/compareStore';
 import CaseCard from './CaseCard';
@@ -20,6 +20,8 @@ const CaseListPanel = ({
   handleCaseSelect,
   handleCaseDeselect,
   onDeleteCase,
+  onPreviewCase,
+  onImport,
   getCaseSchemaName,
   setMainView,
   isAuthenticated,
@@ -91,6 +93,9 @@ const CaseListPanel = ({
             >
               <Plus size={16} />
             </button>
+            <button className="v2-import-btn" onClick={onImport} title={t('ux.import.button')}>
+              <FileUp size={13} /> {t('ux.import.button')}
+            </button>
           </div>
         </div>
       </div>
@@ -146,6 +151,9 @@ const CaseListPanel = ({
             onSelect={handleCaseSelect}
             onDeselect={handleCaseDeselect}
             onDelete={onDeleteCase}
+            onPreview={onPreviewCase}
+            isAuthenticated={isAuthenticated}
+            onShowLogin={onShowLogin}
             compareMode={picking}
             compareSelected={compareIds.includes(String(caseItem.id))}
             onToggleCompare={() => toggleCompare(caseItem.id)}

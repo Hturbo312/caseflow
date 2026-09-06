@@ -1,4 +1,5 @@
 import { Component } from 'react'
+import { zh, en } from '../../i18n/translations'
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -22,6 +23,9 @@ class ErrorBoundary extends Component {
 
   render() {
     if (this.state.hasError) {
+      // 类组件无法使用 useI18n hook：直接读 localStorage 的 locale（与 store 保持一致）
+      const locale = localStorage.getItem('caseflow_locale') || 'zh'
+      const t = (k) => (locale === 'en' ? en[k] : zh[k]) || k
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
           <div className="max-w-md w-full text-center">
@@ -44,11 +48,11 @@ class ErrorBoundary extends Component {
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
 
                 {/* 错误提示标题 */}
-                出现了一些问题
+                {t('error.boundary.title')}
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
                 {/* 错误提示描述 */}
-                页面遇到了意外错误，请尝试刷新页面。如果问题持续存在，请联系技术支持。
+                {t('error.boundary.desc')}
               </p>
             </div>
 
@@ -58,13 +62,13 @@ class ErrorBoundary extends Component {
                 className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
               >
                 {/* 重新加载按钮 */}
-                重新加载
+                {t('error.boundary.reload')}
               </button>
 
               {process.env.NODE_ENV === 'development' && this.state.error && (
                 <details className="text-left mt-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
                   <summary className="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300">
-                    错误详情
+                    {t('error.boundary.details')}
                   </summary>
                   <pre className="mt-2 text-xs text-red-600 dark:text-red-400 whitespace-pre-wrap break-words overflow-auto max-h-48">
                     {this.state.error.toString()}

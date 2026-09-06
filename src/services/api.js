@@ -1,5 +1,19 @@
 // API 服务层 - 封装所有后端API调用
 import { API_BASE_URL, TOKEN_KEY, authHelper } from '../utils';
+import { v2zh, v2en } from '../i18n/translations.v2';
+
+// 非 React 环境（service 层）的双语文案：按 localStorage 语言取词，缺 key 时原样返回
+function tr(key, params) {
+  const locale = localStorage.getItem('caseflow_locale');
+  const dict = locale === 'en' ? v2en : v2zh;
+  let str = dict[key] || key;
+  if (params) {
+    Object.keys(params).forEach((k) => {
+      str = str.replace(`{${k}}`, params[k]);
+    });
+  }
+  return str;
+}
 
 // 通用请求函数
 async function request(endpoint, options = {}) {
@@ -25,7 +39,7 @@ async function request(endpoint, options = {}) {
     if (!contentType.includes('application/json')) {
       const text = await response.text();
       const preview = text.substring(0, 100).replace(/<[^>]*>/g, '').trim();
-      throw new Error(`服务器返回非 JSON 响应 (HTTP ${response.status})：${preview || '未知错误'}`);
+      throw new Error(tr('api.error.nonJson', { status: response.status, preview: preview || tr('api.error.unknown') }));
     }
 
     const data = await response.json();
@@ -43,7 +57,7 @@ async function request(endpoint, options = {}) {
   } catch (error) {
     if (error.name === 'SyntaxError' && error.message.includes('JSON')) {
       console.error(`API Error [${endpoint}]: 响应不是有效的 JSON 格式`);
-      throw new Error('API 响应格式异常，请检查后端服务是否正常运行');
+      throw new Error(tr('api.error.badResponse'));
     }
     console.error(`API Error [${endpoint}]:`, error);
     throw error;
@@ -297,7 +311,7 @@ export const agentApi = {
       }
 
       if (!response.body) {
-        onError?.('响应体为空');
+        onError?.(tr('api.error.emptyBody'));
         return;
       }
       const reader = response.body.getReader();
@@ -345,7 +359,7 @@ export const agentApi = {
         }
       }
     } catch (error) {
-      onError?.(error.message || 'SSE 流式调用异常');
+      onError?.(error.message || tr('api.error.sseFailed'));
     }
   },
 

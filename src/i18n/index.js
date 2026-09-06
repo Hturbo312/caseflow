@@ -1,8 +1,12 @@
 import { useMemo } from 'react';
 import { useAuthStore } from '@store';
 import { zh, en } from './translations';
+import { v2zh, v2en } from './translations.v2';
 
-const dictionaries = { zh, en };
+const dictionaries = {
+  zh: { ...zh, ...v2zh },
+  en: { ...en, ...v2en },
+};
 
 export function useI18n() {
   const locale = useAuthStore((s) => s.locale);

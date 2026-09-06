@@ -3,6 +3,20 @@
  * 提供案例状态管理、格式化、验证等工具函数
  */
 
+import { zh, en } from '../../../../../i18n/translations';
+
+// 非组件模块：直接读 localStorage 的 locale（与 store / ErrorBoundary 的模式一致）
+const tr = (key, params) => {
+  const locale = localStorage.getItem('caseflow_locale') || 'zh';
+  let str = (locale === 'en' ? en[key] : zh[key]) || key;
+  if (params) {
+    Object.keys(params).forEach((k) => {
+      str = str.replace(`{${k}}`, params[k]);
+    });
+  }
+  return str;
+};
+
 // ==================== 状态相关 ====================
 
 /**
@@ -19,27 +33,27 @@ export const CASE_STATUS = {
 };
 
 /**
- * 案例状态列表（用于下拉选择等场景）
+ * 案例状态列表（用于下拉选择等场景；label 为 i18n key，渲染处需用 t() 转换）
  * @constant {Array<{value: string, label: string, className: string}>}
  */
 export const CASE_STATUS_LIST = [
-  { value: CASE_STATUS.PLANNING, label: '规划中', className: 'planning' },
-  { value: CASE_STATUS.ACTIVE, label: '进行中', className: 'active' },
-  { value: CASE_STATUS.COMPLETED, label: '已完成', className: 'completed' }
+  { value: CASE_STATUS.PLANNING, label: 'case.planning', className: 'planning' },
+  { value: CASE_STATUS.ACTIVE, label: 'case.inProgress', className: 'active' },
+  { value: CASE_STATUS.COMPLETED, label: 'case.completed', className: 'completed' }
 ];
 
 /**
- * 获取状态的中文显示文本
+ * 获取状态对应的 i18n key（渲染处需用 t() 转换）
  * @param {string} status - 案例状态值
- * @returns {string} 状态的中文文本
+ * @returns {string} 状态的 i18n key
  */
 export const getStatusText = (status) => {
-  const textMap = {
-    [CASE_STATUS.ACTIVE]: '进行中',
-    [CASE_STATUS.COMPLETED]: '已完成',
-    [CASE_STATUS.PLANNING]: '规划中'
+  const keyMap = {
+    [CASE_STATUS.ACTIVE]: 'case.inProgress',
+    [CASE_STATUS.COMPLETED]: 'case.completed',
+    [CASE_STATUS.PLANNING]: 'case.planning'
   };
-  return textMap[status] || '规划中';
+  return keyMap[status] || 'case.planning';
 };
 
 /**
@@ -64,36 +78,37 @@ export const getCaseStatus = (caseItem) => {
  * @param {string|Date|number} date - 日期值
  * @param {Object} options - 格式化选项
  * @param {string} [options.format='year'] - 格式类型: 'year' | 'full' | 'relative'
- * @param {string} [options.fallback='未知年份'] - 空值时的默认文本
+ * @param {string} [options.fallback] - 空值时的默认文本（缺省为 'case.unknownYear' 的译文）
  * @returns {string} 格式化后的日期字符串
  * @example
  * formatCaseDate('2024') // 返回 '2024'
  * formatCaseDate(new Date(), { format: 'full' }) // 返回 '2024年1月1日'
  */
 export const formatCaseDate = (date, options = {}) => {
-  const { format = 'year', fallback = '未知年份' } = options;
+  const { format = 'year', fallback } = options;
+  const fb = () => (fallback != null ? fallback : tr('case.unknownYear'));
 
-  if (!date) return fallback;
+  if (!date) return fb();
 
   try {
     const dateObj = typeof date === 'string' && /^\d{4}$/.test(date)
       ? new Date(parseInt(date), 0, 1)
       : new Date(date);
 
-    if (isNaN(dateObj.getTime())) return fallback;
+    if (isNaN(dateObj.getTime())) return fb();
 
     switch (format) {
       case 'year':
         return dateObj.getFullYear().toString();
       case 'full':
-        return `${dateObj.getFullYear()}年${dateObj.getMonth() + 1}月${dateObj.getDate()}日`;
+        return tr('time.fullDate', { y: dateObj.getFullYear(), m: dateObj.getMonth() + 1, d: dateObj.getDate() });
       case 'relative':
         return formatRelativeDate(dateObj);
       default:
         return dateObj.getFullYear().toString();
     }
   } catch {
-    return fallback;
+    return fb();
   }
 };
 
@@ -109,17 +124,17 @@ const formatRelativeDate = (date) => {
   const diffMonths = Math.floor(diffDays / 30);
   const diffYears = Math.floor(diffDays / 365);
 
-  if (diffYears > 0) return `${diffYears}年前`;
-  if (diffMonths > 0) return `${diffMonths}个月前`;
-  if (diffDays > 0) return `${diffDays}天前`;
-  return '今天';
+  if (diffYears > 0) return tr('time.yearsAgo', { count: diffYears });
+  if (diffMonths > 0) return tr('time.monthsAgo', { count: diffMonths });
+  if (diffDays > 0) return tr('session.daysAgoShort', { count: diffDays });
+  return tr('session.today');
 };
 
 /**
  * 格式化案例地点
  * @param {string|Object} location - 地点字符串或案例对象
  * @param {Object} [options] - 格式化选项（当第一个参数是字符串时）
- * @param {string} [options.fallback='未知地点'] - 空值时的默认文本
+   * @param {string} [options.fallback] - 空值时的默认文本（缺省为 'case.unknownLocation' 的译文）
  * @param {boolean} [options.short=false] - 是否使用短格式（只显示城市）
  * @param {string} [options.yearFallback='未知年份'] - 年份的默认文本（仅当传入案例对象时使用）
  * @returns {string|{location: string, year: string}} 格式化后的地点字符串或包含地点和年份的对象
@@ -134,14 +149,14 @@ export const formatCaseLocation = (location, options = {}) => {
   // 支持传入案例对象
   if (location && typeof location === 'object' && !options.fallback) {
     const caseItem = location;
-    const loc = caseItem.location || '未知地点';
-    const year = caseItem.year || '未知年份';
+    const loc = caseItem.location || tr('case.unknownLocation');
+    const year = caseItem.year || tr('case.unknownYear');
     return `${loc} · ${year}`;
   }
 
-  const { fallback = '未知地点', short = false } = options;
+  const { fallback, short = false } = options;
 
-  if (!location) return fallback;
+  if (!location) return fallback != null ? fallback : tr('case.unknownLocation');
 
   if (short) {
     // 提取城市名称（去掉省市后缀）
@@ -181,29 +196,29 @@ export const calculateTopologyMetrics = (entityCount, relationCount) => {
  * @returns {{valid: boolean, errors: string[]}} 验证结果对象
  * @example
  * validateCaseForm({ name: '测试案例' }) // 返回 { valid: true, errors: [] }
- * validateCaseForm({ name: '' }) // 返回 { valid: false, errors: ['请输入案例名称'] }
+ * validateCaseForm({ name: '' }) // 返回 { valid: false, errors: ['validation.caseNameRequired'] }
  */
 export const validateCaseForm = (form) => {
   const errors = [];
 
   // 名称验证（必填）
   if (!form?.name?.trim()) {
-    errors.push('请输入案例名称');
+    errors.push(tr('validation.caseNameRequired'));
   }
 
   // 年份验证（如果提供了年份，验证格式）
   if (form?.year && !/^\d{4}$/.test(form.year.trim())) {
-    errors.push('年份格式不正确，请输入4位数字');
+    errors.push(tr('validation.yearInvalid'));
   }
 
   // 名称长度验证
   if (form?.name && form.name.length > 100) {
-    errors.push('案例名称不能超过100个字符');
+    errors.push(tr('validation.caseNameTooLong'));
   }
 
   // 描述长度验证
   if (form?.description && form.description.length > 2000) {
-    errors.push('案例描述不能超过2000个字符');
+    errors.push(tr('validation.caseDescTooLong'));
   }
 
   return {

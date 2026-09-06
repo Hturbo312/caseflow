@@ -2,6 +2,8 @@ import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { UserCircle, FolderKanban, Zap, FileText, BarChart3 } from 'lucide-react';
 import { useCanvasStore } from '@store/canvasStore';
+import { useI18n } from '@/i18n';
+import { pick } from '@/i18n/pick';
 
 const iconMap = {
   intro: UserCircle,
@@ -12,11 +14,11 @@ const iconMap = {
 };
 
 const typeLabelMap = {
-  intro: 'About',
-  project: 'Project',
-  skill: 'Skill',
-  blog: 'Writing',
-  dataviz: 'Data',
+  intro: { zh: '关于', en: 'About' },
+  project: { zh: '项目', en: 'Project' },
+  skill: { zh: '技能', en: 'Skill' },
+  blog: { zh: '写作', en: 'Writing' },
+  dataviz: { zh: '数据', en: 'Data' },
 };
 
 /**
@@ -24,6 +26,7 @@ const typeLabelMap = {
  * 使用 Framer Motion drag + 内联 transform，不与 animate 冲突
  */
 function GraphNode({ node }) {
+  const { locale } = useI18n();
   const { setActiveNode, nodePositions, setNodePosition } = useCanvasStore();
   const [isHovered, setIsHovered] = useState(false);
 
@@ -89,11 +92,11 @@ function GraphNode({ node }) {
               letterSpacing: '-0.01em',
             }}
           >
-            {node.label}
+            {pick(node.label, locale)}
           </span>
         </div>
         <span style={{ fontSize: 11, color: '#888', letterSpacing: '0.02em' }}>
-          {typeLabelMap[node.type]}
+          {pick(typeLabelMap[node.type], locale)}
         </span>
       </div>
     </motion.div>

@@ -89,8 +89,12 @@ export const useAuthStore = create((set) => ({
   // 清除错误
   clearError: () => set({ error: null }),
 
-  // 语言设置
-  locale: localStorage.getItem('caseflow_locale') || 'zh',
+  // 语言设置（?lang=en/zh URL 参数优先，便于分享与测试）
+  locale: (() => {
+    const q = new URLSearchParams(window.location.search).get('lang');
+    if (q === 'zh' || q === 'en') return q;
+    return localStorage.getItem('caseflow_locale') || 'zh';
+  })(),
   setLocale: (locale) => {
     localStorage.setItem('caseflow_locale', locale);
     set({ locale });
@@ -187,6 +191,9 @@ export const useSchemaStore = create((set, get) => ({
   isLoading: false,
 
   setCurrentSchema: (id) => set({ currentSchemaId: id }),
+
+  // 访客演示模式：装载内置演示 Schema，免登录即可浏览图谱
+  loadDemoSchema: () => set({ schemas: [{ ...DEFAULT_SCHEMA }], currentSchemaId: 'default', isLoading: false }),
 
   // 从 API 加载 Schemas
   loadSchemas: async () => {
@@ -612,6 +619,13 @@ export const useCaseStore = create((set, get) => ({
       set({ isLoading: false });
     }
   },
+
+  // 访客演示模式：装载内置演示案例（只读，写操作会引导登录）
+  loadDemoCases: () => set(() => ({
+    cases: DEFAULT_CASES.map(c => ({ ...c, isDemo: true })),
+    currentCaseId: DEFAULT_CASES[0]?.id || null,
+    isLoading: false,
+  })),
 
   // 创建案例（调用 API）
   createCase: async (caseData) => {
