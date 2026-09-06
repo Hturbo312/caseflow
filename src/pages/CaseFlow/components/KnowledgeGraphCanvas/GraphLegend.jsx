@@ -6,10 +6,11 @@ const GraphLegend = ({ entityTypes, onClose }) => {
   return (
     <div
       className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 z-10 bg-white rounded-lg shadow-md border border-gray-200 p-2 sm:p-3"
+      style={{ maxWidth: 'calc(100% - 32px)', maxHeight: 'calc(100% - 32px)', display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden', boxSizing: 'border-box' }}
       role="region"
       aria-label={t('legend.title')}
     >
-      <div className="flex items-center justify-between mb-2 gap-2">
+      <div className="flex shrink-0 items-center justify-between mb-2 gap-2">
         <h4 className="text-xs font-semibold text-gray-500">{t('legend.title')}</h4>
         {/* 命中区 ≥24px：-m 抵消内边距保持视觉尺寸不变，避免大屏上点不准 */}
         <button
@@ -21,14 +22,14 @@ const GraphLegend = ({ entityTypes, onClose }) => {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
-      <div className="space-y-1.5">
+      <div className="space-y-1.5" style={{ minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain' }} tabIndex={0} aria-label="图例类型列表">
         {entityTypes?.map(type => (
           <div key={type.id} className="flex items-center gap-2">
             <div
-              className="w-3 h-3 rounded-full"
+              className="w-3 h-3 rounded-full shrink-0"
               style={{ backgroundColor: type.color }}
             />
-            <span className="text-xs text-gray-600">{type.name}</span>
+            <span className="text-xs text-gray-600" style={{ minWidth: 0, overflowWrap: 'anywhere' }}>{type.name}</span>
           </div>
         ))}
       </div>

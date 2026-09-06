@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Settings, Send, Sparkles, AlertCircle } from 'lucide-react';
+import { Settings, Send, Sparkles, AlertCircle, Shield } from 'lucide-react';
 import { useAuthStore, useSchemaStore, useCaseStore } from '../../../../store';
 import { useWorkspaceStore } from '../../../../store/workspaceStore';
 import { useI18n } from '../../../../i18n';
 import { aiApi } from '../../../../services/api';
 import { useAIConfig } from '../CaseExtractor/hooks/useAIConfig';
 import SettingsModal from '../CaseExtractor/SettingsModal';
+import ResearchAgent from './ResearchAgent';
+import AdminPanel from './AdminPanel';
 
 /**
  * 左栏 AI Copilot（Spec §3.1）
@@ -14,13 +16,14 @@ import SettingsModal from '../CaseExtractor/SettingsModal';
  */
 export default function CopilotRail({ onShowLogin }) {
   const { t } = useI18n();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const { schemas, currentSchemaId } = useSchemaStore();
   const { cases } = useCaseStore();
-  const { caseDetailId, contextTask, copilotSeed } = useWorkspaceStore();
+  const { caseDetailId, contextTask, copilotSeed, extractorOpen, setExtractorOpen } = useWorkspaceStore();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
   const [sending, setSending] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
   const listRef = useRef(null);
 
   // AI 配置（复用 CaseExtractor 的配置逻辑与设置弹窗）
@@ -122,6 +125,11 @@ export default function CopilotRail({ onShowLogin }) {
             <button className="ws-account-btn" onClick={ai.handleOpenSettings} title={t('v2.ai.settingsTitle')}>
               <Settings size={14} /> {t('v2.ai.settings')}
             </button>
+            {user?.role === 'admin' && (
+              <button className="ws-account-btn" onClick={() => setAdminOpen(true)} title="管理员后台：用户管理">
+                <Shield size={14} /> 用户管理
+              </button>
+            )}
           </>
         ) : (
           <>
@@ -141,6 +149,8 @@ export default function CopilotRail({ onShowLogin }) {
         ))}
       </div>
 
+      <div className="copilot-modes"><button aria-pressed={!extractorOpen} onClick={() => setExtractorOpen(false)}>讨论</button><button aria-pressed={extractorOpen} onClick={() => isAuthenticated ? setExtractorOpen(true) : onShowLogin?.()}>材料 Agent</button></div>
+      {extractorOpen ? <ResearchAgent key={caseDetailId} configured={ai.configStatus.configured} onSettings={ai.handleOpenSettings} /> : <>
       {/* 对话主体 */}
       <div className="ws-chat" ref={listRef}>
         {messages.length === 0 && (
@@ -182,6 +192,8 @@ export default function CopilotRail({ onShowLogin }) {
         </div>
       )}
 
+      </>}
+      <AdminPanel isOpen={adminOpen} onClose={() => setAdminOpen(false)} />
       <SettingsModal
         showSettings={ai.showSettings}
         isAuthenticated={isAuthenticated}

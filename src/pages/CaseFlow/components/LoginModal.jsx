@@ -4,7 +4,7 @@ import { X, User, Lock, Mail, Loader2, LogIn, UserPlus } from 'lucide-react';
 import { useAuthStore } from '../../../store';
 import { useI18n } from '../../../i18n';
 
-const LoginModal = ({ isOpen, onClose }) => {
+const LoginModal = ({ isOpen, onClose, locked = false }) => {
   const { t } = useI18n();
   const { login, register, isLoading, error, clearError } = useAuthStore();
   const [mode, setMode] = useState('login'); // 'login' | 'register'
@@ -44,7 +44,7 @@ const LoginModal = ({ isOpen, onClose }) => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={onClose}
+          onClick={() => { if (!locked) onClose(); }}
         >
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
@@ -72,12 +72,14 @@ const LoginModal = ({ isOpen, onClose }) => {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
+              {!locked && (
+                <button
+                  onClick={onClose}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              )}
             </div>
 
             {/* Error Message */}

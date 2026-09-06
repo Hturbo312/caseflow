@@ -6,6 +6,7 @@ import KnowledgeGraphCanvas from '../KnowledgeGraphCanvas';
 import { locateEvidence } from './sourceLocator';
 import './research.css';
 import { ResearchLens } from './FrameworkGuide';
+import ThreeLayerCase from './ThreeLayerCase';
 
 const sessions = new Map();
 const statuses = { pending: '待审核', confirmed: '已确认', rejected: '已驳回' };
@@ -148,10 +149,12 @@ function CaseSession({ item, onShowLogin }) {
       <button aria-pressed={view === 'graph'} onClick={() => setView('graph')}>关系图</button>
       <button aria-expanded={sourceOpen} onClick={() => setSourceOpen(v => !v)}>{sourceOpen ? '收起原文' : '打开原文'}</button>
     </div><ResearchLens caseItem={item} /></header>
+    {view === 'read' && <ThreeLayerCase />}
+    <details open={view === 'graph'} className="legacy-research"><summary>{view === 'graph' ? '正式图谱与已有证据' : '已有案例记录与旧版原文（保留，不覆盖）'}</summary>
     <div className={`research-split ${sourceOpen ? '' : 'single'}`}>
       <div className="research-content" ref={reading} onScroll={e => { readPosition.current = e.currentTarget.scrollTop; sessions.set(String(item.id), { view, sourceOpen, scroll: readPosition.current }); }}>
         {view === 'graph' ? <div className="research-graph"><KnowledgeGraphCanvas isAuthenticated onShowLogin={onShowLogin} onInspectEntity={n => select(n, 'entity')} onInspectRelation={r => select(r, 'relation')} /></div> : <>
-          <section><small>案例整理稿 · 核查内容请查看原文</small><p className="research-prose">{item.description || '尚未填写案例整理稿。可先阅读右侧原文。'}</p></section>
+          <section><small>原有案例简介 · 非带引用的整理版本</small><p className="research-prose">{item.description || '尚未填写案例简介。'}</p></section>
           <div className="research-actions"><input aria-label="查找实体与关系" placeholder="查找实体、关系…" value={q} onChange={e => setQ(e.target.value)} /><label><input type="checkbox" checked={pending} onChange={e => setPending(e.target.checked)} />仅待审核</label></div>
           {error && <p role="alert">审核数据读取失败：{error} <button onClick={() => reload().then(() => setError('')).catch(e => setError(e.message))}>重试</button></p>}
           {['entity', 'relation'].map(type => {
@@ -163,6 +166,6 @@ function CaseSession({ item, onShowLogin }) {
         {selection && <div ref={inspector}><button onClick={() => setSelection(null)}>关闭所选记录</button><EvidenceInspector key={`${selection.type}:${selection.item.id}`} {...selection} onLocate={locate} onUpdated={reload} /></div>}
       </div>
       {sourceOpen && <SourceReader caseId={item.id} evidence={evidence} />}
-    </div>
+    </div></details>
   </div>;
 }

@@ -1,0 +1,29 @@
+.agent-task { flex:1; min-height:0; overflow:auto; padding:18px; line-height:1.6; }
+.agent-task h3,.three-layer h3 { font-size:1.1rem; margin:0 0 8px; }
+.agent-task h4,.three-layer h4 { font-size:1rem; margin:0 0 10px; }
+.agent-task section,.agent-task details { border-top:1px solid #deded5; padding:16px 0; }
+.agent-task label,.three-layer label { display:block; margin:10px 0; font-size:.85rem; }
+.agent-task input,.agent-task textarea,.three-layer select { display:block; width:100%; min-width:0; padding:8px; background:white; border:1px solid #cbd0cf; border-radius:6px; font:inherit; }
+.agent-task input[type=file] { font-size:.8rem; }
+.agent-task button,.three-layer button { padding:7px 10px; border:1px solid #cbd0cf; border-radius:6px; background:#f4f5f0; font-size:.85rem; white-space:normal; overflow-wrap:anywhere; }
+.agent-task button:disabled,.three-layer button:disabled { opacity:.5; cursor:not-allowed; }
+.agent-task small,.three-layer small { display:block; color:#646c6c; font-size:.8rem; }
+.copilot-modes { display:flex; gap:6px; padding:10px 14px; border-bottom:1px solid #deded5; }
+.copilot-modes button { flex:1; padding:8px; border-radius:6px; }
+.copilot-modes button[aria-pressed=true] { color:white; background:#24444c; }
+.research-case { overflow:auto; }
+.research-case > .research-head,.three-layer { flex-shrink:0; }
+.legacy-research { padding:0 16px; flex-shrink:0; }
+.legacy-research > .research-split { min-height:450px; max-height:75vh; }
+.three-layer { padding:20px; min-width:0; }
+.three-layer-reading { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:16px; margin:18px 0; align-items:start; }
+.draft-pane,.raw-pane,.knowledge-pane { min-width:0; padding:16px; border:1px solid #deded5; background:#fffefb; border-radius:10px; }
+.three-layer article { padding:12px 0; border-bottom:1px solid #e7e7df; overflow-wrap:anywhere; }
+.three-layer article.selected { background:#f4edd5; box-shadow:inset 3px 0 #a98c44; padding-left:10px; }
+.three-layer article p { white-space:pre-wrap; line-height:1.8; }
+.three-layer article button { margin:3px; }
+.raw-pane { position:sticky; top:12px; }
+.raw-text { white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.8; max-height:55vh; overflow:auto; margin-top:14px; }
+.source-uri { overflow-wrap:anywhere; font-size:.8rem; }
+.three-layer mark { background:#ffe69b; }
+@media(max-width:1100px) { .three-layer-reading { grid-template-columns:minmax(0,1fr); } .raw-pane { position:static; } }

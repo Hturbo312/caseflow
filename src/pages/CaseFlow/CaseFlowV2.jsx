@@ -18,7 +18,6 @@ import CasePreviewCard from './components/Workspace/CasePreviewCard';
 import CommandPalette from './components/CommandPalette';
 import KnowledgeGraphCanvas from './components/KnowledgeGraphCanvas';
 import LoginModal from './components/LoginModal';
-import AICopilot from './components/CaseExtractor';
 import { CaseListPanel, CreateCaseModal } from './components/CaseManagement';
 import './CaseFlow.css';
 import './components/CaseManagement/CaseCard.css';
@@ -67,6 +66,7 @@ const CaseFlowV2 = () => {
   const [rightCollapsed, setRightCollapsed] = useState(false);
   const [researchTab, setResearchTab] = useState('case');
   const showLogin = useCallback(() => setShowLoginModal(true), []);
+  useEffect(() => { if (extractorOpen) setLeftCollapsed(false); }, [extractorOpen]);
 
   // 登录用户：从 API 初始化；访客：装载演示数据（只读浏览，写操作引导登录）
   useEffect(() => {
@@ -150,8 +150,40 @@ const CaseFlowV2 = () => {
     compact: true, // 紧凑卡片：详情统一在中栏 Case 工作区
   };
 
+  // 未登录门禁：只呈现登录功能框，任何案例/图谱/分析内容均不渲染
+  if (!isAuthenticated) {
+    return (
+      <div className="v2-shell v2-guest">
+        <header className="v2-topbar">
+          <div className="v2-brand">
+            <div className="v2-brand-name">CaseFlow</div>
+          </div>
+          <div className="v2-topbar-right">
+            <button
+              className="v2-lang-btn"
+              onClick={() => setLocale(locale === 'zh' ? 'en' : 'zh')}
+              title={locale === 'zh' ? 'Switch to English' : '切换到中文'}
+            >
+              {locale === 'zh' ? 'EN' : '中'}
+            </button>
+            <Link to="/caseflow/classic" className="v2-classic-link" title={t('v2.topbar.previousTitle')}>
+              <History size={13} /> {t('v2.topbar.previous')}
+            </Link>
+          </div>
+        </header>
+        <div className="v2-gate">
+          <div className="v2-gate-note">
+            <Database size={18} />
+            <p>案例集、图谱与研究分析仅对登录用户可见</p>
+          </div>
+        </div>
+        <LoginModal isOpen locked onClose={() => {}} />
+      </div>
+    );
+  }
+
   return (
-    <div className={`v2-shell${isAuthenticated ? '' : ' v2-guest'}`}>
+    <div className="v2-shell">
       {/* 顶栏：品牌 + 账户（左）｜ 三 tab（与中栏对齐）｜ 工具（右） */}
       <header className="v2-topbar">
         <div className="v2-brand">
@@ -275,19 +307,6 @@ const CaseFlowV2 = () => {
             />
           )}
 
-          {extractorOpen && (
-            <div className="v2-extract" role="dialog" aria-label={t('ux.import.title')}>
-              <div className="v2-extract-head">
-                <span className="v2-extract-title">{t('ux.import.title')}</span>
-                <button className="v2-extract-close" onClick={() => setExtractorOpen(false)} title={t('ux.import.close')} aria-label={t('ux.import.close')}>
-                  <X size={15} />
-                </button>
-              </div>
-              <div className="v2-extract-body">
-                <AICopilot onShowLogin={showLogin} />
-              </div>
-            </div>
-          )}
         </main>
 
         {/* 右栏 CaseLibrary（固定索引，Spec §3.3/§7.1） */}

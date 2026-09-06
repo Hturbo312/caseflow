@@ -24,6 +24,7 @@ import compareRoutes from './routes/compare.js';
 import reviewRoutes from './routes/review.js';
 import schemaVersionsRoutes from './routes/schemaVersions.js';
 import conceptsRoutes from './routes/concepts.js';
+import researchRoutes, { initializeResearch } from './routes/research.js';
 
 dotenv.config();
 
@@ -57,10 +58,12 @@ app.use('/api/compare', compareRoutes);
 app.use('/api/review', reviewRoutes);
 app.use('/api', schemaVersionsRoutes);
 app.use('/api/concepts', conceptsRoutes);
+app.use('/api/research', researchRoutes);
 
 // 启动服务器 - 设置较长超时（LLM 调用较慢）
 const server = app.listen(PORT, '0.0.0.0', async () => {
   await initializeDatabase();
+  await initializeResearch();
   startSessionCleanup(); // 启动会话清理定时器（只需一次）
   console.log(`Server running on http://0.0.0.0:${PORT}`);
   console.log(`Database: ${process.env.DB_NAME}`);

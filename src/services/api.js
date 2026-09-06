@@ -67,6 +67,11 @@ async function request(endpoint, options = {}) {
 // ============================================
 // Schema API
 // ============================================
+export const researchApi = {
+  get: id => request(`/research/${id}`),
+  act: (id, revision, action, payload) => request(`/research/${id}`, { method: 'POST', body: JSON.stringify({ revision, action, payload }) }),
+};
+
 export const schemaApi = {
   // 获取所有 Schema
   getAll: () => request('/schemas'),
@@ -556,4 +561,14 @@ export const schemaVersionApi = {
   freeze: (id) => request(`/schema-versions/${id}/freeze`, { method: 'POST' }),
   archive: (id) => request(`/schema-versions/${id}/archive`, { method: 'POST' }),
   changeLog: (id) => request(`/schema-versions/${id}/change-log`),
+};
+
+// ============================================
+// Admin API（管理员后台：用户管理，服务端 requireAdmin 守卫）
+// ============================================
+export const adminApi = {
+  users: () => request('/auth/users'),
+  createUser: (data) => request('/auth/users', { method: 'POST', body: JSON.stringify(data) }),
+  updateUser: (id, data) => request(`/auth/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteUser: (id) => request(`/auth/users/${id}`, { method: 'DELETE' }),
 };
