@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Database, FolderOpen, BarChart3, Share2, ChevronLeft, ChevronRight, LogIn, History,
-  User, LogOut, Search, X,
+  User, LogOut, X, Settings,
 } from 'lucide-react';
 import { useGraphStore, useSchemaStore, useCaseStore } from '../../store';
 import { useAuth } from '../../hooks';
@@ -15,8 +15,8 @@ import AnalysisWorkspace from './components/Workspace/ResearchAnalysis';
 import SchemaWorkspace from './components/Workspace/SchemaWorkspace';
 import WorkflowNav from './components/Workspace/WorkflowNav';
 import CasePreviewCard from './components/Workspace/CasePreviewCard';
-import CommandPalette from './components/CommandPalette';
 import KnowledgeGraphCanvas from './components/KnowledgeGraphCanvas';
+import UnifiedSettings from './components/Workspace/UnifiedSettings';
 import LoginModal from './components/LoginModal';
 import { CaseListPanel, CreateCaseModal } from './components/CaseManagement';
 import './CaseFlow.css';
@@ -61,7 +61,7 @@ const CaseFlowV2 = () => {
   } = useWorkspaceStore();
 
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [cmdkOpen, setCmdkOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
   const [researchTab, setResearchTab] = useState('case');
@@ -87,18 +87,6 @@ const CaseFlowV2 = () => {
     if (cases.length > 0 && currentSchemaId) loadAllCasesToGraph();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cases.length, currentSchemaId]);
-
-  // Ctrl/Cmd+K 全局命令面板
-  useEffect(() => {
-    const onKey = (e) => {
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
-        e.preventDefault();
-        setCmdkOpen((v) => !v);
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
 
   // 右栏单击 → 预览卡（不切 tab、不覆盖中栏）
   const onCasePreview = useCallback((caseItem) => {
@@ -195,6 +183,9 @@ const CaseFlowV2 = () => {
                 <User size={12} />
                 <span className="v2-user-name">{user?.username}</span>
               </span>
+              <button className="v2-user-settings" onClick={() => setSettingsOpen(true)} title={t('settings.title')}>
+                <Settings size={13} /> {t('settings.title')}
+              </button>
               <button className="v2-user-logout" onClick={logout} title={t('app.logout')}>
                 <LogOut size={12} />
               </button>
@@ -222,21 +213,6 @@ const CaseFlowV2 = () => {
         </nav>
 
         <div className="v2-topbar-right">
-          <button
-            className="v2-kbd-btn"
-            onClick={() => setCmdkOpen(true)}
-            title="Ctrl+K"
-            aria-label={t('ux.cmd.aria')}
-          >
-            <Search size={12} /> <span>Ctrl K</span>
-          </button>
-          <button
-            className="v2-lang-btn"
-            onClick={() => setLocale(locale === 'zh' ? 'en' : 'zh')}
-            title={locale === 'zh' ? 'Switch to English' : '切换到中文'}
-          >
-            {locale === 'zh' ? 'EN' : '中'}
-          </button>
           <Link to="/caseflow/classic" className="v2-classic-link" title={t('v2.topbar.previousTitle')}>
             <History size={13} /> {t('v2.topbar.previous')}
           </Link>
@@ -336,14 +312,7 @@ const CaseFlowV2 = () => {
         schemas={schemas}
         currentSchemaId={currentSchemaId}
       />
-      <CommandPalette
-        open={cmdkOpen}
-        onClose={() => setCmdkOpen(false)}
-        switchTab={switchTab}
-        onImport={() => setExtractorOpen(true)}
-        isAuthenticated={isAuthenticated}
-        onShowLogin={showLogin}
-      />
+      <UnifiedSettings isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
     </div>
   );

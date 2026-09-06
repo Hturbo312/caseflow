@@ -17,6 +17,7 @@ import { useI18n } from '../../../../i18n';
  */
 const SettingsModal = memo(({
   showSettings,
+  embedded = false,
   isAuthenticated,
   configStatus,
   localConfig,
@@ -31,29 +32,39 @@ const SettingsModal = memo(({
   const { t } = useI18n();
   if (!showSettings || !isAuthenticated) return null;
 
+  // embedded：作为统一设置弹窗的分区渲染（无遮罩、无关闭钮）
+  const Outer = embedded ? 'div' : motion.div;
+  const Card = embedded ? 'div' : motion.div;
+  const outerProps = embedded
+    ? { className: 'ws-settings-section' }
+    : {
+        initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 },
+        className: 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4',
+        onClick: onClose,
+      };
+  const cardProps = embedded
+    ? {}
+    : {
+        initial: { scale: 0.95, opacity: 0 }, animate: { scale: 1, opacity: 1 }, exit: { scale: 0.95, opacity: 0 },
+        onClick: (e) => e.stopPropagation(),
+      };
+
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.95, opacity: 0 }}
-        onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto"
+    <Outer {...outerProps}>
+      <Card
+        {...cardProps}
+        className={embedded ? '' : 'bg-white rounded-2xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto'}
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-cyan-500" />
             <h3 className="text-lg font-bold">{t('ai.aiConfig')}</h3>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
-            <X className="w-4 h-4" />
-          </button>
+          {!embedded && (
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {configStatus.configured && (
@@ -178,8 +189,8 @@ const SettingsModal = memo(({
             )}
           </div>
         </div>
-      </motion.div>
-    </motion.div>
+      </Card>
+    </Outer>
   );
 });
 

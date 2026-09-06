@@ -12,6 +12,37 @@
   overflow: hidden;
 }
 
+/* ============================================================
+   UI 字体层次（统一字阶：display 18 / title 15 / body 13 / meta 11.5 / caption 10.5）
+   ============================================================ */
+.v2-shell {
+  --fs-display: 18px;  /* 品牌 / 页面标题 */
+  --fs-title: 15px;    /* 卡片/面板标题 */
+  --fs-body: 13px;     /* 正文 */
+  --fs-meta: 11.5px;   /* 辅助信息 */
+  --fs-caption: 10.5px;/* 徽标 / 极小标注 */
+}
+/* 顶栏 */
+.v2-shell .v2-brand-name { font-size: var(--fs-display); font-weight: 800; letter-spacing: -0.01em; }
+.v2-shell .v2-user-chip .v2-user-name { font-size: var(--fs-body); font-weight: 600; }
+.v2-shell .v2-user-settings {
+  display: inline-flex; align-items: center; gap: 4px;
+  border: 1px solid #e5e7eb; background: #fff; border-radius: 7px;
+  font-size: 12px; font-weight: 600; color: #4b5563; padding: 5px 9px; cursor: pointer;
+}
+.v2-shell .v2-user-settings:hover { border-color: #a5f3fc; color: #0e7490; background: #ecfeff; }
+.v2-shell .v2-tab { font-size: var(--fs-body); font-weight: 600; }
+/* 面板标题统一 */
+.v2-shell .ws-chart-head h3 { font-size: var(--fs-title); font-weight: 800; }
+.v2-shell .ws-admin-head h2 { font-size: var(--fs-title); font-weight: 800; }
+.v2-shell .ws-settings-head h2 { font-size: var(--fs-title); font-weight: 800; }
+.v2-shell .ws-case-title h2 { font-size: 17px; font-weight: 800; }
+/* 正文与辅助文字统一 */
+.v2-shell .ws-chart-sub,
+.v2-shell .ws-fact-meta,
+.v2-shell .ws-ev-loc { font-size: var(--fs-meta); }
+.v2-shell .ws-badge { font-size: var(--fs-caption); }
+
 /* ---------- 顶栏 ---------- */
 .v2-topbar {
   height: 52px;
@@ -693,4 +724,61 @@
 @media (max-width: 1100px) {
   .ws-admin-tr { grid-template-columns: 1fr 1fr; }
   .ws-admin-th { display: none; }
+}
+
+
+/* ============================================================
+   统一设置弹窗（顶栏 ⚙：AI 配置 / 通用设置 / 用户管理）
+   ============================================================ */
+.ws-settings {
+  background: #fff; border-radius: 14px; width: min(860px, 96vw);
+  max-height: 88vh; display: flex; flex-direction: column; overflow: hidden;
+}
+.ws-settings-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px 10px; border-bottom: 1px solid #eef2f7;
+}
+.ws-settings-head h2 { margin: 0; font-size: 16px; font-weight: 800; }
+.ws-settings-body { display: grid; grid-template-columns: 180px 1fr; min-height: 0; overflow: hidden; }
+.ws-settings-nav {
+  border-right: 1px solid #eef2f7; padding: 10px; display: flex;
+  flex-direction: column; gap: 3px; background: #fbfdfe;
+}
+.ws-settings-nav-item {
+  display: flex; align-items: center; gap: 8px;
+  border: none; background: transparent; color: #4b5563;
+  font-size: 13px; font-weight: 600; padding: 9px 11px; border-radius: 8px;
+  cursor: pointer; text-align: left;
+}
+.ws-settings-nav-item:hover { background: #f1f5f9; }
+.ws-settings-nav-item.active { background: #ecfeff; color: #0e7490; }
+.ws-settings-content { padding: 16px 20px; overflow-y: auto; max-height: 70vh; }
+.ws-settings-section { max-width: 560px; }
+
+.ws-settings-field { margin-bottom: 20px; }
+.ws-settings-field > label {
+  display: block; font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 7px;
+}
+.ws-settings-seg { display: inline-flex; background: #f1f5f9; border-radius: 9px; padding: 3px; gap: 2px; }
+.ws-settings-seg button {
+  border: none; background: transparent; color: #64748b;
+  font-size: 12.5px; font-weight: 600; padding: 6px 16px; border-radius: 7px; cursor: pointer;
+}
+.ws-settings-seg button.active { background: #fff; color: #0e7490; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.ws-settings-hint { font-size: 11px; color: #cbd5e1; margin: 7px 0 0; }
+
+/* ---------- 紧凑密度（通用设置-风格） ---------- */
+:root[data-density='compact'] .v2-shell .v2-tab { padding: 6px 12px; font-size: 12.5px; }
+:root[data-density='compact'] .v2-shell .v2-topbar { height: 48px; flex-basis: 48px; }
+:root[data-density='compact'] .v2-shell .v2-main .academic-worktools { padding: 6px 14px; }
+:root[data-density='compact'] .v2-shell .ws-chart { padding: 11px 13px; }
+:root[data-density='compact'] .v2-shell .ws-msg-bubble { font-size: 12.5px; }
+:root[data-density='compact'] .v2-shell .ws-chat { padding: 9px 11px; }
+:root[data-density='compact'] .v2-right .caseflow-card-enhanced.compact { padding: 6px 9px; margin-bottom: 4px; }
+:root[data-density='compact'] .v2-right .caseflow-card-enhanced.compact .caseflow-card-title { font-size: 12.5px; }
+/* 大屏断点下的字号放大让位于紧凑密度（特异性更高，写在文件末尾覆盖） */
+@media (min-width: 1536px) {
+  :root[data-density='compact'] .v2-right .caseflow-card-enhanced.compact .caseflow-card-title { font-size: 12.5px; }
+  :root[data-density='compact'] .v2-shell .ws-msg-bubble,
+  :root[data-density='compact'] .v2-shell .ws-chat-input textarea { font-size: 12.5px; }
 }

@@ -57,4 +57,18 @@ export const pairs = {
   // Schema 工作区：版本管理折叠
   'ux.schema.advTitle': ['高级：版本管理', 'Advanced: Version management'],
   'ux.schema.advToggle': ['展开/收起版本管理', 'Toggle version management'],
+
+  // 统一设置（顶栏 ⚙）
+  'settings.title': ['设置', 'Settings'],
+  'settings.close': ['关闭', 'Close'],
+  'settings.ai': ['AI 配置', 'AI Configuration'],
+  'settings.general': ['通用设置', 'General'],
+  'settings.users': ['用户管理', 'User management'],
+  'settings.usersHint': ['管理员可以管理账号：角色、禁用、重置密码与删除。', 'Admins manage accounts: roles, disabling, password reset and deletion.'],
+  'settings.usersOpen': ['打开用户管理', 'Open user management'],
+  'settings.language': ['界面语言', 'Language'],
+  'settings.style': ['界面风格', 'Interface style'],
+  'settings.styleCozy': ['舒适', 'Cozy'],
+  'settings.styleCompact': ['紧凑', 'Compact'],
+  'settings.styleHint': ['紧凑模式收窄间距与字号，适合大屏一屏浏览更多内容。', 'Compact mode tightens spacing and font sizes to fit more on screen.'],
 };
