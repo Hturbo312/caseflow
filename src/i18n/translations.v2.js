@@ -6,8 +6,9 @@ import { pairs as d } from './dicts/d';
 import { pairs as e } from './dicts/e';
 import { pairs as sys } from './dicts/sys';
 import { pairs as ux } from './dicts/ux';
+import { pairs as f } from './dicts/f';
 
-const M = { ...a, ...b, ...c, ...d, ...e, ...sys, ...ux };
+const M = { ...a, ...b, ...c, ...d, ...e, ...sys, ...ux, ...f };
 
 export const v2zh = Object.fromEntries(Object.entries(M).map(([k, v]) => [k, v[0]]));
 export const v2en = Object.fromEntries(Object.entries(M).map(([k, v]) => [k, v[1]]));

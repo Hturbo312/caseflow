@@ -11,6 +11,8 @@
   color: #111827;
   overflow: hidden;
 }
+/* 左右栏宽度变量：顶栏网格与内容网格共用，保证 tab 行对齐中栏 */
+.v2-shell { --rail-l: 340px; --rail-r: 316px; }
 
 /* ============================================================
    UI 字体层次（统一字阶：display 18 / title 15 / body 13 / meta 11.5 / caption 10.5）
@@ -44,16 +46,41 @@
 .v2-shell .ws-badge { font-size: var(--fs-caption); }
 
 /* ---------- 顶栏 ---------- */
-.v2-topbar {
-  height: 52px;
-  flex: 0 0 52px;
-  display: flex;
+.v2-shell header.v2-topbar {
+  height: auto;
+  min-height: 52px;
+  flex: 0 0 auto;
+  display: grid;
+  /* 与 design-system.css 的 .v2-columns 共用同一组栏宽变量（含折叠态 36px），保证 tab 行对齐中栏 */
+  grid-template-columns: var(--v2-left-w, var(--rail-l)) minmax(0, 1fr) var(--v2-right-w, var(--rail-r));
   align-items: center;
-  gap: 18px;
   padding: 0 16px;
   background: #ffffff;
   border-bottom: 1px solid #e5e7eb;
   z-index: 30;
+}
+/* design-system.css 的 flex 覆盖让位于三区网格（写在本文件任意位置均以特异性取胜） */
+.v2-topbar-left { display: flex; align-items: center; min-width: 0; }
+.v2-topbar-left .v2-brand { flex-wrap: wrap; row-gap: 4px; }
+.v2-topbar-center {
+  display: flex; align-items: center; justify-content: center;
+  gap: 14px; min-width: 0; overflow: hidden;
+}
+.v2-topbar-spacer { display: none; }
+/* 研究框架：作为按钮与 tab 并列（tab 行最左） */
+.v2-topbar-center .v2-framework-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600; color: #4b5563;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 7px 12px; cursor: pointer; white-space: nowrap;
+}
+.v2-topbar-center .v2-framework-btn span {
+  max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: #0891b2; font-weight: 700;
+}
+.v2-topbar-center .v2-framework-btn:hover { border-color: #a5f3fc; color: #0e7490; }
+.v2-topbar-center .v2-framework-btn.active {
+  background: #ecfeff; border-color: #a5f3fc; color: #0e7490;
 }
 .v2-brand { display: flex; align-items: center; gap: 9px; }
 .v2-brand-mark {
@@ -66,7 +93,7 @@
 .v2-brand-name i { font-style: normal; color: #0891b2; }
 .v2-brand-sub { font-size: 10.5px; color: #6b7280; }
 
-.v2-tabs { display: flex; gap: 4px; margin-left: 8px; }
+.v2-tabs { display: flex; gap: 4px; }
 .v2-tab {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 7px 14px; border-radius: 8px; border: none;
@@ -93,7 +120,7 @@
 .v2-columns {
   flex: 1;
   display: grid;
-  grid-template-columns: 340px minmax(0, 1fr) 316px;
+  grid-template-columns: var(--rail-l) minmax(0, 1fr) var(--rail-r);
   min-height: 0;
 }
 .v2-rail { position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
@@ -498,10 +525,13 @@
 /* ---------- 响应式与自适应 ---------- */
 /* 中屏 */
 @media (max-width: 1240px) {
-  .v2-columns { grid-template-columns: 300px minmax(0, 1fr) 280px; }
+  .v2-shell { --rail-l: 300px; --rail-r: 280px; }
+  .v2-columns { grid-template-columns: var(--rail-l) minmax(0, 1fr) var(--rail-r); }
 }
 /* 小屏/移动端 */
 @media (max-width: 900px) {
+  .v2-topbar { display: flex; justify-content: space-between; }
+  .v2-topbar-spacer { display: block; }
   .v2-columns { grid-template-columns: 1fr; grid-template-rows: auto 1fr; overflow-y: auto; }
   .v2-left, .v2-right { display: none; }
   .v2-main { overflow: visible; }
@@ -511,7 +541,8 @@
 
 /* ---------- 大屏适配（≥1536px）：加宽栏距 + 整体字号上调 ---------- */
 @media (min-width: 1536px) {
-  .v2-columns { grid-template-columns: clamp(360px, 23vw, 470px) minmax(0, 1fr) clamp(340px, 21vw, 440px); }
+  .v2-shell { --rail-l: clamp(360px, 23vw, 470px); --rail-r: clamp(340px, 21vw, 440px); }
+  .v2-columns { grid-template-columns: var(--rail-l) minmax(0, 1fr) var(--rail-r); }
 
   .v2-topbar { height: 58px; flex-basis: 58px; padding: 0 22px; }
   .v2-brand-name { font-size: 16.5px; }
@@ -587,7 +618,8 @@
 
 /* ---------- 超大屏 / 4K（≥2300px）：进一步放大 ---------- */
 @media (min-width: 2300px) {
-  .v2-columns { grid-template-columns: clamp(420px, 22vw, 560px) minmax(0, 1fr) clamp(400px, 20vw, 520px); }
+  .v2-shell { --rail-l: clamp(420px, 22vw, 560px); --rail-r: clamp(400px, 20vw, 520px); }
+  .v2-columns { grid-template-columns: var(--rail-l) minmax(0, 1fr) var(--rail-r); }
   .v2-topbar { height: 64px; flex-basis: 64px; }
   .v2-brand-name { font-size: 18px; }
   .v2-tab { font-size: 15px; }

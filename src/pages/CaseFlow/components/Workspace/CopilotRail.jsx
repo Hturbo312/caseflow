@@ -122,14 +122,6 @@ export default function CopilotRail({ onShowLogin }) {
             <span className={`ws-ai-status ${ai.configStatus.configured ? 'ok' : 'off'}`}>
               {ai.configStatus.configured ? t('v2.ai.configured') : t('v2.ai.unconfigured')}
             </span>
-            <button className="ws-account-btn" onClick={ai.handleOpenSettings} title={t('v2.ai.settingsTitle')}>
-              <Settings size={14} /> {t('v2.ai.settings')}
-            </button>
-            {user?.role === 'admin' && (
-              <button className="ws-account-btn" onClick={() => setAdminOpen(true)} title="管理员后台：用户管理">
-                <Shield size={14} /> 用户管理
-              </button>
-            )}
           </>
         ) : (
           <>

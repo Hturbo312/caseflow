@@ -28,8 +28,9 @@ import FrameworkGuide from './components/Workspace/FrameworkGuide';
 import CaseShelf from './components/Workspace/CaseShelf';
 
 const MAIN_TABS = [
-  { id: 'case', label: '案例研究', icon: FolderOpen, task: 'v2.task.case' },
-  { id: 'analysis', label: '跨案例研究', icon: BarChart3, task: 'v2.task.analysis' },
+  { id: 'case', label: 'v2.tab.case', icon: FolderOpen, task: 'v2.task.case' },
+  { id: 'analysis', label: 'v2.tab.analysis', icon: BarChart3, task: 'v2.task.analysis' },
+  { id: 'graph', label: 'v2.tab.graph', icon: Share2, task: 'v2.task.graph' },
 ];
 
 /**
@@ -174,6 +175,7 @@ const CaseFlowV2 = () => {
     <div className="v2-shell">
       {/* 顶栏：品牌 + 账户（左）｜ 三 tab（与中栏对齐）｜ 工具（右） */}
       <header className="v2-topbar">
+        <div className="v2-topbar-left">
         <div className="v2-brand">
           <div className="v2-brand-name">CaseFlow</div>
           {isAuthenticated ? (
@@ -196,22 +198,30 @@ const CaseFlowV2 = () => {
             </button>
           )}
         </div>
+        </div>
 
-        <button className="academic-framework-entry" onClick={() => switchTab(mainTab === 'schema' ? researchTab : 'schema')} title={currentSchema?.name}>研究框架 <span>{currentSchema?.name || '未选择'}</span></button>
-        <nav className="v2-tabs" role="tablist">
-          {MAIN_TABS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              role="tab"
-              aria-selected={mainTab === id}
-              className={`v2-tab ${mainTab === id ? 'active' : ''}`}
-              onClick={() => switchTab(id)}
-            >
-              <Icon size={15} /> {locale === 'en' ? id === 'case' ? 'Case research' : 'Cross-case research' : label}
-            </button>
-          ))}
-        </nav>
-
+        <div className="v2-topbar-center">
+          <button
+            className={`academic-framework-entry v2-framework-btn ${mainTab === 'schema' ? 'active' : ''}`}
+            onClick={() => switchTab(mainTab === 'schema' ? researchTab : 'schema')}
+            title={currentSchema?.name}
+          >
+            {t('v2.framework')} <span>{currentSchema?.name || t('v2.framework.none')}</span>
+          </button>
+          <nav className="v2-tabs" role="tablist">
+            {MAIN_TABS.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                role="tab"
+                aria-selected={mainTab === id}
+                className={`v2-tab ${mainTab === id ? 'active' : ''}`}
+                onClick={() => switchTab(id)}
+              >
+                <Icon size={15} /> {t(label)}
+              </button>
+            ))}
+          </nav>
+        </div>
         <div className="v2-topbar-right">
           <Link to="/caseflow/classic" className="v2-classic-link" title={t('v2.topbar.previousTitle')}>
             <History size={13} /> {t('v2.topbar.previous')}
@@ -248,7 +258,7 @@ const CaseFlowV2 = () => {
 
         {/* 中栏主工作区：滚动区 + 预览卡覆盖层 + 导入向导覆盖层 */}
         <main className="v2-main">
-          <div className="academic-worktools">{mainTab === 'case' ? <><span>案例研究 / 阅读与整理</span><button onClick={() => isAuthenticated ? setShowCreateCase(true) : showLogin()}>新建案例</button><button onClick={() => isAuthenticated ? setExtractorOpen(true) : showLogin()}>导入材料</button></> : mainTab === 'graph' ? <><span>案例集关系探索 · 当前框架范围</span><button onClick={() => switchTab(researchTab)}>返回研究</button></> : <span>研究问题 / 证据 / 发现</span>}</div>
+          <div className="academic-worktools">{mainTab === 'case' ? <><span>{t('v2.work.caseLabel')}</span><button onClick={() => isAuthenticated ? setShowCreateCase(true) : showLogin()}>{t('v2.work.newCase')}</button><button onClick={() => isAuthenticated ? setExtractorOpen(true) : showLogin()}>{t('v2.work.import')}</button></> : mainTab === 'graph' ? <><span>{t('v2.work.graphLabel')}</span><button onClick={() => switchTab(researchTab)}>{t('v2.work.backResearch')}</button></> : <span>{t('v2.work.analysisLabel')}</span>}</div>
           <div className="v2-main-scroll">
             {mainTab === 'graph' && (
               <div className="v2-graph">
