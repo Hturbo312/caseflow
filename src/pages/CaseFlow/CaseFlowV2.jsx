@@ -13,7 +13,6 @@ import CopilotRail from './components/Workspace/CopilotRail';
 import CaseWorkspace from './components/Workspace/ResearchCase';
 import AnalysisWorkspace from './components/Workspace/ResearchAnalysis';
 import SchemaWorkspace from './components/Workspace/SchemaWorkspace';
-import WorkflowNav from './components/Workspace/WorkflowNav';
 import CasePreviewCard from './components/Workspace/CasePreviewCard';
 import KnowledgeGraphCanvas from './components/KnowledgeGraphCanvas';
 import UnifiedSettings from './components/Workspace/UnifiedSettings';
@@ -57,7 +56,6 @@ const CaseFlowV2 = () => {
     mainTab, setMainTab, openCaseDetail, contextTask, setContextTask,
     previewCaseId, closePreview, openPreview,
     extractorOpen, setExtractorOpen,
-    pipelineVisible,
     askCopilot,
   } = useWorkspaceStore();
 
@@ -228,16 +226,6 @@ const CaseFlowV2 = () => {
           </Link>
         </div>
       </header>
-
-      {/* 研究流水线条（可关闭，状态持久化） */}
-      {false && pipelineVisible && (
-        <WorkflowNav
-          switchTab={switchTab}
-          caseCount={cases.length}
-          isAuthenticated={isAuthenticated}
-          onShowLogin={showLogin}
-        />
-      )}
 
       <div className="v2-columns">
         {/* 左栏 AI Copilot */}

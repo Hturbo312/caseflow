@@ -20,8 +20,6 @@ async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   const token = authHelper.getToken();
 
-  console.log(`API请求: ${options.method || 'GET'} ${url}`, { hasToken: !!token });
-
   const config = {
     headers: {
       'Content-Type': 'application/json',
@@ -47,7 +45,6 @@ async function request(endpoint, options = {}) {
     if (!response.ok) {
       // 如果是认证错误，清除token
       if (response.status === 401 && data.requireAuth) {
-        console.log('认证失败，清除token');
         authHelper.removeToken();
       }
       throw new Error(data.error || `HTTP error! status: ${response.status}`);

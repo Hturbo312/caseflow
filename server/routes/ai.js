@@ -1,6 +1,5 @@
 import express from 'express';
 import { authMiddleware } from '../middleware/auth.js';
-import { aiConfigCache, updateAiConfig, resetAiConfig, PORT } from '../config.js';
 import pool from '../db.js';
 
 const router = express.Router();
