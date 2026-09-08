@@ -5,10 +5,12 @@ import { authMiddleware } from '../middleware/auth.js';
 const router = express.Router();
 
 // 稳定键：发布后不可变；未提供时从名称自动生成（与 migration 003 规则一致）
-const toStableKey = (name) => name
-  ? String(name).split('（')[0].trim().toLowerCase()
-      .replace(/ \/ /g, '_').replace(/[\s-]+/g, '_').replace(/[^a-z0-9_]/g, '')
-  : null;
+const toStableKey = (name) => {
+  if (!name) return null;
+  const slug = String(name).split('（')[0].trim().toLowerCase()
+    .replace(/ \/ /g, '_').replace(/[\s-]+/g, '_').replace(/[^a-z0-9_]/g, '');
+  return slug || `auto_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+};
 
 // frozen / archived 版本不可直接修改（Spec §5.2 操作权限、§9.1）
 // 该 schema 行若被冻结/归档版本引用，则其类型与关系定义只读
@@ -139,11 +141,11 @@ router.get('/:id', async (req, res) => {
 router.post('/:schemaId/entity-types', authMiddleware, async (req, res) => {
   const { schemaId } = req.params;
   if (!(await guardVersionWritable(schemaId, res))) return;
-  const { name, color, properties } = req.body;
+  const { name, color, description, properties } = req.body;
   try {
     const result = await pool.query(
-      'INSERT INTO entity_types (schema_id, name, color, properties, stable_key) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [schemaId, name, color, JSON.stringify(properties || []), toStableKey(name)]
+      'INSERT INTO entity_types (schema_id, name, color, description, properties, stable_key) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [schemaId, name, color, description || '', JSON.stringify(properties || []), toStableKey(name)]
     );
     await logSchemaChange(schemaId, 'add_entity_type', result.rows[0].stable_key,
       { name: result.rows[0].name, color });
@@ -157,11 +159,11 @@ router.post('/:schemaId/entity-types', authMiddleware, async (req, res) => {
 router.put('/:schemaId/entity-types/:entityTypeId', authMiddleware, async (req, res) => {
   const { schemaId, entityTypeId } = req.params;
   if (!(await guardVersionWritable(schemaId, res))) return;
-  const { name, color, properties } = req.body;
+  const { name, color, description, properties } = req.body;
   try {
     const result = await pool.query(
-      'UPDATE entity_types SET name = COALESCE($1, name), color = COALESCE($2, color), properties = COALESCE($3, properties) WHERE id = $4 AND schema_id = $5 RETURNING *',
-      [name, color, JSON.stringify(properties), entityTypeId, schemaId]
+      'UPDATE entity_types SET name = COALESCE($1, name), color = COALESCE($2, color), description = COALESCE($3, description), properties = COALESCE($4, properties) WHERE id = $5 AND schema_id = $6 RETURNING *',
+      [name, color, description, JSON.stringify(properties), entityTypeId, schemaId]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Entity type not found' });

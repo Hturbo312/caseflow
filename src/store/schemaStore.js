@@ -11,7 +11,10 @@ export const useSchemaStore = create((set, get) => ({
   schemas: [],
   isLoading: false,
 
-  setCurrentSchema: (id) => set({ currentSchemaId: id }),
+  setCurrentSchema: (id) => {
+    if (id != null) { try { localStorage.setItem('cf_schema_id', String(id)); } catch {} }
+    set({ currentSchemaId: id });
+  },
 
   // 访客演示模式：装载内置演示 Schema，免登录即可浏览图谱
   loadDemoSchema: () => set({ schemas: [{ ...DEFAULT_SCHEMA }], currentSchemaId: 'default', isLoading: false }),
@@ -56,7 +59,13 @@ export const useSchemaStore = create((set, get) => ({
         set({
           schemas: fullSchemas,
           // 2.0：默认优先论文 Schema 9（Dynamic Schema v1.0），其次兼容旧默认 3
-          currentSchemaId: (fullSchemas.find(s => s.id === '9') || fullSchemas.find(s => s.id === '3') || fullSchemas[0])?.id?.toString() || null,
+          currentSchemaId: (() => {
+            try {
+              const saved = localStorage.getItem('cf_schema_id');
+              if (saved && fullSchemas.some(x => String(x.id) === String(saved))) return String(saved);
+            } catch {}
+            return (fullSchemas.find(s => s.id === '9') || fullSchemas.find(s => s.id === '3') || fullSchemas[0])?.id?.toString() || null;
+          })(),
           isLoading: false
         });
       } else {
@@ -141,6 +150,7 @@ export const useSchemaStore = create((set, get) => ({
       const response = await schemaApi.addEntityType(schemaId, {
         name: entityType.name,
         color: entityType.color,
+        description: entityType.description || '',
         properties: entityType.properties || []
       });
       const newEntityType = {
@@ -182,6 +192,7 @@ export const useSchemaStore = create((set, get) => ({
         await schemaApi.updateEntityType(schemaId, entityTypeId, {
           name: entity.name,
           color: entity.color,
+          description: entity.description || '',
           properties: entity.properties
         });
       }

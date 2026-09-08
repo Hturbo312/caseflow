@@ -25,6 +25,7 @@ import reviewRoutes from './routes/review.js';
 import schemaVersionsRoutes from './routes/schemaVersions.js';
 import conceptsRoutes from './routes/concepts.js';
 import researchRoutes, { initializeResearch } from './routes/research.js';
+import agentToolsRoutes from './routes/agentTools.js';
 
 dotenv.config();
 
@@ -59,6 +60,7 @@ app.use('/api/review', reviewRoutes);
 app.use('/api', schemaVersionsRoutes);
 app.use('/api/concepts', conceptsRoutes);
 app.use('/api/research', researchRoutes);
+app.use('/api/agent-tools', agentToolsRoutes);
 
 // 启动服务器 - 设置较长超时（LLM 调用较慢）
 const server = app.listen(PORT, '0.0.0.0', async () => {

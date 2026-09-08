@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../db.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { assertCaseAccess, accessibleCaseIds } from '../middleware/caseAccess.js';
 
 const router = express.Router();
 
@@ -82,10 +83,11 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 });
 
 // ============ 案例原生术语 → 共享概念 映射 ============
-router.get('/mappings', async (req, res) => {
+router.get('/mappings', authMiddleware, async (req, res) => {
   try {
     const caseId = parseInt(req.query.case_id, 10);
     if (!caseId) return res.status(400).json({ error: 'case_id 必填' });
+    await assertCaseAccess(req.user.id, caseId);
     const { rows } = await pool.query(
       `SELECT m.id, m.native_term, m.concept_id, m.mapping_type, m.confidence, m.verified,
               c.label AS concept_label, c.key AS concept_key
@@ -103,6 +105,7 @@ router.post('/mappings', authMiddleware, async (req, res) => {
     if (!case_id || !native_term || !concept_id) {
       return res.status(400).json({ error: 'case_id / native_term / concept_id 必填' });
     }
+    await assertCaseAccess(req.user.id, case_id, ['owner', 'editor']);
     const term = String(native_term).trim();
     const { rows } = await pool.query(
       `INSERT INTO concept_mappings (case_id, native_term, concept_id, mapping_type, confidence, verified)
@@ -157,10 +160,11 @@ router.delete('/mappings/:id', authMiddleware, async (req, res) => {
 });
 
 // ============ 自动映射建议（确定性匹配，研究者确认后生效） ============
-router.get('/suggestions', async (req, res) => {
+router.get('/suggestions', authMiddleware, async (req, res) => {
   try {
     const caseId = parseInt(req.query.case_id, 10);
     if (!caseId) return res.status(400).json({ error: 'case_id 必填' });
+    await assertCaseAccess(req.user.id, caseId);
     const familyId = await resolveFamilyId(req.query.family_id);
     if (!familyId) return res.json({ suggestions: [] });
 
@@ -205,11 +209,13 @@ router.get('/suggestions', async (req, res) => {
 });
 
 // ============ 跨案例概念对齐矩阵（共享概念 × 案例，比较坐标系） ============
-router.get('/coverage', async (req, res) => {
+router.get('/coverage', authMiddleware, async (req, res) => {
   try {
     const caseIds = (req.query.case_ids || '').split(',').map(s => parseInt(s, 10)).filter(Number.isInteger);
     if (caseIds.length < 1) return res.status(400).json({ error: '需要至少 1 个 case_ids' });
     if (caseIds.length > 50) return res.status(400).json({ error: '最多同时对比 50 个案例' });
+    const allowed = await accessibleCaseIds(req.user.id, caseIds);
+    if (allowed.length !== caseIds.length) return res.status(403).json({ error: '案例集包含无权访问的案例' });
     const familyId = await resolveFamilyId(req.query.family_id);
     if (!familyId) return res.json({ family_id: null, concepts: [], cases: [], matrix: {}, case_totals: {}, gaps: {} });
 

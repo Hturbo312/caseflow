@@ -4,6 +4,8 @@ import { useCaseStore, useSchemaStore } from '../../../../store';
 import { useCompareStore } from '../../../../store/compareStore';
 import { useAuth } from '../../../../hooks';
 import { EvidenceInspector, SourceReader } from './ResearchCase';
+import { compareApi } from '../../../../services/api';
+import { useWorkspaceStore } from '../../../../store/workspaceStore';
 import AnalysisWorkspace from './AnalysisWorkspace';
 import { downloadBlob } from './exportUtils';
 import './research.css';
@@ -14,10 +16,11 @@ export default function ResearchAnalysis() {
   const { ids, toggle, remove, MAX } = useCompareStore();
   const schemaId = useSchemaStore(s => s.currentSchemaId);
   const { user, isAuthenticated } = useAuth();
-  return <AnalysisSession key={`${user?.id || 'guest'}:${schemaId}`} cases={cases} ids={ids} toggle={toggle} remove={remove} MAX={MAX} schemaId={schemaId} user={user} isAuthenticated={isAuthenticated} />;
+  const workbenchResult = useWorkspaceStore(s => s.workbenchResult);
+  return <AnalysisSession key={`${user?.id || 'guest'}:${schemaId}`} cases={cases} ids={ids} toggle={toggle} remove={remove} MAX={MAX} schemaId={schemaId} user={user} isAuthenticated={isAuthenticated} workbenchResult={workbenchResult} />;
 }
 
-function AnalysisSession({ cases, ids, toggle, remove, MAX, schemaId, user, isAuthenticated }) {
+function AnalysisSession({ cases, ids, toggle, remove, MAX, schemaId, user, isAuthenticated, workbenchResult }) {
   const { t } = useI18n();
   const key = `cf-research-draft:${user?.id || 'guest'}:${schemaId}`;
   const [draft, setDraft] = useState(() => { try { return drafts.get(key) || JSON.parse(localStorage.getItem(key)) || { question: '', finding: '', limits: '', citations: [], caseIds: [] }; } catch { return { question: '', finding: '', limits: '', citations: [], caseIds: [] }; } });
@@ -26,6 +29,11 @@ function AnalysisSession({ cases, ids, toggle, remove, MAX, schemaId, user, isAu
   const [active, setActive] = useState(null);
   const [preview, setPreview] = useState(null);
   const [tools, setTools] = useState(false);
+  const [pathResult, setPathResult] = useState(null);
+  const [pathBusy, setPathBusy] = useState(false);
+  const [pathError, setPathError] = useState('');
+  const [contrastResult, setContrastResult] = useState(null);
+  const [contrastBusy, setContrastBusy] = useState(false);
   const selected = cases.filter(c => ids.includes(String(c.id)));
   const update = (field, value) => setDraft(d => ({ ...d, [field]: value }));
   const save = () => {
@@ -47,6 +55,12 @@ function AnalysisSession({ cases, ids, toggle, remove, MAX, schemaId, user, isAu
     <details><summary>{t('ra.pick', { n: ids.length, max: MAX })}</summary>{cases.map(c => <label key={c.id}><input type="checkbox" checked={ids.includes(String(c.id))} disabled={!ids.includes(String(c.id)) && ids.length >= MAX} onChange={() => toggle(c.id)} /> {c.name}</label>)}</details>
     <div className="research-actions">{selected.map(c => <button key={c.id} onClick={() => remove(c.id)}>{c.name} ×</button>)}</div>
     {ids.length < 2 && <p>{t('ra.min')}</p>}
+    <section className="research-contrast"><div className="research-actions"><strong>案例对照</strong><button disabled={!isAuthenticated || ids.length < 2 || ids.length > 6 || contrastBusy} onClick={async () => { setContrastBusy(true); try { setContrastResult(await compareApi.contrast(ids)); } catch (e) { setPathError(e.message); } finally { setContrastBusy(false); } }}>{contrastBusy ? '正在对照…' : '对照当前案例'}</button></div>{contrastResult && <><p>共同结构 {contrastResult.common.length} 项；存在差异或缺失 {contrastResult.differing.length} 项。</p>{contrastResult.differing.slice(0, 20).map(item => <details key={item.signature}><summary>{item.signature}</summary>{item.cases.map(c => <p key={c.case_id}>案例 {c.case_id}：{c.present ? c.examples.map(e => `${e.source_name} → ${e.target_name}`).join('；') : '缺失该关系'}</p>)}</details>)}</>}</section>
+    <section className="research-path">
+      <div className="research-actions"><strong>跨案例路径比较</strong><button disabled={!isAuthenticated || ids.length < 2 || pathBusy} onClick={async () => { setPathBusy(true); setPathError(''); try { setPathResult(await compareApi.path(ids)); } catch (e) { setPathError(e.message); } finally { setPathBusy(false); } }}>{pathBusy ? '正在比较…' : '比较当前案例路径'}</button></div>
+      {pathError && <p role="alert">{pathError}</p>}
+      {(pathResult || (workbenchResult?.kind === 'path' && workbenchResult.payload)) && (() => { const result = pathResult || workbenchResult.payload; return <div><p>完整路径：{(result.complete_case_ids || []).length} 个案例；中断：{(result.broken_case_ids || []).length} 个案例</p>{(result.cases || []).map(item => <article key={item.case_id}><strong>案例 {item.case_id}</strong> · {item.complete ? '存在完整路径' : '路径中断'}{item.paths?.[0] && <div><p>{item.paths[0].nodes.map(n => n.name).join(' → ')}</p>{item.paths[0].edges.map(edge => <details key={edge.id}><summary>{edge.source_name} — {edge.relation_type} → {edge.target_name} · Evidence {edge.evidence_count}</summary>{edge.evidence?.length ? edge.evidence.map(ev => <blockquote key={ev.id}>“{ev.quote}” <small>· {ev.document_title || '来源材料'}</small></blockquote>) : <p>暂无已关联引文</p>}</details>)}</div>}</article>)}</div>; })()}
+    </section>
     {draft.caseIds?.length > 0 && draft.caseIds.join(',') !== ids.join(',') && <p role="status">{t('ra.drift')}</p>}
     <div className="research-comparison">{selected.map(c => <section key={c.id}><h3>{c.name}</h3><p>{c.description || t('ra.noDraft')}</p><button disabled={!isAuthenticated} onClick={() => setPreview({ caseId: c.id, evidence: null })}>{t('ra.readSource')}</button>
       <details><summary>{t('ra.pickEntities', { n: c.entities?.length || 0 })}</summary>{c.entities?.map(e => <button className="research-record" key={e.id} onClick={() => { setActive({ item: e, type: 'entity', caseId: c.id }); setPreview(null); }}>{e.name}</button>)}</details>

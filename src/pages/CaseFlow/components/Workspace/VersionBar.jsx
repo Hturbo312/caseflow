@@ -31,7 +31,10 @@ export default function VersionBar({ schemaId }) {
   const load = useCallback(async () => {
     try {
       const famRes = await schemaVersionApi.families();
-      const fam = (famRes.families || []).find((f) => f.key === 'thesis_dynamic_schema') || famRes.families?.[0];
+      const all = famRes.families || [];
+      const fam = schemaId
+        ? all.find((f) => Number(f.legacy_schema_id) === Number(schemaId))
+        : (all.find((f) => f.key === 'thesis_dynamic_schema') || all[0]);
       setFamily(fam || null);
       if (fam) {
         const verRes = await schemaVersionApi.versions(fam.id);
@@ -40,8 +43,20 @@ export default function VersionBar({ schemaId }) {
     } catch (e) {
       setError(e.message);
     }
-  }, []);
+  }, [schemaId]);
   useEffect(() => { load(); }, [load]);
+
+  const enableVersioning = async () => {
+    setBusy(true); setError('');
+    try {
+      await schemaVersionApi.createFamily({ schemaId: Number(schemaId) });
+      await load();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const act = async (fn, versionId) => {
     setBusy(true); setError('');
@@ -89,7 +104,24 @@ export default function VersionBar({ schemaId }) {
     }
   };
 
-  if (!family) return null;
+  if (!family) {
+    if (schemaId && isAuthenticated) {
+      return (
+        <div className="ws-versionbar">
+          <div className="ws-versionbar-row">
+            <GitBranch size={13} />
+            <span className="ws-versionbar-title">{t('v2.version.title')}</span>
+            <span className="ws-badge na">未纳入版本管理</span>
+            <button className="ws-versionbar-new" onClick={enableVersioning} disabled={busy}>
+              {busy ? <Loader2 size={12} className="spin" /> : <Plus size={12} />} 启用版本管理
+            </button>
+          </div>
+          {error && <p className="ws-versionbar-error" role="alert">{error}</p>}
+        </div>
+      );
+    }
+    return null;
+  }
   const active = versions.find((v) => v.status === 'active');
 
   return (

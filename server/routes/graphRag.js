@@ -1,7 +1,10 @@
 import express from 'express';
 import { graphRagSearch, getRelatedCases, extractSubgraph } from '../services/graphRag.js';
+import { authMiddleware } from '../middleware/auth.js';
+import { assertCaseAccess, assertTargetAccess } from '../middleware/caseAccess.js';
 
 const router = express.Router();
+router.use(authMiddleware);
 
 // GraphRAG 混合检索
 router.post('/search', async (req, res) => {
@@ -10,6 +13,7 @@ router.post('/search', async (req, res) => {
     return res.status(400).json({ error: 'query 是必需的' });
   }
   try {
+    if (caseId != null) await assertCaseAccess(req.user.id, caseId);
     const result = await graphRagSearch(query, {
       schemaId,
       caseId,
@@ -29,6 +33,7 @@ router.get('/recommend/:caseId', async (req, res) => {
   const { caseId } = req.params;
   const { limit, schemaId } = req.query;
   try {
+    await assertCaseAccess(req.user.id, caseId);
     const result = await getRelatedCases(parseInt(caseId), {
       limit: limit ? parseInt(limit) : 10,
       schemaId: schemaId ? parseInt(schemaId) : undefined,
@@ -47,6 +52,7 @@ router.post('/subgraph', async (req, res) => {
     return res.status(400).json({ error: 'entityIds 必须是数组' });
   }
   try {
+    for (const entityId of entityIds) await assertTargetAccess(req.user.id, { entityId });
     const result = await extractSubgraph(entityIds, {
       depth: depth || 1,
       schemaId: schemaId || 3,

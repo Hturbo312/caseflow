@@ -985,7 +985,8 @@ async function matchSegment(caseId, quote) {
  * @param {Array<{targetType:'entity'|'relation', targetId:number, quote?:string, segmentId?:number|null, confidence?:number, status?:string, sourceRefs?:Array, evidenceStatus?:string}>} items
  * @returns {{evidence_count:number, fact_count:number}}
  */
-export async function persistEvidenceAndFacts(caseId, items = []) {
+export async function persistEvidenceAndFacts(caseId, items = [], transactionClient = null) {
+  const db = transactionClient || pool;
   let evidenceCount = 0;
   let factCount = 0;
   for (const item of items) {
@@ -994,7 +995,7 @@ export async function persistEvidenceAndFacts(caseId, items = []) {
     const segmentId = item.segmentId ?? await matchSegment(caseId, quote);
     const status = item.evidenceStatus || 'confirmed';
 
-    const evRes = await pool.query(
+    const evRes = await db.query(
       `INSERT INTO evidence (entity_id, relation_id, segment_id, quote, confidence, source, status, metadata)
        VALUES ($1, $2, $3, $4, $5, 'extraction', $6, $7) RETURNING id`,
       [item.targetType === 'entity' ? item.targetId : null,
@@ -1005,7 +1006,7 @@ export async function persistEvidenceAndFacts(caseId, items = []) {
     evidenceCount++;
 
     // 同步写 L1 原子事实（独立于 Schema，schema 改版不重拆）
-    const factRes = await pool.query(
+    const factRes = await db.query(
       `INSERT INTO atomic_facts (case_id, segment_id, fact_text, fact_type, status, metadata)
        VALUES ($1, $2, $3, $4, 'confirmed', $5) RETURNING id`,
       [caseId, segmentId, quote,
@@ -1020,12 +1021,12 @@ export async function persistEvidenceAndFacts(caseId, items = []) {
     // 写事实断言（版本化关联，Spec §4.5）
     const versionId = item.schemaVersionId || null;
     if (item.targetType === 'entity') {
-      await pool.query(
+      await db.query(
         `INSERT INTO fact_entity_assertions (fact_id, entity_id, schema_version_id, assertion_status)
          VALUES ($1, $2, $3, 'confirmed') ON CONFLICT DO NOTHING`,
         [factRes.rows[0].id, item.targetId, versionId]);
     } else {
-      await pool.query(
+      await db.query(
         `INSERT INTO fact_relation_assertions (fact_id, relation_id, schema_version_id, assertion_status)
          VALUES ($1, $2, $3, 'confirmed') ON CONFLICT DO NOTHING`,
         [factRes.rows[0].id, item.targetId, versionId]);

@@ -19,7 +19,7 @@ const router = express.Router();
 async function getUserAiConfig(userId) {
   try {
     const cfgResult = await pool.query(
-      'SELECT api_key, endpoint, model, temperature, max_tokens, use_temperature, use_max_tokens FROM user_ai_configs WHERE user_id = $1',
+      'SELECT cfg.api_key, cfg.endpoint, cfg.model, cfg.temperature, cfg.max_tokens, cfg.use_temperature, cfg.use_max_tokens, u.role FROM users u LEFT JOIN user_ai_configs cfg ON cfg.user_id = u.id WHERE u.id = $1',
       [userId]
     );
     return cfgResult.rows.length > 0 ? cfgResult.rows[0] : null;

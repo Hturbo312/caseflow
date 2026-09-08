@@ -67,6 +67,7 @@ async function request(endpoint, options = {}) {
 export const researchApi = {
   get: id => request(`/research/${id}`),
   act: (id, revision, action, payload) => request(`/research/${id}`, { method: 'POST', body: JSON.stringify({ revision, action, payload }) }),
+  publish: (id, revision, extractionId, targets = {}) => request(`/research/${id}`, { method: 'POST', body: JSON.stringify({ revision, action: 'publish', payload: { extractionId, targets } }) }),
 };
 
 export const schemaApi = {
@@ -205,6 +206,8 @@ export const conceptApi = {
 export const compareApi = {
   matrix: (schemaId, caseIds) =>
     request(`/compare?schema_id=${schemaId}&case_ids=${caseIds.join(',')}`),
+  path: (caseIds, types) => request('/compare/path', { method: 'POST', body: JSON.stringify({ case_ids: caseIds, types }) }),
+  contrast: (caseIds) => request('/compare/contrast', { method: 'POST', body: JSON.stringify({ case_ids: caseIds }) }),
 };
 
 // ============================================
@@ -278,6 +281,11 @@ export const aiApi = {
 // ============================================
 // Agent API
 // ============================================
+export const agentToolsApi = {
+  list: () => request('/agent-tools'),
+  execute: (name, input = {}) => request(`/agent-tools/${name}`, { method: 'POST', body: JSON.stringify(input) }),
+};
+
 export const agentApi = {
   // 获取所有 Agent
   getAll: () => request('/agents'),
@@ -548,6 +556,8 @@ export const analysisApi = {
 // ============================================
 export const schemaVersionApi = {
   families: () => request('/schema-families'),
+  createFamily: (data) =>
+    request('/schema-families', { method: 'POST', body: JSON.stringify(data) }),
   versions: (familyId) => request(`/schema-families/${familyId}/versions`),
   createDraft: (data) =>
     request('/schema-versions/draft', { method: 'POST', body: JSON.stringify(data) }),

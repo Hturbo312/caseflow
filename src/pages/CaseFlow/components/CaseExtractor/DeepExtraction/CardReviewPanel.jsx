@@ -132,7 +132,6 @@ const CardReviewPanel = memo(({ entityType, cards, currentSchema, onUpdateStatus
             </>
           )}
         </div>
-      )}
 
       {/* 卡片列表 */}
       <AnimatePresence>

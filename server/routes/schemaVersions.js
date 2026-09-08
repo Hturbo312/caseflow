@@ -39,9 +39,36 @@ router.get('/schema-families', async (req, res) => {
       SELECT f.*,
              (SELECT COUNT(*)::int FROM schema_versions v WHERE v.family_id = f.id) AS version_count,
              (SELECT json_build_object('id', v.id, 'version_key', v.version_key, 'status', v.status)
-              FROM schema_versions v WHERE v.family_id = f.id AND v.status = 'active' LIMIT 1) AS active_version
+              FROM schema_versions v WHERE v.family_id = f.id AND v.status = 'active' LIMIT 1) AS active_version,
+             (SELECT v.legacy_schema_id FROM schema_versions v WHERE v.family_id = f.id AND v.legacy_schema_id IS NOT NULL
+              ORDER BY v.created_at DESC LIMIT 1) AS legacy_schema_id
       FROM schema_families f ORDER BY f.id`);
     res.json({ families: rows });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 为指定 Schema 创建版本族（每个框架一条版本线）
+router.post('/schema-families', authMiddleware, async (req, res) => {
+  try {
+    const { schemaId, name } = req.body;
+    if (!schemaId) return res.status(400).json({ error: 'schemaId 必填' });
+    const schemaRes = await pool.query('SELECT name FROM schemas WHERE id = $1', [schemaId]);
+    if (schemaRes.rows.length === 0) return res.status(404).json({ error: 'Schema 不存在' });
+    const key = `schema_${schemaId}_${Date.now()}`;
+    const { rows } = await pool.query(
+      'INSERT INTO schema_families (key, name, description) VALUES ($1, $2, $3) RETURNING *',
+      [key, name || schemaRes.rows[0].name, `Schema #${schemaId} 的版本管理`]
+    );
+    // 种子 v1.0（生效）：以当前框架内容为基线，否则空族无法创建首个草案
+    const seed = await pool.query(
+      `INSERT INTO schema_versions (family_id, version_key, legacy_schema_id, status, research_question, change_reason, created_by)
+       VALUES ($1, 'v1.0', $2, 'active', '初始版本', '启用版本管理，以当前框架内容为基线', $3) RETURNING *`,
+      [rows[0].id, schemaId, req.user?.id || null]
+    );
+    await logChange(seed.rows[0].id, 'enable_versioning', `schema_${schemaId}`, { baseline: true });
+    res.json({ family: rows[0], version: seed.rows[0] });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

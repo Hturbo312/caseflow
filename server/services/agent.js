@@ -1,5 +1,5 @@
 import pool from '../db.js';
-import { aiConfigCache } from '../config.js';
+import { aiConfigCache, ALLOWED_USER_IDS } from '../config.js';
 import { graphRagSearch } from './graphRag.js';
 import https from 'https';
 import http from 'http';
@@ -48,7 +48,7 @@ function buildAiConfig({ apiKey, endpoint, model, temperature, maxTokens, useTem
  * 解析 AI 配置：用户配置优先，回退到全局缓存（环境变量 / 管理员配置）
  * 优化：提取共享构建逻辑，消除冗余分支；增加 endpoint 无 apiKey 的校验
  */
-function resolveAiConfig(userConfig) {
+function resolveAiConfig(userConfig, userId = null) {
   // 用户有配置时使用用户配置（兼容 api_key 和 apiKey 两种命名）
   const userApiKey = userConfig?.api_key || userConfig?.apiKey;
   if (userApiKey) {
@@ -61,6 +61,10 @@ function resolveAiConfig(userConfig) {
       useTemperature: userConfig.use_temperature ?? userConfig.useTemperature ?? true,
       useMaxTokens: userConfig.use_max_tokens ?? userConfig.useMaxTokens ?? true,
     });
+  }
+  // 只有管理员白名单可以使用服务器全局配置，普通用户必须配置自己的 Key。
+  if (userId != null && userConfig?.role !== 'admin' && !ALLOWED_USER_IDS.includes(Number(userId))) {
+    return buildAiConfig({});
   }
   // 回退到全局缓存（环境变量或管理员通过 API 设置的全局配置）
   if (aiConfigCache && aiConfigCache.apiKey && aiConfigCache.endpoint) {
@@ -496,8 +500,8 @@ function resolveHttpClient(endpoint) {
 }
 
 // 调用 AI - 非流式（使用 fetch，DashScope coding 端点对 node:https 返回 405）
-export async function callAI(systemPrompt, messages, agent, userConfig) {
-  const cfg = resolveAiConfig(userConfig);
+export async function callAI(systemPrompt, messages, agent, userConfig, userId = null) {
+  const cfg = resolveAiConfig(userConfig, userId);
   if (!cfg.apiKey || !cfg.endpoint) {
     throw new Error('请先配置 AI API');
   }
@@ -531,8 +535,8 @@ export async function callAI(systemPrompt, messages, agent, userConfig) {
 }
 
 // 流式调用 AI（使用 node:https + 共享 keep-alive agent，与 callAI 保持一致）
-export async function callAIStream(systemPrompt, messages, agent, onChunk, userConfig) {
-  const cfg = resolveAiConfig(userConfig);
+export async function callAIStream(systemPrompt, messages, agent, onChunk, userConfig, userId = null) {
+  const cfg = resolveAiConfig(userConfig, userId);
   if (!cfg.apiKey || !cfg.endpoint) {
     throw new Error('请先配置 AI API');
   }

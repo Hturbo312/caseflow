@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useCaseStore, useSchemaStore, useAuthStore } from '../../../../store';
 import { useWorkspaceStore } from '../../../../store/workspaceStore';
-import SchemaWorkspace from './SchemaWorkspace';
+import { aiApi, schemaVersionApi } from '../../../../services/api';
+import SchemaArchitect from '../SchemaArchitect';
+import SchemaVisualization from '../SchemaArchitect/SchemaVisualization';
+import VersionBar from './VersionBar';
 
 export function ResearchLens({ caseItem }) {
   const schema = useSchemaStore(s => s.schemas.find(x => String(x.id) === String(caseItem.schemaId || caseItem.schema_id)));
@@ -12,35 +15,307 @@ export function ResearchLens({ caseItem }) {
   </div>;
 }
 
+/**
+ * 研究框架视图（2026-09 重构）
+ * 图为核心操作面：点节点 → 下方实体面板（定义/证据/修订）；点连线 → 关系面板（编辑）。
+ * 未选中时面板显示框架简介与实体/关系统计。
+ * 顶部：版本状态条（框架切换器 + 版本状态 + 历史与差异抽屉）。
+ * 冻结/归档版本由后端 guardVersionWritable 拒绝写入。
+ */
 export default function FrameworkGuide(props) {
   const { schemas, currentSchemaId } = useSchemaStore();
   const cases = useCaseStore(s => s.cases);
   const userId = useAuthStore(s => s.user?.id || 'guest');
   const schema = schemas.find(s => String(s.id) === String(currentSchemaId));
-  return <GuideSession key={`${userId}:${currentSchemaId}`} {...props} schema={schema} cases={cases} storageKey={`cf-framework-notes:${userId}:${currentSchemaId}`} />;
+  return <GuideSession key={`${userId}:${currentSchemaId}`} {...props} schema={schema} cases={cases} />;
 }
 
-function GuideSession({ schema, cases, storageKey, ...props }) {
-  const [type, setType] = useState(null);
-  const [editing, setEditing] = useState(false);
-  const [notes, setNotes] = useState(() => { try { return JSON.parse(localStorage.getItem(storageKey)) || []; } catch { return []; } });
-  const [draft, setDraft] = useState({ caseId: '', quote: '', question: '' });
+const VER_STATUS_LABEL = { active: '生效中', draft: '草案', frozen: '已冻结', archived: '已归档' };
+
+function GuideSession({ schema, cases, ...props }) {
+  const { schemas, setCurrentSchema } = useSchemaStore();
+  const [type, setType] = useState(null);            // 选中的概念（由图节点点击驱动）
+  const [revising, setRevising] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [graphOpen, setGraphOpen] = useState(true);
+  const [tidySignal, setTidySignal] = useState(0);
+  const [layoutPlan, setLayoutPlan] = useState(null);
+  const [aiLayingOut, setAiLayingOut] = useState(false);
+  const [relEditing, setRelEditing] = useState(null);
+  const [verInfo, setVerInfo] = useState(null);
+  const [draft, setDraft] = useState({ name: '', description: '' });
+  const [relDraft, setRelDraft] = useState({ name: '', from: '', to: '' });
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiProposals, setAiProposals] = useState(null);
+  const [aiError, setAiError] = useState('');
   const [message, setMessage] = useState('');
   const types = schema?.entityTypes || [];
-  const active = type || types[0];
+  const relations = schema?.relations || [];
+  const active = type;                                // 仅由图节点点击选中，无默认兜底
   const matching = cases.filter(c => String(c.schemaId || c.schema_id) === String(schema?.id));
-  const instances = matching.flatMap(c => (c.entities || []).filter(e => (e.entityType || e.entity_type) === active?.name).map(e => ({ c, e })));
-  function save() {
-    const next = [...notes, { ...draft, concept: active?.name || '', createdAt: new Date().toISOString() }];
-    try { localStorage.setItem(storageKey, JSON.stringify(next)); setNotes(next); setDraft({ caseId: '', quote: '', question: '' }); setMessage('已保存到本机待讨论记录；尚未形成框架修改或服务器审核任务。'); } catch { setMessage('保存失败，请复制保留你的记录。'); }
+  const instances = active ? matching.flatMap(c => (c.entities || []).filter(e => (e.entityType || e.entity_type) === active.name).map(e => ({ c, e }))) : [];
+  const relatedRelations = active ? relations.filter(r => r.from === active.name || r.to === active.name) : [];
+
+  // 版本状态（轻量读取，与 VersionBar 同源 API）
+  const loadVersionInfo = useCallback(async () => {
+    try {
+      const famRes = await schemaVersionApi.families();
+      const fam = (famRes.families || []).find(f => Number(f.legacy_schema_id) === Number(schema?.id));
+      if (!fam) return setVerInfo(null);
+      const verRes = await schemaVersionApi.versions(fam.id);
+      const vs = verRes.versions || [];
+      const cur = vs.find(v => v.status === 'active') || vs.find(v => v.status === 'draft') || vs[0];
+      setVerInfo(cur ? { key: cur.version_key, status: cur.status } : null);
+    } catch { setVerInfo(null); }
+  }, []);
+  useEffect(() => { loadVersionInfo(); }, [loadVersionInfo, schema?.id]);
+
+  function selectType(t) {
+    setType(t);
+    setRevising(false);
+    setAiProposals(null);
+    setAiError('');
+    setMessage('');
+    setRelEditing(null);
   }
-  return <div className="academic-framework"><small>研究手册 / 框架与证据</small><h2>{schema?.name || '选择研究框架'}</h2><p>{schema?.description || '框架指导阅读，案例证据推动修订，研究者决定解释和分类。'}</p>
-    <div className="research-actions"><button aria-pressed={!editing} onClick={() => setEditing(false)}>定义与案例实例</button><button aria-pressed={editing} onClick={() => setEditing(true)}>编辑结构与版本</button></div>
-    {editing ? <SchemaWorkspace {...props} /> : <div className="academic-framework-grid"><nav aria-label="框架概念">{types.map(t => <button key={t.id} aria-pressed={t.id === active?.id} onClick={() => setType(t)}>{t.name}</button>)}{!types.length && <p>尚无概念定义。</p>}</nav><article>
-      <h3>{active?.name || '研究概念'}</h3><h4>定义与识别依据</h4><p>{active?.description || '当前框架尚未记录此概念的定义。可在结构编辑中补充。'}</p>
-      <h4>已关联实例 · {instances.length}</h4><p className="academic-muted">关联记录用于理解概念，不自动视为已核实的支持证据。</p>{instances.slice(0, 30).map(({ c, e }) => <button className="research-record" key={`${c.id}:${e.id}`} onClick={() => useWorkspaceStore.getState().openCaseDetail(c.id)}>{e.name} · {c.name}</button>)}{instances.length > 30 && <p>展示前 30 条，更多实例请在案例集中查看。</p>}
-      <h4>现有分类不合适？</h4><p>先保留材料和疑问，再决定是否修订框架。</p><label>关联案例<select value={draft.caseId} onChange={e => setDraft({ ...draft, caseId: e.target.value })}><option value="">暂不关联案例</option>{matching.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label><label>材料摘录<textarea value={draft.quote} onChange={e => setDraft({ ...draft, quote: e.target.value })} /></label><label>疑问与初步想法<textarea value={draft.question} onChange={e => setDraft({ ...draft, question: e.target.value })} /></label><button disabled={!draft.question.trim()} onClick={save}>保留为待讨论问题</button><p role="status">{message}</p>
-      <details><summary>待讨论问题 · {notes.length}（本机）</summary>{notes.map((n, i) => <section key={i}><b>{n.concept || '未归类'}</b><blockquote>{n.quote}</blockquote><p>{n.question}</p><small>{n.caseId ? `关联案例 ${n.caseId} · ` : ''}{n.createdAt.slice(0, 10)}</small></section>)}</details>
-    </article></div>}
+
+  function startRevise() {
+    setDraft({ name: active?.name || '', description: active?.description || '' });
+    setRelDraft({ name: '', from: active?.name || '', to: '' });
+    setAiProposals(null);
+    setMessage('');
+    setRevising(true);
+  }
+
+  function switchSchema(id) {
+    if (!id) return;
+    setCurrentSchema(id);
+    setType(null);
+    setRevising(false);
+    setAdvanced(false);
+    setAiProposals(null);
+    setRelEditing(null);
+    setMessage('');
+  }
+
+  // 人工修订：概念名称/定义就地保存（冻结/归档版本由后端拒绝）
+  async function saveEdit() {
+    if (!draft.name.trim()) return setMessage('概念名称不能为空。');
+    setMessage('');
+    await useSchemaStore.getState().updateEntityType(schema.id, active.id, { name: draft.name.trim(), description: draft.description });
+    setRevising(false);
+    setMessage('修订已保存。重大结构调整建议创建新版本草案（顶部「历史与差异」）后批量进行。');
+    loadVersionInfo();
+  }
+
+  async function addConcept() {
+    const created = await useSchemaStore.getState().addEntityType(schema.id, { name: `新概念 ${types.length + 1}`, color: '#9ca3af', description: '' });
+    setType(created);
+    setDraft({ name: created.name, description: '' });
+    setRevising(true);
+  }
+
+  async function removeConcept() {
+    if (!window.confirm(`删除概念「${active?.name}」？已归入该概念的案例实体记录不会删除，但会失去类型归属。`)) return;
+    await useSchemaStore.getState().deleteEntityType(schema.id, active.id);
+    setType(null);
+    setRevising(false);
+    setMessage('概念已删除。');
+  }
+
+  async function addRelation() {
+    if (!relDraft.name.trim() || !relDraft.from || !relDraft.to) return setMessage('关系名、起点与终点概念均需填写。');
+    await useSchemaStore.getState().addRelation(schema.id, { name: relDraft.name.trim(), from: relDraft.from, to: relDraft.to, description: '' });
+    setRelDraft({ name: '', from: active?.name || '', to: '' });
+    setMessage('关系已添加。');
+  }
+
+  // 画布拖线 → 直接创建关系（默认名「关联」，随后可在关系面板中改名）
+  async function handleGraphConnect({ sourceName, targetName }) {
+    if (!sourceName || !targetName) return;
+    const nr = await useSchemaStore.getState().addRelation(schema.id, { name: '关联', from: sourceName, to: targetName, description: '' });
+    if (nr) {
+      setRevising(false);
+      setRelEditing({ ...nr });
+      setMessage('已创建关系。请在下方面板中命名，回图可继续拖线。');
+    }
+  }
+
+  // 画布中选中连线按 Delete → 删除关系（同步服务器）
+  async function handleGraphEdgeDelete(ids) {
+    if (!ids.length) return;
+    if (!window.confirm(`删除选中的 ${ids.length} 条关系？此操作会同步到服务器。`)) return;
+    for (const id of ids) {
+      const r = relations.find(x => String(x.id) === String(id));
+      if (r) await useSchemaStore.getState().deleteRelation(schema.id, r.id);
+    }
+    setRelEditing(null);
+    setMessage('关系已删除。');
+  }
+
+  async function removeRelation(r) {
+    await useSchemaStore.getState().deleteRelation(schema.id, r.id);
+    setMessage(`关系「${r.name}」已删除。`);
+  }
+
+  // AI 排布：把概念/关系清单交给 AI 出分行方案（只影响排版，不写入数据）
+  async function aiLayout() {
+    if (!types.length || aiLayingOut) return;
+    setAiLayingOut(true); setAiError(''); setMessage('');
+    try {
+      const concepts = types.map(t => ({ name: t.name, definition: (t.description || '').slice(0, 80) }));
+      const rels = relations.map(r => `${r.from} -${r.name}-> ${r.to}`);
+      const response = await aiApi.proxy([
+        { role: 'system', content: '你是研究框架图布局助手。根据概念与关系，给出分行排版方案。规则：1) 按研究逻辑分行（如驱动、行动、结果等阶段），2-6 行；2) 每个概念必须且只能出现一行，用原始全名；3) 关系密集的概念放入相邻行；4) orientation: LR=行从左到右流动（适合因果/流程链），TB=从上到下。只返回 JSON: {"orientation":"LR","rows":[{"title":"行标题","items":["概念全名"]}]}' },
+        { role: 'user', content: JSON.stringify({ concepts, relations: rels }) },
+      ]);
+      const raw = response?.choices?.[0]?.message?.content || '';
+      const plan = JSON.parse(raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, ''));
+      const names = new Set(types.map(t => t.name));
+      const seen = new Set();
+      const rows = (Array.isArray(plan.rows) ? plan.rows : [])
+        .map(r => ({ title: r.title || '', items: (Array.isArray(r.items) ? r.items : []).filter(n => names.has(n) && !seen.has(n) && (seen.add(n), true)) }))
+        .filter(r => r.items.length);
+      const missing = types.map(t => t.name).filter(n => !seen.has(n));
+      if (missing.length) rows.push({ title: '', items: missing });
+      if (!rows.length) throw new Error('AI 未返回有效分行');
+      setLayoutPlan({ orientation: plan.orientation === 'TB' ? 'TB' : 'LR', rows });
+      setMessage('AI 排布已应用。可在图中拖动微调后「保存布局」固定。');
+    } catch (e) {
+      setAiError('AI 排布失败：' + e.message);
+    } finally {
+      setAiLayingOut(false);
+    }
+  }
+
+  // AI 起草：基于概念定义与案例证据提出修订建议，人工采纳后才写入
+  async function aiDraft() {
+    setAiBusy(true); setAiError(''); setAiProposals(null); setMessage('');
+    try {
+      const evidence = instances.slice(0, 10).map(({ c, e }) => `${e.name}（案例：${c.name}）`);
+      const response = await aiApi.proxy([
+        { role: 'system', content: '你是研究框架修订助手。基于概念定义与案例证据提出框架修订建议。只返回 JSON: {"proposals":[{"kind":"refine_definition","target":"概念名","definition":"修订后的完整定义","reason":"依据"}]}。最多 3 条；证据不足时返回空数组；不得编造证据中不存在的内容。' },
+        { role: 'user', content: JSON.stringify({ concept: active?.name, definition: active?.description || '', evidence }) },
+      ]);
+      const raw = response?.choices?.[0]?.message?.content || '';
+      const parsed = JSON.parse(raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, ''));
+      setAiProposals(Array.isArray(parsed.proposals) ? parsed.proposals : []);
+    } catch (e) {
+      setAiError(e.message);
+    } finally {
+      setAiBusy(false);
+    }
+  }
+
+  async function acceptProposal(p) {
+    const target = types.find(t => t.name === (p.target || active?.name)) || active;
+    await useSchemaStore.getState().updateEntityType(schema.id, target.id, { description: p.definition });
+    setAiProposals(list => list.filter(x => x !== p));
+    setMessage(`建议已采纳并写入「${target.name}」的定义。`);
+  }
+
+  return <div className="academic-framework">
+    <div className="fw-statusbar">
+      <span className="fw-status-main">研究框架</span>
+      <select className="fw-schema-select" value={schema?.id || ''} onChange={(e) => switchSchema(e.target.value)} title="切换研究框架">
+        {(schemas || []).map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
+      </select>
+      <span className={`fw-status-ver ${verInfo?.status || 'none'}`}>{verInfo ? `${verInfo.key} · ${VER_STATUS_LABEL[verInfo.status] || verInfo.status}` : '未纳入版本管理'}</span>
+      {verInfo?.status === 'draft' && <span className="fw-draft-hint">草案修订中，批准后生效</span>}
+      <button onClick={() => setHistoryOpen(v => !v)}>{historyOpen ? '收起历史' : '历史与差异'}</button>
+    </div>
+    {historyOpen && <div className="fw-history"><VersionBar schemaId={schema?.id} /></div>}
+
+    <div className="fw-graph">
+      <button className="fw-graph-toggle" onClick={() => setGraphOpen(v => !v)}>
+        实体与关系图 {graphOpen ? '▾' : '▸'}
+      </button>
+      {graphOpen && <button className="fw-graph-toggle" onClick={aiLayout} disabled={aiLayingOut} title="让 AI 按研究逻辑分行排布">{aiLayingOut ? 'AI 排布中…' : 'AI 排布'}</button>}
+      {graphOpen && <button className="fw-graph-toggle" onClick={() => setTidySignal(s => s + 1)} title="按关系结构自动重排节点">自动整理布局</button>}
+      {graphOpen && <button className="fw-graph-toggle" onClick={addConcept}>＋ 新增概念</button>}
+      {graphOpen && <div className="fw-graph-canvas">{schema && <SchemaVisualization
+        schema={schema}
+        tidySignal={tidySignal}
+        layoutPlan={layoutPlan}
+        onConnect={handleGraphConnect}
+        onEdgeDelete={handleGraphEdgeDelete}
+        onNodeClick={(node) => { const t = types.find(x => String(x.id) === String(node.id)); if (t) selectType(t); }}
+        onEdgeClick={(edge) => { const r = relations.find(x => String(x.id) === String(edge.id)); if (r) { setRevising(false); setType(types.find(t => t.name === r.from) || null); setRelEditing({ ...r }); setAiProposals(null); setAiError(''); setMessage(''); } }}
+      />}</div>}
+    </div>
+
+    <div className="fw-panel">
+      {relEditing ? <div className="fw-relpanel">
+        <div className="fw-relpanel-head"><b>关系 · {relEditing.from} → {relEditing.to}</b><button onClick={() => setRelEditing(null)} title="关闭">×</button></div>
+        <label>关系名<input value={relEditing.name || ''} onChange={e => setRelEditing({ ...relEditing, name: e.target.value })} /></label>
+        <div className="fw-relpanel-ends">
+          <label>起点<select value={relEditing.from || ''} onChange={e => setRelEditing({ ...relEditing, from: e.target.value })}>{types.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}</select></label>
+          <label>终点<select value={relEditing.to || ''} onChange={e => setRelEditing({ ...relEditing, to: e.target.value })}>{types.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}</select></label>
+        </div>
+        <label>说明（可选）<textarea rows={2} value={relEditing.description || ''} onChange={e => setRelEditing({ ...relEditing, description: e.target.value })} /></label>
+        <div className="fw-relpanel-actions">
+          <button onClick={async () => { await useSchemaStore.getState().updateRelation(schema.id, relEditing.id, { name: relEditing.name, from: relEditing.from, to: relEditing.to, description: relEditing.description }); setRelEditing(null); setMessage('关系已更新。'); }}>保存</button>
+          <button onClick={() => setRelEditing(null)}>取消</button>
+          <button className="fw-danger" onClick={async () => { if (!window.confirm('删除该关系？')) return; await useSchemaStore.getState().deleteRelation(schema.id, relEditing.id); setRelEditing(null); setMessage('关系已删除。'); }}>删除</button>
+        </div>
+      </div>
+      : active ? (revising ? <div className="fw-edit">
+        <h3>修订 · {active.name}</h3>
+        <label>概念名称<input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} /></label>
+        <label>定义与识别依据<textarea rows={4} value={draft.description} onChange={e => setDraft({ ...draft, description: e.target.value })} /></label>
+        <div className="fw-edit-actions"><button onClick={saveEdit}>保存修订</button><button onClick={() => { setRevising(false); setMessage(''); }}>取消</button><button className="fw-danger" onClick={removeConcept}>删除此概念</button></div>
+        <div className="fw-rel">
+          <h4>相关关系 · {relatedRelations.length}</h4>
+          {relatedRelations.map(r => <div className="fw-rel-row" key={r.id}><span>{r.from} —{r.name}→ {r.to}</span><button onClick={() => removeRelation(r)}>删除</button></div>)}
+          {!relatedRelations.length && <p className="academic-muted">尚无涉及此概念的关系。</p>}
+          <div className="fw-rel-add">
+            <input placeholder="关系名（如 影响）" value={relDraft.name} onChange={e => setRelDraft({ ...relDraft, name: e.target.value })} />
+            <select value={relDraft.from} onChange={e => setRelDraft({ ...relDraft, from: e.target.value })}><option value="">起点概念</option>{types.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}</select>
+            <select value={relDraft.to} onChange={e => setRelDraft({ ...relDraft, to: e.target.value })}><option value="">终点概念</option>{types.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}</select>
+            <button onClick={addRelation}>新增关系</button>
+          </div>
+        </div>
+        <div className="fw-advanced">
+          <button onClick={() => setAdvanced(v => !v)}>{advanced ? '收起完整结构编辑器' : '完整结构编辑器（高级：画布/属性/关系细节）'}</button>
+          {advanced && <SchemaArchitect {...props} />}
+        </div>
+      </div> : <>
+        <h3>{active.name}</h3>
+        <h4>定义与识别依据</h4>
+        <p className="fw-def">{active.description || '尚未填写定义。点击「修订框架」补充识别依据。'}</p>
+        <details className="fw-evidence">
+          <summary>证据 · {instances.length} 条（来自案例实体归类）</summary>
+          {!instances.length && <p className="academic-muted">尚无案例归入此概念；这不代表现象未发生，只是尚未登记。</p>}
+          {instances.slice(0, 10).map(({ c, e }) => <button className="research-record" key={`${c.id}:${e.id}`} onClick={() => useWorkspaceStore.getState().openCaseDetail(c.id)}>{e.name} · {c.name}</button>)}
+          {instances.length > 10 && <p className="academic-muted">仅显示前 10 条，全部实例请在案例集或图谱中查看。</p>}
+        </details>
+        <div className="fw-revise">
+          <button onClick={startRevise}>修订框架</button>
+          <button onClick={aiDraft} disabled={aiBusy}>{aiBusy ? 'AI 起草中…' : 'AI 起草修订'}</button>
+          {message && <span className="fw-message" role="status">{message}</span>}
+        </div>
+        {aiError && <p role="alert" className="fw-error">{aiError}</p>}
+        {aiProposals && <div className="fw-proposals">
+          <h4>AI 修订建议（采纳后才写入框架）</h4>
+          {!aiProposals.length && <p className="academic-muted">证据不足，AI 未提出修订建议。</p>}
+          {aiProposals.map((p, i) => <section key={i}>
+            <b>{p.target || active?.name}</b>
+            <p>{p.definition}</p>
+            <p className="academic-muted">依据：{p.reason}</p>
+            <button onClick={() => acceptProposal(p)}>采纳</button>
+          </section>)}
+        </div>}
+      </>) : <div className="fw-overview">
+        <h3>{schema?.name || '选择研究框架'}</h3>
+        <p className="fw-def">{schema?.description || '框架指导阅读，案例证据推动修订，研究者决定解释和分类。'}</p>
+        <div className="fw-stats">
+          <span className="fw-stat-chip">概念 · {types.length}</span>
+          <span className="fw-stat-chip">关系 · {relations.length}</span>
+          <span className="fw-stat-chip">关联案例 · {matching.length}</span>
+        </div>
+        <p className="academic-muted">点击图中的实体或连线查看与编辑；「＋ 新增概念」在图上方。</p>
+      </div>}
+    </div>
   </div>;
 }

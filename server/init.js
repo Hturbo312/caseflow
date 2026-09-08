@@ -477,6 +477,19 @@ export async function initializeDatabase() {
       )
     `);
 
+    // 案例级访问控制：存量案例由迁移脚本归属管理员，新案例由路由写入创建者。
+    await pool.query(`ALTER TABLE cases ADD COLUMN IF NOT EXISTS created_by INTEGER REFERENCES users(id) ON DELETE SET NULL`);
+    await pool.query(`CREATE TABLE IF NOT EXISTS case_access (
+      case_id INTEGER NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      role VARCHAR(20) NOT NULL DEFAULT 'viewer',
+      created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (case_id, user_id),
+      CONSTRAINT case_access_role_check CHECK (role IN ('owner', 'editor', 'viewer'))
+    )`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_case_access_user ON case_access(user_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_case_access_case ON case_access(case_id)`);
+
     // 创建案例实体表
     await pool.query(`
       CREATE TABLE IF NOT EXISTS case_entities (

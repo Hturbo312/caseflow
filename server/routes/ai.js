@@ -1,6 +1,7 @@
 import express from 'express';
 import { authMiddleware } from '../middleware/auth.js';
 import pool from '../db.js';
+import { aiConfigCache } from '../config.js';
 
 const router = express.Router();
 
@@ -16,6 +17,11 @@ async function getUserConfig(userId) {
     console.error('获取用户 AI 配置失败:', e);
     return null;
   }
+}
+
+async function getUserRole(userId) {
+  const result = await pool.query('SELECT role FROM users WHERE id = $1', [userId]);
+  return result.rows[0]?.role || null;
 }
 
 // 获取 AI 配置状态
@@ -39,15 +45,20 @@ router.get('/config', async (req, res) => {
   }
 
   const hasOwnConfig = !!(userConfig && userConfig.api_key);
+  const isAdmin = userId ? (await getUserRole(userId)) === 'admin' : false;
+  const sharedConfigured = !!(aiConfigCache?.apiKey && aiConfigCache?.endpoint);
+  const effectiveConfig = hasOwnConfig ? userConfig : (isAdmin && sharedConfigured ? aiConfigCache : null);
 
   res.json({
-    configured: hasOwnConfig && !!userConfig.endpoint,
-    endpoint: hasOwnConfig ? (userConfig.endpoint || '') : '',
-    model: hasOwnConfig ? (userConfig.model || 'glm-4.7-flash') : 'glm-4.7-flash',
-    temperature: parseFloat(hasOwnConfig ? (userConfig.temperature || 0.7) : 0.7),
-    maxTokens: parseInt(hasOwnConfig ? (userConfig.max_tokens || 16384) : 16384),
-    useTemperature: hasOwnConfig ? (userConfig.use_temperature !== undefined ? userConfig.use_temperature : true) : true,
-    useMaxTokens: hasOwnConfig ? (userConfig.use_max_tokens !== undefined ? userConfig.use_max_tokens : true) : true,
+    configured: !!(effectiveConfig && effectiveConfig.endpoint),
+    endpoint: effectiveConfig ? (effectiveConfig.endpoint || '') : '',
+    model: effectiveConfig ? (effectiveConfig.model || 'glm-4.7-flash') : 'glm-4.7-flash',
+    temperature: parseFloat(effectiveConfig ? (effectiveConfig.temperature || 0.7) : 0.7),
+    maxTokens: parseInt(effectiveConfig ? (effectiveConfig.max_tokens || effectiveConfig.maxTokens || 16384) : 16384),
+    useTemperature: effectiveConfig ? (effectiveConfig.use_temperature ?? effectiveConfig.useTemperature ?? true) : true,
+    useMaxTokens: effectiveConfig ? (effectiveConfig.use_max_tokens ?? effectiveConfig.useMaxTokens ?? true) : true,
+    sharedConfigured: isAdmin && sharedConfigured,
+    usingSharedConfig: !hasOwnConfig && isAdmin && sharedConfigured,
     embeddingConfigured: hasOwnConfig && !!userConfig.embedding_endpoint,
     embeddingEndpoint: hasOwnConfig ? (userConfig.embedding_endpoint || '') : '',
     embeddingModel: hasOwnConfig ? (userConfig.embedding_model || 'embedding-2') : 'embedding-2',
@@ -128,14 +139,16 @@ router.delete('/config', authMiddleware, async (req, res) => {
 router.post('/proxy', authMiddleware, async (req, res) => {
   const userId = req.user.id;
   const userConfig = await getUserConfig(userId);
+  const isAdmin = req.user.role === 'admin' || (await getUserRole(userId)) === 'admin';
+  const effectiveConfig = userConfig?.api_key ? userConfig : (isAdmin ? aiConfigCache : null);
 
-  const apiKey = userConfig?.api_key;
-  const endpoint = userConfig?.endpoint;
-  const model = userConfig?.model || 'glm-4.7-flash';
-  const temperature = req.body.temperature ?? userConfig?.temperature ?? 0.7;
-  const maxTokens = req.body.maxTokens ?? userConfig?.max_tokens ?? 4096;
-  const useTemperature = req.body.useTemperature ?? userConfig?.use_temperature ?? true;
-  const useMaxTokens = req.body.useMaxTokens ?? userConfig?.use_max_tokens ?? true;
+  const apiKey = effectiveConfig?.api_key || effectiveConfig?.apiKey;
+  const endpoint = effectiveConfig?.endpoint;
+  const model = effectiveConfig?.model || 'glm-4.7-flash';
+  const temperature = req.body.temperature ?? effectiveConfig?.temperature ?? 0.7;
+  const maxTokens = req.body.maxTokens ?? effectiveConfig?.max_tokens ?? effectiveConfig?.maxTokens ?? 4096;
+  const useTemperature = req.body.useTemperature ?? effectiveConfig?.use_temperature ?? effectiveConfig?.useTemperature ?? true;
+  const useMaxTokens = req.body.useMaxTokens ?? effectiveConfig?.use_max_tokens ?? effectiveConfig?.useMaxTokens ?? true;
   const messages = req.body.messages;
 
   if (!apiKey || !endpoint) {

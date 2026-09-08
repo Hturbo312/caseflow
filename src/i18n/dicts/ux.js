@@ -71,4 +71,26 @@ export const pairs = {
   'settings.styleCozy': ['舒适', 'Cozy'],
   'settings.styleCompact': ['紧凑', 'Compact'],
   'settings.styleHint': ['紧凑模式收窄间距与字号，适合大屏一屏浏览更多内容。', 'Compact mode tightens spacing and font sizes to fit more on screen.'],
+
+  // 统一 Copilot：材料能力内化（附件登记 + 整理/提取动作）
+  'ux.mat.attach': ['登记来源材料（PDF/DOCX/TXT）', 'Attach source materials (PDF/DOCX/TXT)'],
+  'ux.mat.registering': ['正在登记来源材料…', 'Registering source materials…'],
+  'ux.mat.drafting': ['正在整理来源与冲突…', 'Organizing sources and conflicts…'],
+  'ux.mat.extracting': ['正在抽取候选知识…', 'Extracting candidate knowledge…'],
+  'ux.mat.registered': ['已登记 {n} 份来源材料（当前共 {total} 份）。可以直接让我整理。', 'Registered {n} source(s) ({total} in total). Ask me to organize them anytime.'],
+  'ux.mat.fileTooBig': ['文件超过 20 MB', 'File exceeds 20 MB'],
+  'ux.mat.noText': ['未识别出文字，扫描件请先 OCR', 'No text recognized; run OCR first for scanned files'],
+  'ux.mat.fileFail': ['解析失败：{msg}', 'Failed to parse: {msg}'],
+  'ux.mat.noCase': ['请先在右侧打开或新建一个案例，再登记材料。', 'Open or create a case on the right before attaching materials.'],
+  'ux.mat.busy': ['当前案例有材料任务进行中，请稍候。', 'A material task is already running for this case; please wait.'],
+  'ux.mat.noSources': ['当前案例还没有已登记的来源材料，请先用附件按钮登记。', 'No sources registered for this case yet; attach files first.'],
+  'ux.mat.tooBig': ['材料超过本轮 6 万字符处理上限，不会静默截断，请先分批整理。', 'Materials exceed the 60,000-character limit (no silent truncation); organize in smaller batches.'],
+  'ux.mat.notConfirmed': ['最新整理稿尚未在中栏确认，请先审阅确认后再提取候选知识。', 'The latest draft is not confirmed yet; review it in the workspace before extraction.'],
+  'ux.mat.aiInvalid': ['AI 未返回有效结构，未保存任何结果，请重试。', 'AI returned no valid structure; nothing was saved. Please retry.'],
+  'ux.mat.draftOk': ['整理稿已生成（{n} 段）并保存到服务器，请在中栏审阅确认。', 'Draft generated ({n} paragraphs) and saved; review and confirm it in the workspace.'],
+  'ux.mat.extractOk': ['候选知识已提取（{n} 条），请在中栏核查后写入图谱。', 'Extracted {n} candidate item(s); verify them in the workspace before writing to the graph.'],
+  'ux.mat.failed': ['任务失败：{msg}', 'Task failed: {msg}'],
+
+  // 左栏拖宽手柄
+  'ux.rail.resize': ['拖动调整左栏宽度，双击恢复默认', 'Drag to resize the rail; double-click to reset'],
 };

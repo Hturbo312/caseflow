@@ -2,8 +2,14 @@ import express from 'express';
 import { authMiddleware } from '../middleware/auth.js';
 import * as pipeline from '../services/extractionPipeline.js';
 import pool from '../db.js';
+import { assertCaseAccess } from '../middleware/caseAccess.js';
 
 const router = express.Router();
+router.use(authMiddleware);
+router.param('caseId', async (req, res, next, caseId) => {
+  try { await assertCaseAccess(req.user.id, caseId, ['owner', 'editor']); next(); }
+  catch (error) { res.status(error.status || 403).json({ error: error.message }); }
+});
 
 // 获取提取进度
 router.get('/:caseId/progress', authMiddleware, async (req, res) => {

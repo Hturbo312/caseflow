@@ -22,6 +22,7 @@ const EntityNode = ({ data }) => {
       <Handle
         type="target"
         position={Position.Top}
+        id="top"
         style={{ background: data.color, width: 8, height: 8 }}
       />
       <div style={{ fontWeight: 600, color: data.color, fontSize: 14 }}>
@@ -35,6 +36,7 @@ const EntityNode = ({ data }) => {
       <Handle
         type="source"
         position={Position.Bottom}
+        id="bottom"
         style={{ background: data.color, width: 8, height: 8 }}
       />
       <Handle

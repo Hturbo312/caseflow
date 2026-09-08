@@ -1,8 +1,21 @@
 import express from 'express';
 import pool from '../db.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { accessibleCaseIds } from '../middleware/caseAccess.js';
 
 const router = express.Router();
+
+// 所有比较接口统一验证案例集合，避免通过聚合接口绕过案例访问控制。
+router.use(authMiddleware, async (req, res, next) => {
+  try {
+    const raw = req.query.case_ids || req.body?.case_ids || req.body?.case_id;
+    if (raw == null) return next();
+    const requested = (Array.isArray(raw) ? raw : String(raw).split(',')).map(Number).filter(Number.isInteger);
+    const allowed = await accessibleCaseIds(req.user.id, requested);
+    if (allowed.length !== [...new Set(requested)].length) return res.status(403).json({ error: '比较集包含当前用户无权访问的案例' });
+    next();
+  } catch (error) { res.status(403).json({ error: error.message }); }
+});
 
 // 跨案例对比矩阵：行 = Schema 实体类型维度，列 = 案例，单元格 = 该维度的知识摘要与证据覆盖
 // 说明：实体类型仍按名称匹配 entity_types（历史上 entity_type 是自由字符串），
@@ -209,6 +222,71 @@ router.post('/capability-task', authMiddleware, async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// 少量案例对照：共同结构、不同关系、缺失环节及关系 Evidence。
+router.post('/contrast', authMiddleware, async (req, res) => {
+  try {
+    const { ids, error } = parseCaseIdArray(req.body?.case_ids, { min: 2, max: 6 });
+    if (error) return res.status(400).json({ error });
+    const [casesRes, relRes] = await Promise.all([
+      pool.query('SELECT id,name FROM cases WHERE id=ANY($1::int[])', [ids]),
+      pool.query(`SELECT cr.case_id,cr.id,cr.relation_type,cr.source_entity_id,cr.target_entity_id,
+        s.name AS source_name,s.entity_type AS source_type,t.name AS target_name,t.entity_type AS target_type
+        FROM case_relations cr JOIN case_entities s ON s.id=cr.source_entity_id JOIN case_entities t ON t.id=cr.target_entity_id
+        WHERE cr.case_id=ANY($1::int[]) AND cr.status<>'rejected' ORDER BY cr.case_id,cr.id`, [ids]),
+    ]);
+    const signatures = new Map();
+    for (const r of relRes.rows) {
+      const key = `${r.source_type}::${r.relation_type}::${r.target_type}`;
+      if (!signatures.has(key)) signatures.set(key, []);
+      signatures.get(key).push(r);
+    }
+    const relations = [...signatures.entries()].map(([signature, rows]) => ({
+      signature,
+      cases: ids.map(caseId => ({ case_id: caseId, present: rows.some(r => r.case_id === caseId), examples: rows.filter(r => r.case_id === caseId).slice(0, 5) })),
+      common: ids.every(caseId => rows.some(r => r.case_id === caseId)),
+    }));
+    res.json({ case_ids: ids, cases: casesRes.rows, common: relations.filter(r => r.common), differing: relations.filter(r => !r.common), generated_at: new Date().toISOString() });
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// 跨案例路径比较：返回完整路径、断点案例及关系证据计数。
+router.post('/path', authMiddleware, async (req, res) => {
+  try {
+    const { ids, error } = parseCaseIdArray(req.body?.case_ids, { min: 2, max: 50 });
+    if (error) return res.status(400).json({ error });
+    const types = Array.isArray(req.body?.types) && req.body.types.length >= 2 ? req.body.types : [
+      'Technology（技术）', 'Capability（技术能力）', 'Task（社区更新任务）', 'Action / Event（行动与事件）', 'Outcome（结果）'
+    ];
+    const [entitiesRes, relationsRes, evidenceRes] = await Promise.all([
+      pool.query("SELECT id,case_id,name,entity_type,status FROM case_entities WHERE case_id=ANY($1::int[]) AND status<>'rejected'", [ids]),
+      pool.query(`SELECT id,case_id,source_entity_id,target_entity_id,relation_type,status FROM case_relations
+        WHERE case_id=ANY($1::int[]) AND status<>'rejected'`, [ids]),
+      pool.query(`SELECT ev.relation_id,count(*)::int AS evidence_count,
+        json_agg(json_build_object('id',ev.id,'quote',ev.quote,'status',ev.status,'document_title',d.title,'segment_id',ev.segment_id) ORDER BY ev.created_at DESC) AS evidence
+        FROM evidence ev JOIN case_relations cr ON cr.id=ev.relation_id
+        LEFT JOIN text_segments ts ON ts.id=ev.segment_id LEFT JOIN documents d ON d.id=ts.document_id
+        WHERE cr.case_id=ANY($1::int[]) GROUP BY ev.relation_id`, [ids]),
+    ]);
+    const byCase = new Map(ids.map(id => [id, { entities: entitiesRes.rows.filter(e => e.case_id === id), relations: relationsRes.rows.filter(r => r.case_id === id) }]));
+    const evidence = new Map(evidenceRes.rows.map(r => [r.relation_id, { count: Number(r.evidence_count), items: r.evidence || [] }]));
+    const results = ids.map(caseId => {
+      const graph = byCase.get(caseId); const paths = [];
+      const walk = (current, index, edges) => {
+        if (index === types.length - 1) { paths.push({ nodes: [...current], edges: [...edges] }); return; }
+        const nextType = types[index + 1];
+        const tail = current[current.length - 1];
+        graph.relations.filter(r => r.source_entity_id === tail.id).forEach(r => {
+          const target = graph.entities.find(e => e.id === r.target_entity_id && e.entity_type === nextType);
+          if (target) walk([...current, target], index + 1, [...edges, { ...r, evidence_count: evidence.get(r.id)?.count || 0, evidence: evidence.get(r.id)?.items || [] }]);
+        });
+      };
+      graph.entities.filter(e => e.entity_type === types[0]).forEach(start => walk([start], 0, []));
+      return { case_id: caseId, complete: paths.length > 0, paths: paths.slice(0, 50), available_types: [...new Set(graph.entities.map(e => e.entity_type))] };
+    });
+    res.json({ schema_version: 'Dynamic Schema v1.0', types, cases: results, complete_case_ids: results.filter(r => r.complete).map(r => r.case_id), broken_case_ids: results.filter(r => !r.complete).map(r => r.case_id), generated_at: new Date().toISOString() });
+  } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 // 技术作用链：单案例按 情境→问题→任务→技术→能力→行动→响应→结果 主链排序返回（Spec §7.3-C）

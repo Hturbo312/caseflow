@@ -10,9 +10,17 @@ export const useWorkspaceStore = create((set) => ({
   caseDetailId: null,           // 中栏 Case 工作区当前打开的案例 id（字符串）
   caseSubTab: 'overview',       // overview | source | evidence | review
   selectedEntityId: null,
-  contextTask: '案例审阅',       // Copilot 上下文条：当前任务
+  workbenchResult: null,
+  contextTask: '案例审阅',       // Copilot 上下文任务
+  previewCaseId: null,           // 右栏单击 → 预览卡（不抢占中栏，仅 analysis tab）
+  copilotSeed: null,             // 「问AI」种子 {text, ts}，CopilotRail 监听后自动发送
 
   setMainTab: (tab) => set({ mainTab: tab }),
+  openPreview: (id) => set({ previewCaseId: String(id) }),
+  closePreview: () => set({ previewCaseId: null }),
+
+  // 「问AI」种子：任意视图唤起 Copilot 自动发送（ts 去重）
+  askCopilot: (text) => set({ copilotSeed: { text, ts: Date.now() } }),
 
   // 单击案例 → 选中并在中栏打开详情（Spec §3.3 交互规则）
   openCaseDetail: (id, subTab) => set((state) => ({
@@ -24,5 +32,7 @@ export const useWorkspaceStore = create((set) => ({
   setCaseSubTab: (sub) => set({ caseSubTab: sub }),
 
   selectEntity: (id) => set({ selectedEntityId: id ? String(id) : null }),
+  showWorkbenchResult: (kind, payload = {}) => set({ workbenchResult: { kind, payload, updatedAt: Date.now() } }),
+  clearWorkbenchResult: () => set({ workbenchResult: null }),
   setContextTask: (t) => set({ contextTask: t }),
 }));

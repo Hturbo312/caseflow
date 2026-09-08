@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../db.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { assertCaseAccess, assertTargetAccess } from '../middleware/caseAccess.js';
 
 const router = express.Router();
 
@@ -30,6 +31,7 @@ function makeStatusHandler(targetType, action) {
     }
     const { reason, name, entityType, properties, relationType, sourceEntityId, targetEntityId } = req.body || {};
     const operatorId = req.user?.id || null;
+    await assertTargetAccess(operatorId, targetType === 'entity' ? { entityId: id } : { relationId: id });
     const table = targetType === 'entity' ? 'case_entities' : 'case_relations';
 
     const client = await pool.connect();
@@ -113,6 +115,7 @@ for (const action of ['approve', 'reject', 'edit', 'restore']) {
 }
 router.get('/entity/:id/history', async (req, res) => {
   try {
+    await assertTargetAccess(req.user.id, { entityId: req.params.id });
     const { rows } = await pool.query(
       `SELECT rd.*, u.username AS operator_name
        FROM review_decisions rd LEFT JOIN users u ON u.id = rd.operator_id
@@ -130,6 +133,7 @@ router.get('/entity/:id/history', async (req, res) => {
 // ------------------------------------------------------------
 router.get('/relation/:id/history', async (req, res) => {
   try {
+    await assertTargetAccess(req.user.id, { relationId: req.params.id });
     const { rows } = await pool.query(
       `SELECT rd.*, u.username AS operator_name
        FROM review_decisions rd LEFT JOIN users u ON u.id = rd.operator_id
@@ -150,6 +154,7 @@ router.get('/queues', async (req, res) => {
   try {
     const caseId = parseInt(req.query.case_id, 10);
     if (!caseId) return res.status(400).json({ error: 'case_id 必填' });
+    await assertCaseAccess(req.user.id, caseId);
     const statusFilter = req.query.status || null;
 
     const entSql = `

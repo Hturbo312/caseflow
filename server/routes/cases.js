@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../db.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { assertCaseAccess } from '../middleware/caseAccess.js';
 
 const router = express.Router();
 
@@ -69,7 +70,7 @@ router.get('/', authMiddleware, async (req, res) => {
     // 只查消费方实际使用的列：created_at/source_segment_ids/standardized_name 前端从未读取；
     // 关系列用显式列代替 SELECT *。响应保持 snake_case，camelCase 由前端 loadCases 统一映射
     const [casesResult, entitiesResult, relationsResult] = await Promise.all([
-      pool.query('SELECT id, name, schema_id, location, year, description, tags, case_status, metadata, created_at FROM cases ORDER BY created_at DESC'),
+      pool.query(`SELECT c.id, c.name, c.schema_id, c.location, c.year, c.description, c.tags, c.case_status, c.metadata, c.created_at FROM cases c JOIN case_access ca ON ca.case_id=c.id AND ca.user_id=$1 ORDER BY c.created_at DESC`, [req.user.id]),
       pool.query('SELECT id, case_id, name, entity_type, properties, color FROM case_entities'),
       pool.query('SELECT id, case_id, source_entity_id, target_entity_id, relation_type FROM case_relations')
     ]);
@@ -105,9 +106,10 @@ router.post('/', authMiddleware, async (req, res) => {
   const { name, schemaId, location, year, description, tags } = req.body;
   try {
     const result = await pool.query(
-      'INSERT INTO cases (name, schema_id, location, year, description, tags) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [name, schemaId, location, year, description, JSON.stringify(tags)]
+      'INSERT INTO cases (name, schema_id, location, year, description, tags, created_by) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [name, schemaId, location, year, description, JSON.stringify(tags), req.user.id]
     );
+    await pool.query(`INSERT INTO case_access(case_id, user_id, role) VALUES ($1, $2, 'owner') ON CONFLICT DO NOTHING`, [result.rows[0].id, req.user.id]);
     res.json({ case: result.rows[0] });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -268,6 +270,7 @@ router.get('/export-all', authMiddleware, async (req, res) => {
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
+    await assertCaseAccess(req.user.id, id);
     const [caseResult, entitiesResult, relationsResult] = await Promise.all([
       pool.query('SELECT id, name, schema_id, location, year, description, tags, case_status, metadata, created_at FROM cases WHERE id = $1', [id]),
       pool.query('SELECT id, case_id, name, entity_type, properties, color FROM case_entities WHERE case_id = $1', [id]),
@@ -291,6 +294,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 // 添加案例实体
 router.post('/:caseId/entities', authMiddleware, async (req, res) => {
   const { caseId } = req.params;
+  await assertCaseAccess(req.user.id, caseId, ['owner', 'editor']);
   const { name, entityType, properties } = req.body;
   try {
     const result = await pool.query(
@@ -306,6 +310,7 @@ router.post('/:caseId/entities', authMiddleware, async (req, res) => {
 // 添加案例关系
 router.post('/:caseId/relations', authMiddleware, async (req, res) => {
   const { caseId } = req.params;
+  await assertCaseAccess(req.user.id, caseId, ['owner', 'editor']);
   const { sourceEntityId, targetEntityId, relationType } = req.body;
   try {
     const result = await pool.query(
@@ -321,6 +326,7 @@ router.post('/:caseId/relations', authMiddleware, async (req, res) => {
 // 删除案例实体
 router.delete('/:caseId/entities/:entityId', authMiddleware, async (req, res) => {
   const { caseId, entityId } = req.params;
+  await assertCaseAccess(req.user.id, caseId, ['owner', 'editor']);
   try {
     await pool.query(
       'DELETE FROM case_relations WHERE case_id = $1 AND (source_entity_id = $2 OR target_entity_id = $2)',
@@ -336,6 +342,7 @@ router.delete('/:caseId/entities/:entityId', authMiddleware, async (req, res) =>
 // 删除案例关系
 router.delete('/:caseId/relations/:relationId', authMiddleware, async (req, res) => {
   const { caseId, relationId } = req.params;
+  await assertCaseAccess(req.user.id, caseId, ['owner', 'editor']);
   try {
     await pool.query('DELETE FROM case_relations WHERE id = $1 AND case_id = $2', [relationId, caseId]);
     res.json({ message: 'Relation deleted' });
@@ -348,6 +355,7 @@ router.delete('/:caseId/relations/:relationId', authMiddleware, async (req, res)
 router.delete('/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
   try {
+    await assertCaseAccess(req.user.id, id, ['owner', 'editor']);
     // 使用事务确保级联删除的原子性
     const client = await pool.connect();
     try {

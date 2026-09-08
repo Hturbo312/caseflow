@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '../../../../i18n';
-import { useCaseResearch } from './ResearchAgent';
+import { useCaseResearch } from './useCaseResearch';
 const labels = { pending: 'tl.st.pending', confirmed: 'tl.st.confirmed', rejected: 'tl.st.rejected' };
 
 export default function ThreeLayerCase() {
@@ -8,6 +8,7 @@ export default function ThreeLayerCase() {
   const r = useCaseResearch();
   const [version, setVersion] = useState('');
   const [error, setError] = useState('');
+  const [relationTargets, setRelationTargets] = useState({});
   const sourceRef = useRef(null);
   const data = r.record?.data;
   const draft = data?.drafts.find(d => d.id === version) || data?.drafts.at(-1);
@@ -45,7 +46,8 @@ export default function ThreeLayerCase() {
       </div>
       <section className="knowledge-pane"><h4>{t('tl.candidates')}</h4><small>{t('tl.candidatesNote')}</small>
         {data.extractions.filter(e => e.draftId === draft?.id).length === 0 && <p>{t('tl.extractEmpty')}</p>}
-        {data.extractions.filter(e => e.draftId === draft?.id).map((ex,n) => <details open key={ex.id}><summary>{t('tl.batch', { n: n+1, m: ex.items.length })}</summary>{ex.items.map(item => <article key={item.id}><strong>{item.name}</strong><small>{item.type} · {labels[item.status] ? t(labels[item.status]) : item.status}</small>
+        {data.extractions.filter(e => e.draftId === draft?.id).map(ex => <button key={`publish-${ex.id}`} disabled={!!r.working || !ex.items.some(i => i.status === 'confirmed' && !i.published)} onClick={() => review('publish', { extractionId: ex.id, targets: relationTargets })}>发布已确认知识到图谱并保留证据链</button>)}
+        {data.extractions.filter(e => e.draftId === draft?.id).map((ex,n) => <details open key={ex.id}><summary>{t('tl.batch', { n: n+1, m: ex.items.length })}</summary>{ex.items.map(item => <article key={item.id}><strong>{item.name}</strong><small>{item.type} · {item.published ? '已发布到图谱' : (labels[item.status] ? t(labels[item.status]) : item.status)}</small>{item.kind === 'relation' && !item.published && <div className="relation-target-editor"><input placeholder="起点实体" value={relationTargets[item.id]?.sourceName ?? item.sourceName ?? ''} onChange={e => setRelationTargets(v => ({ ...v, [item.id]: { ...v[item.id], sourceName: e.target.value } }))} /><input placeholder="关系类型" value={relationTargets[item.id]?.relationType ?? item.relationType ?? item.type ?? ''} onChange={e => setRelationTargets(v => ({ ...v, [item.id]: { ...v[item.id], relationType: e.target.value } }))} /><input placeholder="终点实体" value={relationTargets[item.id]?.targetName ?? item.targetName ?? ''} onChange={e => setRelationTargets(v => ({ ...v, [item.id]: { ...v[item.id], targetName: e.target.value } }))} /></div>}
           <div className="research-actions">{item.paragraphIds.map(pid => <button key={pid} onClick={() => { const p = draft.paragraphs.find(p => p.id === pid); locate(p,p.citations[0]); document.getElementById(`draft-${pid}`)?.scrollIntoView({ block: 'nearest' }); }}>{t('tl.locate', { n: draft.paragraphs.findIndex(p => p.id === pid)+1 })}</button>)}
             <button disabled={!!r.working || item.status === 'confirmed'} onClick={() => review('reviewItem', { id: item.id, status: 'confirmed' })}>{t('tl.confirm')}</button><button disabled={!!r.working || item.status === 'rejected'} onClick={() => review('reviewItem', { id: item.id, status: 'rejected' })}>{t('tl.reject')}</button>
           </div></article>)}</details>)}

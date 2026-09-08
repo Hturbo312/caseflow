@@ -7,104 +7,36 @@ import {
   useNodesState,
   useEdgesState,
   MarkerType,
+  ConnectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import dagre from '@dagrejs/dagre';
 import { useSchemaStore } from '../../../../store';
 import { useToastStore } from '@components/Toast/ToastStore';
 import { useI18n } from '../../../../i18n';
 import { nodeTypes } from './EntityNode';
 
 /**
- * 力导向布局计算（一次性计算，非实时模拟）
+ * dagre 层级布局：按关系结构分层排布（左→右），自动减少交叉
  */
-const NODE_W = 165;
-const NODE_H = 80;
-const MIN_GAP = 30;
-
-function computeLayout(nodes, edges, iterations = 200) {
-  const nodeMap = new Map();
-  for (const n of nodes) {
-    nodeMap.set(n.id, { ...n, vx: 0, vy: 0 });
-  }
-  const edgeList = edges.filter(e => nodeMap.has(e.source) && nodeMap.has(e.target));
-
-  const nodeIds = [...nodeMap.keys()];
-  const k = Math.sqrt((500 * 400) / nodeIds.length);
-
-  for (let iter = 0; iter < iterations; iter++) {
-    const alpha = 1 - iter / iterations;
-    const cooling = alpha * alpha;
-
-    // 斥力
-    for (let i = 0; i < nodeIds.length; i++) {
-      const a = nodeMap.get(nodeIds[i]);
-      a.vx = 0;
-      a.vy = 0;
-      for (let j = i + 1; j < nodeIds.length; j++) {
-        const b = nodeMap.get(nodeIds[j]);
-        let dx = a.x - b.x;
-        let dy = a.y - b.y;
-        let dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        let force = (k * k) / dist * 0.3;
-        let minDist = NODE_W * 0.7 + MIN_GAP;
-        if (dist < minDist) {
-          force += (minDist - dist) * 0.4;
-        }
-        a.vx += (dx / dist) * force;
-        a.vy += (dy / dist) * force;
-        b.vx -= (dx / dist) * force;
-        b.vy -= (dy / dist) * force;
-      }
-    }
-
-    // 引力
-    for (const e of edgeList) {
-      const a = nodeMap.get(e.source);
-      const b = nodeMap.get(e.target);
-      let dx = b.x - a.x;
-      let dy = b.y - a.y;
-      let dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      let force = (dist - k) * 0.06;
-      a.vx += (dx / dist) * force;
-      a.vy += (dy / dist) * force;
-      b.vx -= (dx / dist) * force;
-      b.vy -= (dy / dist) * force;
-    }
-
-    // 中心引力
-    const cx = 400, cy = 300;
-    for (const n of nodeMap.values()) {
-      n.vx += (cx - n.x) * 0.01;
-      n.vy += (cy - n.y) * 0.01;
-    }
-
-    // 应用位移
-    for (const n of nodeMap.values()) {
-      n.x += n.vx * cooling * 5;
-      n.y += n.vy * cooling * 5;
-    }
-  }
-
-  // 归一化
-  let minX = Infinity, minY = Infinity;
-  for (const n of nodeMap.values()) {
-    minX = Math.min(minX, n.x);
-    minY = Math.min(minY, n.y);
-  }
-  const offsetX = 50 - minX;
-  const offsetY = 50 - minY;
-  for (const n of nodeMap.values()) {
-    n.x += offsetX;
-    n.y += offsetY;
-  }
-
-  return nodeMap;
+function dagreLayout(entityTypes, relations) {
+  const g = new dagre.graphlib.Graph();
+  g.setGraph({ rankdir: 'LR', nodesep: 55, ranksep: 130, marginx: 24, marginy: 24 });
+  g.setDefaultEdgeLabel(() => ({}));
+  entityTypes.forEach((et) => g.setNode(String(et.id), { width: 180, height: 68 }));
+  relations.forEach((rel) => {
+    const f = entityTypes.find((e) => e.name === rel.from);
+    const t = entityTypes.find((e) => e.name === rel.to);
+    if (f && t) g.setEdge(String(f.id), String(t.id));
+  });
+  dagre.layout(g);
+  return g;
 }
 
 /**
  * SchemaVisualization — Schema 结构可视化（ReactFlow 力导向图）
  */
-const SchemaVisualization = ({ schema }) => {
+const SchemaVisualization = ({ schema, onNodeClick, onEdgeClick, onConnect, onEdgeDelete, tidySignal, layoutPlan }) => {
   const { entityTypes, relations } = schema;
   const { t } = useI18n();
   const { updateSchema } = useSchemaStore();
@@ -115,19 +47,16 @@ const SchemaVisualization = ({ schema }) => {
     if (entityTypes.length === 0) return [];
 
     const savedLayout = schema?.layout?.nodes || {};
-    const hasSavedLayout = Object.keys(savedLayout).length > 0;
-
-    const centerX = 400;
-    const centerY = 300;
-    const baseRadius = Math.max(120, entityTypes.length * 18);
 
     const rawNodes = entityTypes.map((entity, index) => {
       const angle = (2 * Math.PI * index) / entityTypes.length - Math.PI / 2;
+      const radius = Math.max(120, entityTypes.length * 18);
       return {
         id: entity.id?.toString() || `entity-${index}`,
         type: 'entity',
-        x: centerX + baseRadius * Math.cos(angle),
-        y: centerY + baseRadius * Math.sin(angle),
+        connectable: true,
+        x: 400 + radius * Math.cos(angle),
+        y: 300 + radius * Math.sin(angle),
         data: {
           label: entity.name,
           color: entity.color || '#3b82f6',
@@ -136,31 +65,31 @@ const SchemaVisualization = ({ schema }) => {
       };
     });
 
-    if (hasSavedLayout) {
-      return rawNodes.map(n => {
+    let positioned;
+    if (Object.keys(savedLayout).length > 0) {
+      positioned = rawNodes.map(n => {
         const saved = savedLayout[n.id];
-        return saved
-          ? { ...n, position: { x: saved.x, y: saved.y } }
-          : n;
+        return saved ? { ...n, position: { x: saved.x, y: saved.y } } : n;
+      });
+    } else {
+      const g = dagreLayout(entityTypes, relations);
+      positioned = rawNodes.map(n => {
+        const pos = g.node(n.id);
+        return { ...n, position: { x: pos.x - 85, y: pos.y - 31 } };
       });
     }
 
-    const rawEdges = relations
-      .filter(rel => {
-        const fromEntity = entityTypes.find(e => e.name === rel.from);
-        const toEntity = entityTypes.find(e => e.name === rel.to);
-        return fromEntity && toEntity;
-      })
-      .map(rel => ({
-        source: entityTypes.find(e => e.name === rel.from).id?.toString(),
-        target: entityTypes.find(e => e.name === rel.to).id?.toString()
-      }));
-
-    const layoutMap = computeLayout(rawNodes, rawEdges);
-
-    return rawNodes.map(n => ({
+    // 归一化：无论保存布局多散，统一缩放/居中到约 760x480，保证 fitView 后节点可读
+    const xs = positioned.map(n => n.position.x);
+    const ys = positioned.map(n => n.position.y);
+    const w = Math.max(Math.max(...xs) - Math.min(...xs), 1);
+    const h = Math.max(Math.max(...ys) - Math.min(...ys), 1);
+    const scale = Math.min(900 / w, 560 / h, 1.2);
+    const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+    const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+    return positioned.map(n => ({
       ...n,
-      position: { x: layoutMap.get(n.id).x, y: layoutMap.get(n.id).y }
+      position: { x: 400 + (n.position.x - cx) * scale, y: 300 + (n.position.y - cy) * scale }
     }));
   }, [entityTypes, relations, schema?.layout]);
 
@@ -196,7 +125,76 @@ const SchemaVisualization = ({ schema }) => {
   }, [relations, entityTypes]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const relationsSignature = useMemo(
+    () => JSON.stringify(relations.map(r => [r.id, r.name, r.from, r.to])),
+    [relations]
+  );
+  useEffect(() => {
+    setEdges(initialEdges);
+    // 关系新增/删除/改名后重建连线（保留节点手动位置，节点布局不受影响）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [relationsSignature]);
+  // AI 排版方案：按行分组定位（LR=行从左往右流动；TB=从上往下），行内按相邻行邻居重心排序就近连接
+  useEffect(() => {
+    if (!layoutPlan || !Array.isArray(layoutPlan.rows) || entityTypes.length === 0) return;
+    // 名称归一化匹配：取「（」前的主体、忽略大小写与空白差异，容忍 AI 输出的名称细微出入
+    const norm = (n) => String(n).split('（')[0].trim().toLowerCase().replace(/\s+/g, ' ');
+    const nameToId = new Map(entityTypes.map(e => [norm(String(e.name)), String(e.id)]));
+    const rows = layoutPlan.rows
+      .map(r => ({ title: r.title || '', items: (Array.isArray(r.items) ? r.items : []).filter(n => nameToId.has(norm(n))) }))
+      .filter(r => r.items.length);
+    if (!rows.length) return;
+    const rowOf = new Map();
+    rows.forEach((row, ri) => row.items.forEach(name => { const id = nameToId.get(norm(name)); if (id) rowOf.set(id, ri); }));
+    const orderRows = [];
+    rows.forEach((row, ri) => {
+      if (ri === 0 || !(orderRows[ri - 1] || []).length) { orderRows.push([...row.items]); return; }
+      const prevPos = new Map();
+      (orderRows[ri - 1] || []).forEach((name, idx) => prevPos.set(name, idx));
+      const bary = (name) => {
+        const vals = relations
+          .filter(r => (r.from === name && prevPos.has(r.to)) || (r.to === name && prevPos.has(r.from)))
+          .map(r => prevPos.get(r.from === name ? r.to : r.from));
+        return vals.length ? vals.reduce((acc, v) => acc + v, 0) / vals.length : Number.MAX_SAFE_INTEGER;
+      };
+      orderRows.push([...row.items].sort((a, b) => bary(a) - bary(b)));
+    });
+    const isLR = layoutPlan.orientation !== 'TB';
+    const COL = 240, ROWH = 92, NODEW = 190, ROWV = 150;
+    const updates = {};
+    orderRows.forEach((items, ri) => {
+      items.forEach((name, idx) => {
+        const id = nameToId.get(norm(name));
+        if (isLR) {
+          updates[id] = { x: 60 + ri * COL, y: 300 - (items.length * ROWH) / 2 + idx * ROWH + 16 };
+        } else {
+          updates[id] = { x: 450 - (items.length * NODEW) / 2 + idx * NODEW, y: 60 + ri * ROWV };
+        }
+      });
+    });
+    setNodes(nds => nds.map(n => (updates[n.id] ? { ...n, position: updates[n.id] } : n)));
+  }, [layoutPlan, entityTypes, relations, setNodes]);
+
+  const appliedTidy = useRef(0);
+  useEffect(() => {
+    if (!tidySignal || tidySignal === appliedTidy.current || entityTypes.length === 0) return;
+    appliedTidy.current = tidySignal;
+    const g = dagreLayout(entityTypes, relations);
+    setNodes((nds) => nds.map((n) => {
+      const pos = g.node(n.id);
+      return pos ? { ...n, position: { x: pos.x - 85, y: pos.y - 31 } } : n;
+    }));
+  }, [tidySignal, entityTypes, relations, setNodes]);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const handleNodesChange = useCallback((changes) => {
+    // 实体不能在画布上删除（防误删）；位置/尺寸变化照常应用
+    onNodesChange(changes.filter(c => c.type !== 'remove'));
+  }, [onNodesChange]);
+  const handleEdgesChange = useCallback((changes) => {
+    const removes = changes.filter(c => c.type === 'remove');
+    onEdgesChange(changes.filter(c => c.type !== 'remove'));
+    if (removes.length && onEdgeDelete) onEdgeDelete(removes.map(c => c.id));
+  }, [onEdgesChange, onEdgeDelete]);
 
   const initializedRef = useRef(false);
   useEffect(() => {
@@ -276,8 +274,17 @@ const SchemaVisualization = ({ schema }) => {
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
+        connectionMode={ConnectionMode.Loose}
+        nodesConnectable
+        onNodesChange={handleNodesChange}
+        onEdgesChange={handleEdgesChange}
+        onConnect={(connection) => {
+          const from = entityTypes.find(e => String(e.id) === String(connection.source));
+          const to = entityTypes.find(e => String(e.id) === String(connection.target));
+          if (from && to && onConnect) onConnect({ sourceName: from.name, targetName: to.name });
+        }}
+        onNodeClick={(event, node) => onNodeClick?.(node)}
+        onEdgeClick={(event, edge) => onEdgeClick?.(edge)}
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.2, maxZoom: 1.5 }}

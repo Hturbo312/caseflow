@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../db.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { accessibleCaseIds } from '../middleware/caseAccess.js';
 
 const router = express.Router();
 
@@ -9,6 +10,7 @@ router.get('/counts', authMiddleware, async (req, res) => {
   try {
     const caseId = parseInt(req.query.case_id, 10);
     if (!caseId) return res.status(400).json({ error: 'case_id 必填' });
+    if (!(await accessibleCaseIds(req.user.id, [caseId])).includes(caseId)) return res.status(403).json({ error: '无权访问该案例' });
     const [entRes, relRes] = await Promise.all([
       pool.query(`SELECT ev.entity_id AS id, count(*)::int AS cnt, count(*) FILTER (WHERE ev.status = 'confirmed')::int AS confirmed
                   FROM evidence ev JOIN case_entities ce ON ce.id = ev.entity_id
