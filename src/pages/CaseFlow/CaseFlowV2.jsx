@@ -25,6 +25,7 @@ import './design-system.css';
 import './academic.css';
 import FrameworkGuide from './components/Workspace/FrameworkGuide';
 import CaseShelf from './components/Workspace/CaseShelf';
+import WorkspaceGuide from './components/Workspace/WorkspaceGuide';
 
 const MAIN_TABS = [
   { id: 'case', label: 'v2.tab.case', icon: FolderOpen, task: 'v2.task.case' },
@@ -288,8 +289,9 @@ const CaseFlowV2 = () => {
 
         {/* 中栏主工作区：滚动区 + 预览卡覆盖层 + 导入向导覆盖层 */}
         <main className="v2-main">
-          {mainTab !== 'schema' && <div className="academic-worktools">{mainTab === 'case' ? <><span>{t('v2.work.caseLabel')}</span><button onClick={() => isAuthenticated ? setShowCreateCase(true) : showLogin()}>{t('v2.work.newCase')}</button><button onClick={openImport}>{t('v2.work.import')}</button></> : mainTab === 'graph' ? <><span>{t('v2.work.graphLabel')}</span><button onClick={() => switchTab(researchTab)}>{t('v2.work.backResearch')}</button></> : <span>{t('v2.work.analysisLabel')}</span>}</div>}
+          {mainTab !== 'schema' && mainTab !== 'home' && <div className="academic-worktools">{mainTab === 'case' ? <><span>{t('v2.work.caseLabel')}</span><button onClick={() => isAuthenticated ? setShowCreateCase(true) : showLogin()}>{t('v2.work.newCase')}</button><button onClick={openImport}>{t('v2.work.import')}</button></> : mainTab === 'graph' ? <><span>{t('v2.work.graphLabel')}</span><button onClick={() => switchTab(researchTab)}>{t('v2.work.backResearch')}</button></> : <span>{t('v2.work.analysisLabel')}</span>}</div>}
           <div className={`v2-main-scroll ${mainTab === 'case' ? 'crw-host' : ''}`}>
+            {mainTab === 'home' && <WorkspaceGuide onOpenTab={switchTab} />}
             {mainTab === 'graph' && (
               <div className="v2-graph">
                 <KnowledgeGraphCanvas isAuthenticated={isAuthenticated} onShowLogin={showLogin} />

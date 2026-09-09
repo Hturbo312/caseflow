@@ -5,6 +5,7 @@ import { aiApi, schemaVersionApi } from '../../../../services/api';
 import SchemaArchitect from '../SchemaArchitect';
 import SchemaVisualization from '../SchemaArchitect/SchemaVisualization';
 import VersionBar from './VersionBar';
+import './framework-guide.css';
 
 export function ResearchLens({ caseItem }) {
   const schema = useSchemaStore(s => s.schemas.find(x => String(x.id) === String(caseItem.schemaId || caseItem.schema_id)));
@@ -38,12 +39,12 @@ function GuideSession({ schema, cases, ...props }) {
   const [revising, setRevising] = useState(false);
   const [advanced, setAdvanced] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [graphOpen, setGraphOpen] = useState(true);
   const [tidySignal, setTidySignal] = useState(0);
   const [layoutPlan, setLayoutPlan] = useState(null);
   const [aiLayingOut, setAiLayingOut] = useState(false);
   const [relEditing, setRelEditing] = useState(null);
   const [verInfo, setVerInfo] = useState(null);
+  const [versions, setVersions] = useState([]);
   const [draft, setDraft] = useState({ name: '', description: '' });
   const [relDraft, setRelDraft] = useState({ name: '', from: '', to: '' });
   const [aiBusy, setAiBusy] = useState(false);
@@ -57,17 +58,18 @@ function GuideSession({ schema, cases, ...props }) {
   const instances = active ? matching.flatMap(c => (c.entities || []).filter(e => (e.entityType || e.entity_type) === active.name).map(e => ({ c, e }))) : [];
   const relatedRelations = active ? relations.filter(r => r.from === active.name || r.to === active.name) : [];
 
-  // 版本状态（轻量读取，与 VersionBar 同源 API）
+  // 版本状态与时间线（轻量读取，与 VersionBar 同源 API）
   const loadVersionInfo = useCallback(async () => {
     try {
       const famRes = await schemaVersionApi.families();
       const fam = (famRes.families || []).find(f => Number(f.legacy_schema_id) === Number(schema?.id));
-      if (!fam) return setVerInfo(null);
+      if (!fam) { setVersions([]); return setVerInfo(null); }
       const verRes = await schemaVersionApi.versions(fam.id);
       const vs = verRes.versions || [];
+      setVersions(vs);
       const cur = vs.find(v => v.status === 'active') || vs.find(v => v.status === 'draft') || vs[0];
       setVerInfo(cur ? { key: cur.version_key, status: cur.status } : null);
-    } catch { setVerInfo(null); }
+    } catch { setVersions([]); setVerInfo(null); }
   }, []);
   useEffect(() => { loadVersionInfo(); }, [loadVersionInfo, schema?.id]);
 
@@ -129,6 +131,17 @@ function GuideSession({ schema, cases, ...props }) {
     await useSchemaStore.getState().addRelation(schema.id, { name: relDraft.name.trim(), from: relDraft.from, to: relDraft.to, description: '' });
     setRelDraft({ name: '', from: active?.name || '', to: '' });
     setMessage('关系已添加。');
+  }
+
+  // 工具栏「＋ 关系」：直接打开下方关系面板的创建模式
+  function startAddRelation() {
+    if (!types.length) return setMessage('请先创建实体概念，再建立关系。');
+    const first = active?.name || types[0]?.name || '';
+    setRevising(false);
+    setAiProposals(null);
+    setAiError('');
+    setMessage('');
+    setRelEditing({ name: '', from: first, to: first, description: '', __new: true });
   }
 
   // 画布拖线 → 直接创建关系（默认名「关联」，随后可在关系面板中改名）
@@ -215,7 +228,7 @@ function GuideSession({ schema, cases, ...props }) {
     setMessage(`建议已采纳并写入「${target.name}」的定义。`);
   }
 
-  return <div className="academic-framework">
+  return <div className="academic-framework fw2">
     <div className="fw-statusbar">
       <span className="fw-status-main">研究框架</span>
       <select className="fw-schema-select" value={schema?.id || ''} onChange={(e) => switchSchema(e.target.value)} title="切换研究框架">
@@ -223,99 +236,131 @@ function GuideSession({ schema, cases, ...props }) {
       </select>
       <span className={`fw-status-ver ${verInfo?.status || 'none'}`}>{verInfo ? `${verInfo.key} · ${VER_STATUS_LABEL[verInfo.status] || verInfo.status}` : '未纳入版本管理'}</span>
       {verInfo?.status === 'draft' && <span className="fw-draft-hint">草案修订中，批准后生效</span>}
-      <button onClick={() => setHistoryOpen(v => !v)}>{historyOpen ? '收起历史' : '历史与差异'}</button>
+      {message && <span className="fw-message" role="status">{message}</span>}
     </div>
     {historyOpen && <div className="fw-history"><VersionBar schemaId={schema?.id} /></div>}
 
-    <div className="fw-graph">
-      <button className="fw-graph-toggle" onClick={() => setGraphOpen(v => !v)}>
-        实体与关系图 {graphOpen ? '▾' : '▸'}
-      </button>
-      {graphOpen && <button className="fw-graph-toggle" onClick={aiLayout} disabled={aiLayingOut} title="让 AI 按研究逻辑分行排布">{aiLayingOut ? 'AI 排布中…' : 'AI 排布'}</button>}
-      {graphOpen && <button className="fw-graph-toggle" onClick={() => setTidySignal(s => s + 1)} title="按关系结构自动重排节点">自动整理布局</button>}
-      {graphOpen && <button className="fw-graph-toggle" onClick={addConcept}>＋ 新增概念</button>}
-      {graphOpen && <div className="fw-graph-canvas">{schema && <SchemaVisualization
-        schema={schema}
-        tidySignal={tidySignal}
-        layoutPlan={layoutPlan}
-        onConnect={handleGraphConnect}
-        onEdgeDelete={handleGraphEdgeDelete}
-        onNodeClick={(node) => { const t = types.find(x => String(x.id) === String(node.id)); if (t) selectType(t); }}
-        onEdgeClick={(edge) => { const r = relations.find(x => String(x.id) === String(edge.id)); if (r) { setRevising(false); setType(types.find(t => t.name === r.from) || null); setRelEditing({ ...r }); setAiProposals(null); setAiError(''); setMessage(''); } }}
-      />}</div>}
-    </div>
-
-    <div className="fw-panel">
-      {relEditing ? <div className="fw-relpanel">
-        <div className="fw-relpanel-head"><b>关系 · {relEditing.from} → {relEditing.to}</b><button onClick={() => setRelEditing(null)} title="关闭">×</button></div>
-        <label>关系名<input value={relEditing.name || ''} onChange={e => setRelEditing({ ...relEditing, name: e.target.value })} /></label>
-        <div className="fw-relpanel-ends">
-          <label>起点<select value={relEditing.from || ''} onChange={e => setRelEditing({ ...relEditing, from: e.target.value })}>{types.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}</select></label>
-          <label>终点<select value={relEditing.to || ''} onChange={e => setRelEditing({ ...relEditing, to: e.target.value })}>{types.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}</select></label>
-        </div>
-        <label>说明（可选）<textarea rows={2} value={relEditing.description || ''} onChange={e => setRelEditing({ ...relEditing, description: e.target.value })} /></label>
-        <div className="fw-relpanel-actions">
-          <button onClick={async () => { await useSchemaStore.getState().updateRelation(schema.id, relEditing.id, { name: relEditing.name, from: relEditing.from, to: relEditing.to, description: relEditing.description }); setRelEditing(null); setMessage('关系已更新。'); }}>保存</button>
-          <button onClick={() => setRelEditing(null)}>取消</button>
-          <button className="fw-danger" onClick={async () => { if (!window.confirm('删除该关系？')) return; await useSchemaStore.getState().deleteRelation(schema.id, relEditing.id); setRelEditing(null); setMessage('关系已删除。'); }}>删除</button>
-        </div>
-      </div>
-      : active ? (revising ? <div className="fw-edit">
-        <h3>修订 · {active.name}</h3>
-        <label>概念名称<input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} /></label>
-        <label>定义与识别依据<textarea rows={4} value={draft.description} onChange={e => setDraft({ ...draft, description: e.target.value })} /></label>
-        <div className="fw-edit-actions"><button onClick={saveEdit}>保存修订</button><button onClick={() => { setRevising(false); setMessage(''); }}>取消</button><button className="fw-danger" onClick={removeConcept}>删除此概念</button></div>
-        <div className="fw-rel">
-          <h4>相关关系 · {relatedRelations.length}</h4>
-          {relatedRelations.map(r => <div className="fw-rel-row" key={r.id}><span>{r.from} —{r.name}→ {r.to}</span><button onClick={() => removeRelation(r)}>删除</button></div>)}
-          {!relatedRelations.length && <p className="academic-muted">尚无涉及此概念的关系。</p>}
-          <div className="fw-rel-add">
-            <input placeholder="关系名（如 影响）" value={relDraft.name} onChange={e => setRelDraft({ ...relDraft, name: e.target.value })} />
-            <select value={relDraft.from} onChange={e => setRelDraft({ ...relDraft, from: e.target.value })}><option value="">起点概念</option>{types.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}</select>
-            <select value={relDraft.to} onChange={e => setRelDraft({ ...relDraft, to: e.target.value })}><option value="">终点概念</option>{types.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}</select>
-            <button onClick={addRelation}>新增关系</button>
+    <div className="fw2-body">
+      <div className="fw2-main">
+        <section className="fw2-graph" aria-label="框架实体关系图">
+          <div className="fw2-toolbar">
+            <button className="fw2-tool fw2-tool-primary" onClick={addConcept} title="新增实体概念，画布中点击节点查看与修订">＋ 实体</button>
+            <button className="fw2-tool fw2-tool-primary" onClick={startAddRelation} disabled={!types.length} title="新建关系，也可在画布中从一个节点拖线到另一节点">＋ 关系</button>
+            <span className="fw2-toolbar-note">点击实体或连线出现下方面板 · 画布拖线直接建关系</span>
+            <span className="fw2-flex" />
+            <button className="fw2-tool" onClick={() => setTidySignal(s => s + 1)} title="按关系结构自动重排节点">自动整理</button>
+            <button className="fw2-tool" onClick={aiLayout} disabled={aiLayingOut} title="让 AI 按研究逻辑分行排布">{aiLayingOut ? 'AI 排布中…' : 'AI 排布'}</button>
           </div>
-        </div>
-        <div className="fw-advanced">
-          <button onClick={() => setAdvanced(v => !v)}>{advanced ? '收起完整结构编辑器' : '完整结构编辑器（高级：画布/属性/关系细节）'}</button>
-          {advanced && <SchemaArchitect {...props} />}
-        </div>
-      </div> : <>
-        <h3>{active.name}</h3>
-        <h4>定义与识别依据</h4>
-        <p className="fw-def">{active.description || '尚未填写定义。点击「修订框架」补充识别依据。'}</p>
-        <details className="fw-evidence">
-          <summary>证据 · {instances.length} 条（来自案例实体归类）</summary>
-          {!instances.length && <p className="academic-muted">尚无案例归入此概念；这不代表现象未发生，只是尚未登记。</p>}
-          {instances.slice(0, 10).map(({ c, e }) => <button className="research-record" key={`${c.id}:${e.id}`} onClick={() => useWorkspaceStore.getState().openCaseDetail(c.id)}>{e.name} · {c.name}</button>)}
-          {instances.length > 10 && <p className="academic-muted">仅显示前 10 条，全部实例请在案例集或图谱中查看。</p>}
-        </details>
-        <div className="fw-revise">
-          <button onClick={startRevise}>修订框架</button>
-          <button onClick={aiDraft} disabled={aiBusy}>{aiBusy ? 'AI 起草中…' : 'AI 起草修订'}</button>
-          {message && <span className="fw-message" role="status">{message}</span>}
-        </div>
-        {aiError && <p role="alert" className="fw-error">{aiError}</p>}
-        {aiProposals && <div className="fw-proposals">
-          <h4>AI 修订建议（采纳后才写入框架）</h4>
-          {!aiProposals.length && <p className="academic-muted">证据不足，AI 未提出修订建议。</p>}
-          {aiProposals.map((p, i) => <section key={i}>
-            <b>{p.target || active?.name}</b>
-            <p>{p.definition}</p>
-            <p className="academic-muted">依据：{p.reason}</p>
-            <button onClick={() => acceptProposal(p)}>采纳</button>
-          </section>)}
-        </div>}
-      </>) : <div className="fw-overview">
-        <h3>{schema?.name || '选择研究框架'}</h3>
-        <p className="fw-def">{schema?.description || '框架指导阅读，案例证据推动修订，研究者决定解释和分类。'}</p>
-        <div className="fw-stats">
-          <span className="fw-stat-chip">概念 · {types.length}</span>
-          <span className="fw-stat-chip">关系 · {relations.length}</span>
-          <span className="fw-stat-chip">关联案例 · {matching.length}</span>
-        </div>
-        <p className="academic-muted">点击图中的实体或连线查看与编辑；「＋ 新增概念」在图上方。</p>
-      </div>}
+          <div className="fw-graph-canvas fw2-canvas">
+            {schema && <SchemaVisualization
+              schema={schema}
+              tidySignal={tidySignal}
+              layoutPlan={layoutPlan}
+              onConnect={handleGraphConnect}
+              onEdgeDelete={handleGraphEdgeDelete}
+              onNodeClick={(node) => { const t = types.find(x => String(x.id) === String(node.id)); if (t) selectType(t); }}
+              onEdgeClick={(edge) => { const r = relations.find(x => String(x.id) === String(edge.id)); if (r) { setRevising(false); setType(types.find(t => t.name === r.from) || null); setRelEditing({ ...r }); setAiProposals(null); setAiError(''); setMessage(''); } }}
+            />}
+          </div>
+        </section>
+        <section className="fw2-panel" aria-label="框架详情面板">
+          {relEditing ? <div className="fw-relpanel">
+            <div className="fw-relpanel-head"><b>{relEditing.__new ? '新建关系' : `关系 · ${relEditing.from} → ${relEditing.to}`}</b><button onClick={() => setRelEditing(null)} title="关闭">×</button></div>
+            <label>关系名<input value={relEditing.name || ''} onChange={e => setRelEditing({ ...relEditing, name: e.target.value })} /></label>
+            <div className="fw-relpanel-ends">
+              <label>起点<select value={relEditing.from || ''} onChange={e => setRelEditing({ ...relEditing, from: e.target.value })}>{types.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}</select></label>
+              <label>终点<select value={relEditing.to || ''} onChange={e => setRelEditing({ ...relEditing, to: e.target.value })}>{types.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}</select></label>
+            </div>
+            <label>说明（可选）<textarea rows={2} value={relEditing.description || ''} onChange={e => setRelEditing({ ...relEditing, description: e.target.value })} /></label>
+            <div className="fw-relpanel-actions">
+              <button onClick={async () => {
+                if (relEditing.__new) {
+                  if (!relEditing.name.trim() || !relEditing.from || !relEditing.to) return setMessage('关系名、起点与终点概念均需填写。');
+                  await useSchemaStore.getState().addRelation(schema.id, { name: relEditing.name.trim(), from: relEditing.from, to: relEditing.to, description: relEditing.description });
+                  setRelEditing(null);
+                  setMessage('关系已添加。');
+                  return;
+                }
+                await useSchemaStore.getState().updateRelation(schema.id, relEditing.id, { name: relEditing.name, from: relEditing.from, to: relEditing.to, description: relEditing.description });
+                setRelEditing(null);
+                setMessage('关系已更新。');
+              }}>保存</button>
+              <button onClick={() => setRelEditing(null)}>取消</button>
+              {!relEditing.__new && <button className="fw-danger" onClick={async () => { if (!window.confirm('删除该关系？')) return; await useSchemaStore.getState().deleteRelation(schema.id, relEditing.id); setRelEditing(null); setMessage('关系已删除。'); }}>删除</button>}
+            </div>
+          </div>
+          : active ? (revising ? <div className="fw-edit">
+            <h3>修订 · {active.name}</h3>
+            <label>概念名称<input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} /></label>
+            <label>定义与识别依据<textarea rows={4} value={draft.description} onChange={e => setDraft({ ...draft, description: e.target.value })} /></label>
+            <div className="fw-edit-actions"><button onClick={saveEdit}>保存修订</button><button onClick={() => { setRevising(false); setMessage(''); }}>取消</button><button className="fw-danger" onClick={removeConcept}>删除此概念</button></div>
+            <div className="fw-rel">
+              <h4>相关关系 · {relatedRelations.length}</h4>
+              {relatedRelations.map(r => <div className="fw-rel-row" key={r.id}><span>{r.from} —{r.name}→ {r.to}</span><button onClick={() => removeRelation(r)}>删除</button></div>)}
+              {!relatedRelations.length && <p className="academic-muted">尚无涉及此概念的关系。</p>}
+              <div className="fw-rel-add">
+                <input placeholder="关系名（如 影响）" value={relDraft.name} onChange={e => setRelDraft({ ...relDraft, name: e.target.value })} />
+                <select value={relDraft.from} onChange={e => setRelDraft({ ...relDraft, from: e.target.value })}><option value="">起点概念</option>{types.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}</select>
+                <select value={relDraft.to} onChange={e => setRelDraft({ ...relDraft, to: e.target.value })}><option value="">终点概念</option>{types.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}</select>
+                <button onClick={addRelation}>新增关系</button>
+              </div>
+            </div>
+            <div className="fw-advanced">
+              <button onClick={() => setAdvanced(v => !v)}>{advanced ? '收起完整结构编辑器' : '完整结构编辑器（高级：画布/属性/关系细节）'}</button>
+              {advanced && <SchemaArchitect {...props} />}
+            </div>
+          </div> : <>
+            <h3>{active.name}</h3>
+            <h4>定义与识别依据</h4>
+            <p className="fw-def">{active.description || '尚未填写定义。点击「修订框架」补充识别依据。'}</p>
+            <details className="fw-evidence">
+              <summary>证据 · {instances.length} 条（来自案例实体归类）</summary>
+              {!instances.length && <p className="academic-muted">尚无案例归入此概念；这不代表现象未发生，只是尚未登记。</p>}
+              {instances.slice(0, 10).map(({ c, e }) => <button className="research-record" key={`${c.id}:${e.id}`} onClick={() => useWorkspaceStore.getState().openCaseDetail(c.id)}>{e.name} · {c.name}</button>)}
+              {instances.length > 10 && <p className="academic-muted">仅显示前 10 条，全部实例请在案例集或图谱中查看。</p>}
+            </details>
+            <div className="fw-revise">
+              <button onClick={startRevise}>修订框架</button>
+              <button onClick={aiDraft} disabled={aiBusy}>{aiBusy ? 'AI 起草中…' : 'AI 起草修订'}</button>
+              {aiError && <span role="alert" className="fw-error">{aiError}</span>}
+            </div>
+            {aiProposals && <div className="fw-proposals">
+              <h4>AI 修订建议（采纳后才写入框架）</h4>
+              {!aiProposals.length && <p className="academic-muted">证据不足，AI 未提出修订建议。</p>}
+              {aiProposals.map((p, i) => <section key={i}>
+                <b>{p.target || active?.name}</b>
+                <p>{p.definition}</p>
+                <p className="academic-muted">依据：{p.reason}</p>
+                <button onClick={() => acceptProposal(p)}>采纳</button>
+              </section>)}
+            </div>}
+          </>) : <div className="fw-overview">
+            <h3>{schema?.name || '选择研究框架'}</h3>
+            <p className="fw-def">{schema?.description || '框架指导阅读，案例证据推动修订，研究者决定解释和分类。'}</p>
+            <div className="fw-stats">
+              <span className="fw-stat-chip">概念 · {types.length}</span>
+              <span className="fw-stat-chip">关系 · {relations.length}</span>
+              <span className="fw-stat-chip">关联案例 · {matching.length}</span>
+            </div>
+            <p className="academic-muted">点击图中的实体或连线查看与编辑；「＋ 实体」「＋ 关系」在图上方，画布中拖线可直接建关系。</p>
+          </div>}
+        </section>
+      </div>
+      <aside className="fw2-timeline" aria-label="schema 版本时间线">
+        <header className="fw2-tl-head"><strong>schema 时间线</strong><button onClick={() => setHistoryOpen(v => !v)}>{historyOpen ? '收起历史' : '历史与差异'}</button></header>
+        {versions.length ? <ol className="fw2-tl">
+          {versions.map(v => (
+            <li key={v.id} className={verInfo?.key === v.version_key ? 'current' : ''}>
+              <span className="fw2-tl-dot" />
+              <div className="fw2-tl-body">
+                <b>{v.version_key}</b>
+                <small>{VER_STATUS_LABEL[v.status] || v.status}{v.created_at ? ` · ${new Date(v.created_at).toLocaleDateString()}` : ''}</small>
+              </div>
+            </li>
+          ))}
+        </ol> : <p className="fw2-tl-empty">{schema ? '该框架尚未纳入版本管理。创建版本草案后，这里将记录框架的演进。' : '选择研究框架后查看版本时间线。'}</p>}
+        <p className="fw2-tl-hint">时间线记录框架演进；「历史与差异」支持创建草案、对比与批准。</p>
+      </aside>
     </div>
   </div>;
 }

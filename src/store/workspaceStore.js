@@ -6,7 +6,7 @@ import { create } from 'zustand';
  * 与经典布局共享 useCaseStore / useGraphStore / useCompareStore，只换壳不换脑
  */
 export const useWorkspaceStore = create((set) => ({
-  mainTab: 'graph',             // graph | schema | case | analysis（默认整体图谱，与 v1 习惯一致）
+  mainTab: 'home',              // home | graph | schema | case | analysis（home=使用说明，点击任一 tab 后进入对应工作区）
   caseDetailId: null,           // 中栏 Case 工作区当前打开的案例 id（字符串）
   caseSubTab: 'overview',       // overview | source | evidence | review
   selectedEntityId: null,
