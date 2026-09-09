@@ -4,7 +4,6 @@ import { useWorkspaceStore } from '../../../../store/workspaceStore';
 import { aiApi, schemaVersionApi } from '../../../../services/api';
 import SchemaArchitect from '../SchemaArchitect';
 import SchemaVisualization from '../SchemaArchitect/SchemaVisualization';
-import VersionBar from './VersionBar';
 import './framework-guide.css';
 
 export function ResearchLens({ caseItem }) {
@@ -38,7 +37,6 @@ function GuideSession({ schema, cases, ...props }) {
   const [type, setType] = useState(null);            // 选中的概念（由图节点点击驱动）
   const [revising, setRevising] = useState(false);
   const [advanced, setAdvanced] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
   const [tidySignal, setTidySignal] = useState(0);
   const [layoutPlan, setLayoutPlan] = useState(null);
   const [aiLayingOut, setAiLayingOut] = useState(false);
@@ -58,7 +56,7 @@ function GuideSession({ schema, cases, ...props }) {
   const instances = active ? matching.flatMap(c => (c.entities || []).filter(e => (e.entityType || e.entity_type) === active.name).map(e => ({ c, e }))) : [];
   const relatedRelations = active ? relations.filter(r => r.from === active.name || r.to === active.name) : [];
 
-  // 版本状态与时间线（轻量读取，与 VersionBar 同源 API）
+  // 版本状态与更改历史（轻量读取，与版本管理同源 API）
   const loadVersionInfo = useCallback(async () => {
     try {
       const famRes = await schemaVersionApi.families();
@@ -238,7 +236,6 @@ function GuideSession({ schema, cases, ...props }) {
       {verInfo?.status === 'draft' && <span className="fw-draft-hint">草案修订中，批准后生效</span>}
       {message && <span className="fw-message" role="status">{message}</span>}
     </div>
-    {historyOpen && <div className="fw-history"><VersionBar schemaId={schema?.id} /></div>}
 
     <div className="fw2-body">
       <div className="fw2-main">
@@ -347,7 +344,7 @@ function GuideSession({ schema, cases, ...props }) {
         </section>
       </div>
       <aside className="fw2-timeline" aria-label="schema 版本时间线">
-        <header className="fw2-tl-head"><strong>schema 时间线</strong><button onClick={() => setHistoryOpen(v => !v)}>{historyOpen ? '收起历史' : '历史与差异'}</button></header>
+        <header className="fw2-tl-head"><strong>schema 更改历史</strong></header>
         {versions.length ? <ol className="fw2-tl">
           {versions.map(v => (
             <li key={v.id} className={verInfo?.key === v.version_key ? 'current' : ''}>
@@ -358,8 +355,8 @@ function GuideSession({ schema, cases, ...props }) {
               </div>
             </li>
           ))}
-        </ol> : <p className="fw2-tl-empty">{schema ? '该框架尚未纳入版本管理。创建版本草案后，这里将记录框架的演进。' : '选择研究框架后查看版本时间线。'}</p>}
-        <p className="fw2-tl-hint">时间线记录框架演进；「历史与差异」支持创建草案、对比与批准。</p>
+        </ol> : <p className="fw2-tl-empty">{schema ? '该框架尚未纳入版本管理。' : '选择研究框架后查看更改历史。'}</p>}
+        <p className="fw2-tl-hint">记录框架的每次版本演进，当前生效版本高亮。</p>
       </aside>
     </div>
   </div>;
