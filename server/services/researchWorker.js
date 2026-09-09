@@ -52,7 +52,7 @@ async function runJob(job) {
   for (const source of record.sources.filter(s => s.status === 'pending' || s.status === 'failed')) {
     await pool.query("UPDATE case_research_jobs SET stage=$2,updated_at=now() WHERE id=$1", [job.id, `正在阅读：${source.title}`]);
     let parsed;
-    try { parsed = await parseMaterial(source); } catch { parsed = { ...source, status: 'failed', error: '材料解析失败，原文件已保存；可重试或转换格式。' }; }
+    try { parsed = await parseMaterial(source); } catch (e) { console.error(`[research] 解析材料失败 ${source.title}:`, e.message); parsed = { ...source, status: 'failed', error: '材料解析失败，原文件已保存；可重试或转换格式。' }; }
     await withResearch(caseId, userId, data => { const i = data.sources.findIndex(s => s.id === source.id); if (i >= 0) data.sources[i] = parsed; });
   }
   record = (await pool.query('SELECT data FROM case_research_work WHERE case_id=$1 AND user_id=$2', [caseId, userId])).rows[0].data;
@@ -131,7 +131,7 @@ export async function tickResearchJobs() {
       WHERE id=(SELECT id FROM case_research_jobs WHERE status='queued' ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING *`);
     if (rows[0]) {
       try { await runJob(rows[0]); }
-      catch (e) { await pool.query("UPDATE case_research_jobs SET status='failed',stage='处理未完成',error=$2,updated_at=now() WHERE id=$1", [rows[0].id, e.message]); }
+      catch (e) { console.error(`[research-worker] 任务失败 ${rows[0].id}:`, e.message); await pool.query("UPDATE case_research_jobs SET status='failed',stage='处理未完成',error=$2,updated_at=now() WHERE id=$1", [rows[0].id, e.message]); }
     }
   } catch (e) { console.error('[research-worker]', e.message); } finally { active = false; }
 }
