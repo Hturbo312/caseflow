@@ -10,7 +10,7 @@ import { useCaseData } from '../../hooks';
 import { useWorkspaceStore } from '../../store/workspaceStore';
 import { useI18n } from '../../i18n';
 import CopilotRail from './components/Workspace/CopilotRail';
-import CaseWorkspace from './components/Workspace/ResearchCase';
+import CaseWorkspace from './components/Workspace/CaseResearchWorkspace';
 import AnalysisWorkspace from './components/Workspace/ResearchAnalysis';
 import SchemaWorkspace from './components/Workspace/SchemaWorkspace';
 import CasePreviewCard from './components/Workspace/CasePreviewCard';
@@ -289,14 +289,14 @@ const CaseFlowV2 = () => {
         {/* 中栏主工作区：滚动区 + 预览卡覆盖层 + 导入向导覆盖层 */}
         <main className="v2-main">
           {mainTab !== 'schema' && <div className="academic-worktools">{mainTab === 'case' ? <><span>{t('v2.work.caseLabel')}</span><button onClick={() => isAuthenticated ? setShowCreateCase(true) : showLogin()}>{t('v2.work.newCase')}</button><button onClick={openImport}>{t('v2.work.import')}</button></> : mainTab === 'graph' ? <><span>{t('v2.work.graphLabel')}</span><button onClick={() => switchTab(researchTab)}>{t('v2.work.backResearch')}</button></> : <span>{t('v2.work.analysisLabel')}</span>}</div>}
-          <div className="v2-main-scroll">
+          <div className={`v2-main-scroll ${mainTab === 'case' ? 'crw-host' : ''}`}>
             {mainTab === 'graph' && (
               <div className="v2-graph">
                 <KnowledgeGraphCanvas isAuthenticated={isAuthenticated} onShowLogin={showLogin} />
               </div>
             )}
             {mainTab === 'case' && (
-              <CaseWorkspace isAuthenticated={isAuthenticated} onShowLogin={showLogin} />
+              <CaseWorkspace onCreate={() => setShowCreateCase(true)} />
             )}
             {mainTab === 'analysis' && <AnalysisWorkspace />}
             {/* 框架视图独占中栏，自带版本状态条（覆盖层与「关闭框架」按钮已废弃） */}
@@ -341,7 +341,7 @@ const CaseFlowV2 = () => {
       <CreateCaseModal
         show={showCreateCase}
         onClose={() => setShowCreateCase(false)}
-        onCreate={async () => { await handleCreateCase(isAuthenticated, showLogin); }}
+        onCreate={async () => { const created = await handleCreateCase(isAuthenticated, showLogin); if (created && mainTab === 'case') { const id = useCaseStore.getState().currentCaseId; if (id) openCaseDetail(id); } }}
         newCaseForm={newCaseForm}
         setNewCaseForm={setNewCaseForm}
         creatingCase={creatingCase}

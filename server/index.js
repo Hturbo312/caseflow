@@ -26,6 +26,8 @@ import schemaVersionsRoutes from './routes/schemaVersions.js';
 import conceptsRoutes from './routes/concepts.js';
 import researchRoutes, { initializeResearch } from './routes/research.js';
 import agentToolsRoutes from './routes/agentTools.js';
+import researchWorkspaceRoutes from './routes/researchWorkspace.js';
+import { initializeResearchJobs } from './services/researchWorker.js';
 
 dotenv.config();
 
@@ -60,12 +62,14 @@ app.use('/api/review', reviewRoutes);
 app.use('/api', schemaVersionsRoutes);
 app.use('/api/concepts', conceptsRoutes);
 app.use('/api/research', researchRoutes);
+app.use('/api/research-workspace', researchWorkspaceRoutes);
 app.use('/api/agent-tools', agentToolsRoutes);
 
 // 启动服务器 - 设置较长超时（LLM 调用较慢）
 const server = app.listen(PORT, '0.0.0.0', async () => {
   await initializeDatabase();
   await initializeResearch();
+  await initializeResearchJobs();
   startSessionCleanup(); // 启动会话清理定时器（只需一次）
   console.log(`Server running on http://0.0.0.0:${PORT}`);
   console.log(`Database: ${process.env.DB_NAME}`);

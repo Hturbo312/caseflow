@@ -43,3 +43,4 @@ record-*.js
 test-send.mjs
 server/test_*.mjs
 *.orig
+case-workspace/

@@ -1,0 +1,11 @@
+import {readFile} from 'node:fs/promises';
+import pool from './db.js';
+import {parseMaterial} from './services/researchFiles.js';
+const f=JSON.parse(await readFile('/tmp/caseflow-review-fixture.json','utf8'));
+const {rows}=await pool.query('SELECT data FROM case_research_work WHERE case_id=$1 AND user_id=$2',[f.caseId,f.userId]);
+const data=rows[0].data;
+const index=data.sources.findIndex(s=>s.extension==='.docx');
+data.sources[index]=await parseMaterial(data.sources[index]);
+await pool.query('UPDATE case_research_work SET data=$3,revision=revision+1 WHERE case_id=$1 AND user_id=$2',[f.caseId,f.userId,JSON.stringify(data)]);
+console.log('Word formatted content saved:',data.sources[index].html.length);
+await pool.end();
