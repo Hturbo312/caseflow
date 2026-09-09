@@ -212,3 +212,58 @@
   .fw2-body { grid-template-columns: 1fr; }
   .fw2-timeline { order: 3; max-height: 260px; }
 }
+
+/* 关系标签（常显，与案例研究关系图一致）+ 线上删除按钮 */
+.fw-graph-canvas .fw-edge-label {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 4px 1px 8px;
+  background: #fff;
+  border: 1px solid #dfe7ee;
+  border-radius: 999px;
+  font-size: 11px;
+  color: #41586c;
+  pointer-events: all;
+  box-shadow: 0 1px 4px rgba(15, 42, 60, 0.08);
+  white-space: nowrap;
+}
+
+.fw-graph-canvas .fw-edge-del,
+.fw-graph-canvas .fw-node-del {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  background: #f1f5f8;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  text-align: center;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fw-graph-canvas .fw-edge-del:hover,
+.fw-graph-canvas .fw-node-del:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* 实体节点：悬停显示删除按钮 */
+.fw-graph-canvas .fw-node-del {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  opacity: 0;
+  transition: opacity 0.12s;
+  z-index: 5;
+}
+
+.fw-graph-canvas .fw-entity-card:hover .fw-node-del {
+  opacity: 1;
+}

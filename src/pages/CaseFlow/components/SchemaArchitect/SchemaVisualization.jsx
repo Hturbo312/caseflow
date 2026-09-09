@@ -8,19 +8,23 @@ import {
   useEdgesState,
   MarkerType,
   ConnectionMode,
+  BaseEdge,
+  EdgeLabelRenderer,
+  getSmoothStepPath,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import dagre from '@dagrejs/dagre';
 import { nodeTypes } from './EntityNode';
 
 /**
- * dagre 层级布局：按关系结构分层排布（左→右），自动减少交叉
+ * dagre 层级布局：按关系结构分层排布（左→右），自动减少交叉。
+ * 参数与案例研究关系图（ResearchGraph）一致：层间距 100、同层间距 35、节点 156x62。
  */
 function dagreLayout(entityTypes, relations) {
   const g = new dagre.graphlib.Graph();
-  g.setGraph({ rankdir: 'LR', nodesep: 55, ranksep: 130, marginx: 24, marginy: 24 });
+  g.setGraph({ rankdir: 'LR', nodesep: 35, ranksep: 100, marginx: 24, marginy: 24 });
   g.setDefaultEdgeLabel(() => ({}));
-  entityTypes.forEach((et) => g.setNode(String(et.id), { width: 180, height: 68 }));
+  entityTypes.forEach((et) => g.setNode(String(et.id), { width: 156, height: 62 }));
   relations.forEach((rel) => {
     const f = entityTypes.find((e) => e.name === rel.from);
     const t = entityTypes.find((e) => e.name === rel.to);
@@ -31,36 +35,72 @@ function dagreLayout(entityTypes, relations) {
 }
 
 /**
- * SchemaVisualization — Schema 结构可视化（ReactFlow 力导向图）
+ * 关系连线（自定义边）：标签常显（与案例研究关系图一致），标签旁附删除按钮。
+ * 删除按钮经 data.onDelete 注入——FrameworkGuide 传入 onEdgeDelete 时才显示，SchemaArchitect 用法不受影响。
  */
-const SchemaVisualization = ({ schema, onNodeClick, onEdgeClick, onConnect, onEdgeDelete, tidySignal, layoutPlan }) => {
+function RelationEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data, selected, markerEnd }) {
+  const [path, labelX, labelY] = getSmoothStepPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, borderRadius: 12 });
+  return (
+    <>
+      <BaseEdge
+        id={id}
+        path={path}
+        markerEnd={markerEnd}
+        style={{
+          stroke: selected ? '#226ca5' : (data?.color || '#8295a6'),
+          strokeWidth: selected ? 2.5 : 1.4,
+          strokeDasharray: data?.dasharray,
+        }}
+      />
+      <EdgeLabelRenderer>
+        <div
+          className="fw-edge-label"
+          style={{ transform: `translate(-50%,-50%) translate(${labelX}px,${labelY}px)` }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span>{data?.label}</span>
+          {data?.onDelete && (
+            <button className="fw-edge-del" title="删除关系" onClick={data.onDelete}>×</button>
+          )}
+        </div>
+      </EdgeLabelRenderer>
+    </>
+  );
+}
+const edgeTypes = { relation: RelationEdge };
+
+const SchemaVisualization = ({ schema, onNodeClick, onEdgeClick, onConnect, onEdgeDelete, onNodeDelete, tidySignal, layoutPlan }) => {
   const { entityTypes, relations } = schema;
+
+  // 删除回调经 ref 转发进节点/边 data，避免回调身份变化导致布局反复重算
+  const nodeDeleteRef = useRef(onNodeDelete);
+  useEffect(() => { nodeDeleteRef.current = onNodeDelete; }, [onNodeDelete]);
+  const edgeDeleteRef = useRef(onEdgeDelete);
+  useEffect(() => { edgeDeleteRef.current = onEdgeDelete; }, [onEdgeDelete]);
 
   const initialNodes = useMemo(() => {
     if (entityTypes.length === 0) return [];
 
-    const rawNodes = entityTypes.map((entity, index) => {
-      const angle = (2 * Math.PI * index) / entityTypes.length - Math.PI / 2;
-      const radius = Math.max(120, entityTypes.length * 18);
-      return {
-        id: entity.id?.toString() || `entity-${index}`,
-        type: 'entity',
-        connectable: true,
-        x: 400 + radius * Math.cos(angle),
-        y: 300 + radius * Math.sin(angle),
-        data: {
-          label: entity.name,
-          color: entity.color || '#3b82f6',
-          propertyCount: entity.properties?.length || 0
-        }
-      };
-    });
+    const rawNodes = entityTypes.map((entity, index) => ({
+      id: entity.id?.toString() || `entity-${index}`,
+      type: 'entity',
+      connectable: true,
+      position: { x: 0, y: 0 },
+      data: {
+        label: entity.name,
+        color: entity.color || '#3b82f6',
+        propertyCount: entity.properties?.length || 0,
+        ...(onNodeDelete ? {
+          onDelete: (e) => { e.stopPropagation(); e.preventDefault(); nodeDeleteRef.current(entity.id); },
+        } : {}),
+      },
+    }));
 
     // 每次进入都按 dagre 自动排布（与案例研究关系图一致）；会话内可拖动微调，坐标不持久化
     const g = dagreLayout(entityTypes, relations);
     const positioned = rawNodes.map(n => {
       const pos = g.node(n.id);
-      return { ...n, position: { x: pos.x - 85, y: pos.y - 31 } };
+      return { ...n, position: { x: pos.x - 78, y: pos.y - 31 } };
     });
 
     // 归一化：统一缩放/居中到约 760x480，保证 fitView 后节点可读
@@ -75,7 +115,7 @@ const SchemaVisualization = ({ schema, onNodeClick, onEdgeClick, onConnect, onEd
       ...n,
       position: { x: 400 + (n.position.x - cx) * scale, y: 300 + (n.position.y - cy) * scale }
     }));
-  }, [entityTypes, relations]);
+  }, [entityTypes, relations, onNodeDelete]);
 
   const initialEdges = useMemo(() => {
     if (relations.length === 0) return [];
@@ -85,28 +125,27 @@ const SchemaVisualization = ({ schema, onNodeClick, onEdgeClick, onConnect, onEd
       const toEntity = entityTypes.find(e => e.name === rel.to);
       if (!fromEntity || !toEntity) return null;
 
+      const id = rel.id?.toString() || `rel-${rel.name}-${rel.from}-${rel.to}`;
       return {
-        id: rel.id?.toString() || `rel-${rel.name}-${rel.from}-${rel.to}`,
+        id,
         source: fromEntity.id?.toString(),
         target: toEntity.id?.toString(),
-        label: rel.name,
-        labelStyle: { fill: '#6b7280', fontWeight: 500, fontSize: 11 },
-        labelBgStyle: { fill: 'white', fillOpacity: 0.9 },
-        labelBgPadding: [4, 4],
-        labelBgBorderRadius: 4,
-        style: {
-          stroke: rel.color || '#9ca3af',
-          strokeWidth: 2,
-          strokeDasharray: rel.style === 'dashed' ? '5,5' : rel.style === 'dotted' ? '2,2' : undefined,
+        type: 'relation',
+        data: {
+          label: rel.name,
+          color: rel.color || '#8295a6',
+          dasharray: rel.style === 'dashed' ? '5,5' : rel.style === 'dotted' ? '2,2' : undefined,
+          ...(onEdgeDelete ? {
+            onDelete: (e) => { e.stopPropagation(); e.preventDefault(); edgeDeleteRef.current([id]); },
+          } : {}),
         },
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          color: rel.color || '#9ca3af',
+          color: rel.color || '#8295a6',
         },
-        animated: false
       };
     }).filter(Boolean);
-  }, [relations, entityTypes]);
+  }, [relations, entityTypes, onEdgeDelete]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const relationsSignature = useMemo(
@@ -166,12 +205,12 @@ const SchemaVisualization = ({ schema, onNodeClick, onEdgeClick, onConnect, onEd
     const g = dagreLayout(entityTypes, relations);
     setNodes((nds) => nds.map((n) => {
       const pos = g.node(n.id);
-      return pos ? { ...n, position: { x: pos.x - 85, y: pos.y - 31 } } : n;
+      return pos ? { ...n, position: { x: pos.x - 78, y: pos.y - 31 } } : n;
     }));
   }, [tidySignal, entityTypes, relations, setNodes]);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const handleNodesChange = useCallback((changes) => {
-    // 实体不能在画布上删除（防误删）；位置/尺寸变化照常应用
+    // 实体不能在画布上删除（防误删，删除走节点悬停 × 或下方面板）；位置/尺寸变化照常应用
     onNodesChange(changes.filter(c => c.type !== 'remove'));
   }, [onNodesChange]);
   const handleEdgesChange = useCallback((changes) => {
@@ -202,6 +241,7 @@ const SchemaVisualization = ({ schema, onNodeClick, onEdgeClick, onConnect, onEd
       <ReactFlow
         nodes={nodes}
         edges={edges}
+        edgeTypes={edgeTypes}
         connectionMode={ConnectionMode.Loose}
         nodesConnectable
         onNodesChange={handleNodesChange}

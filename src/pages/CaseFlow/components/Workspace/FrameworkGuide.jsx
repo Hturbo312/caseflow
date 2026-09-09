@@ -116,6 +116,16 @@ function GuideSession({ schema, cases, ...props }) {
     setRevising(true);
   }
 
+  // 图节点悬停 × 直接删除（带确认）；面板内「删除此概念」仍走 removeConcept
+  async function deleteConceptById(nodeId) {
+    const t = types.find(x => String(x.id) === String(nodeId));
+    if (!t) return;
+    if (!window.confirm(`删除概念「${t.name}」？已归入该概念的案例实体记录不会删除，但会失去类型归属。`)) return;
+    await useSchemaStore.getState().deleteEntityType(schema.id, t.id);
+    if (active && String(active.id) === String(nodeId)) { setType(null); setRevising(false); }
+    setMessage(`概念「${t.name}」已删除。`);
+  }
+
   async function removeConcept() {
     if (!window.confirm(`删除概念「${active?.name}」？已归入该概念的案例实体记录不会删除，但会失去类型归属。`)) return;
     await useSchemaStore.getState().deleteEntityType(schema.id, active.id);
@@ -156,7 +166,7 @@ function GuideSession({ schema, cases, ...props }) {
   // 画布中选中连线按 Delete → 删除关系（同步服务器）
   async function handleGraphEdgeDelete(ids) {
     if (!ids.length) return;
-    if (!window.confirm(`删除选中的 ${ids.length} 条关系？此操作会同步到服务器。`)) return;
+    if (!window.confirm(`确认删除 ${ids.length} 条关系？此操作会同步到服务器。`)) return;
     for (const id of ids) {
       const r = relations.find(x => String(x.id) === String(id));
       if (r) await useSchemaStore.getState().deleteRelation(schema.id, r.id);
@@ -255,7 +265,8 @@ function GuideSession({ schema, cases, ...props }) {
               layoutPlan={layoutPlan}
               onConnect={handleGraphConnect}
               onEdgeDelete={handleGraphEdgeDelete}
-              onNodeClick={(node) => { const t = types.find(x => String(x.id) === String(node.id)); if (t) selectType(t); }}
+              onNodeDelete={deleteConceptById}
+        onNodeClick={(node) => { const t = types.find(x => String(x.id) === String(node.id)); if (t) selectType(t); }}
               onEdgeClick={(edge) => { const r = relations.find(x => String(x.id) === String(edge.id)); if (r) { setRevising(false); setType(types.find(t => t.name === r.from) || null); setRelEditing({ ...r }); setAiProposals(null); setAiError(''); setMessage(''); } }}
             />}
           </div>
